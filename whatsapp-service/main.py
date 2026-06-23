@@ -47,9 +47,37 @@ def _file_post_send_wait_ms(size_bytes: int) -> int:
     return max(18000, min(int(14000 + size_mb * 7000), 60000))
 
 
+async def _launch_context():
+    global _PLAYWRIGHT, _CONTEXT
+    if _PLAYWRIGHT:
+        try:
+            await _PLAYWRIGHT.stop()
+        except Exception:
+            pass
+    _PLAYWRIGHT = await async_playwright().start()
+    _CONTEXT = await _PLAYWRIGHT.chromium.launch_persistent_context(
+        user_data_dir=str(PROFILE_DIR),
+        headless=True,
+        user_agent=(
+            "Mozilla/5.0 (X11; Linux x86_64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/124.0.0.0 Safari/537.36"
+        ),
+        args=[
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--disable-session-crashed-bubble",
+            "--disable-blink-features=AutomationControlled",
+            "--single-process",
+        ],
+    )
+
+
 async def _get_context_and_page():
     global _PLAYWRIGHT, _CONTEXT
     async with _CONTEXT_LOCK:
+        # Reset context if browser crashed
         if _CONTEXT is not None:
             try:
                 _ = _CONTEXT.pages
@@ -57,26 +85,17 @@ async def _get_context_and_page():
                 _CONTEXT = None
 
         if _CONTEXT is None:
-            _PLAYWRIGHT = await async_playwright().start()
-            _CONTEXT = await _PLAYWRIGHT.chromium.launch_persistent_context(
-                user_data_dir=str(PROFILE_DIR),
-                headless=True,
-                user_agent=(
-                    "Mozilla/5.0 (X11; Linux x86_64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                ),
-                args=[
-                    "--no-sandbox",
-                    "--disable-dev-shm-usage",
-                    "--disable-session-crashed-bubble",
-                    "--disable-blink-features=AutomationControlled",
-                ],
-            )
+            await _launch_context()
 
-        pages = [p for p in _CONTEXT.pages if not p.is_closed()]
-        page = pages[0] if pages else await _CONTEXT.new_page()
-        await page.bring_to_front()
+        try:
+            pages = [p for p in _CONTEXT.pages if not p.is_closed()]
+            page = pages[0] if pages else await _CONTEXT.new_page()
+        except Exception:
+            # Context crashed — restart
+            _CONTEXT = None
+            await _launch_context()
+            page = await _CONTEXT.new_page()
+
         return _CONTEXT, page
 
 
