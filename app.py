@@ -716,11 +716,35 @@ async def _prime_marketing_drive_assets() -> list[dict]:
 
 
 def _marketing_drive_thumbnail_url(asset_key: str) -> str:
-    """Return a Google Drive thumbnail URL if the asset is synced to Drive."""
+    """Return a Google Drive thumbnail URL — uses cache or does a live Drive lookup."""
     cached = MARKETING_DRIVE_ASSET_CACHE.get(asset_key) or {}
     file_id = str(cached.get("id") or "").strip()
     if file_id:
         return f"https://drive.google.com/thumbnail?id={file_id}&sz=w480"
+    # Live lookup: find the file in Drive by name
+    try:
+        from services.google_drive_sync import _find_file_in_folder, _find_child_folder
+        spec = MARKETING_DRIVE_ASSETS.get(asset_key)
+        if not spec:
+            return ""
+        service = _google_drive_service()
+        root_id = _ensure_marketing_drive_root_folder()
+        # Navigate into sub-folders (spec["folders"])
+        folder_id = root_id
+        for folder_name in (spec.get("folders") or []):
+            fid = _find_child_folder(service, folder_id, folder_name)
+            if not fid:
+                return ""
+            folder_id = fid
+        drive_name = str(spec.get("drive_name") or "")
+        if not drive_name:
+            return ""
+        record = _find_file_in_folder(service, folder_id, drive_name)
+        if record and record.get("id"):
+            MARKETING_DRIVE_ASSET_CACHE[asset_key] = record
+            return f"https://drive.google.com/thumbnail?id={record['id']}&sz=w480"
+    except Exception:
+        pass
     return ""
 
 
