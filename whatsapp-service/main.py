@@ -74,13 +74,19 @@ async def _launch_context():
     )
 
 
-async def _get_context_and_page():
+async def _get_fresh_page():
+    """Always return a new page, closing any existing ones. Restart context if crashed."""
     global _PLAYWRIGHT, _CONTEXT
     async with _CONTEXT_LOCK:
-        # Reset context if browser crashed
         if _CONTEXT is not None:
+            # Close all existing pages to free memory
             try:
-                _ = _CONTEXT.pages
+                for p in list(_CONTEXT.pages):
+                    try:
+                        if not p.is_closed():
+                            await p.close()
+                    except Exception:
+                        pass
             except Exception:
                 _CONTEXT = None
 
@@ -88,10 +94,8 @@ async def _get_context_and_page():
             await _launch_context()
 
         try:
-            pages = [p for p in _CONTEXT.pages if not p.is_closed()]
-            page = pages[0] if pages else await _CONTEXT.new_page()
+            page = await _CONTEXT.new_page()
         except Exception:
-            # Context crashed — restart
             _CONTEXT = None
             await _launch_context()
             page = await _CONTEXT.new_page()
@@ -102,7 +106,7 @@ async def _get_context_and_page():
 async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
     """file_items: list of {name, content_b64, size_bytes}"""
     phone = _normalize_phone(phone)
-    _, page = await _get_context_and_page()
+    _, page = await _get_fresh_page()
     await page.add_init_script("""
         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
         Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});
@@ -241,7 +245,7 @@ async def health():
 
 async def _get_whatsapp_screenshot() -> bytes:
     import base64 as _b64
-    _, page = await _get_context_and_page()
+    _, page = await _get_fresh_page()
     # Hide automation fingerprints before loading
     await page.add_init_script("""
         Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
