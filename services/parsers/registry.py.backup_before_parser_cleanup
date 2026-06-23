@@ -1,0 +1,8 @@
+from services.parsers.yuval_alon import parse_yuval_alon
+
+def detect_and_parse(text: str):
+    for parser in [parse_yuval_alon]:
+        result = parser(text)
+        if result:
+            return result
+    return None

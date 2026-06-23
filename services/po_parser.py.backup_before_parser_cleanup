@@ -1,0 +1,71 @@
+import pdfplumber
+import importlib.util
+from services.parsers.registry import detect_and_parse
+
+spec = importlib.util.spec_from_file_location("old_parser", "services/_tmp_old_parser.py")
+old_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(old_module)
+old_parse = old_module.parse_purchase_order
+
+
+def _set_if_attr(obj, names, value):
+    if value in (None, ""):
+        return
+    for name in names:
+        if hasattr(obj, name):
+            setattr(obj, name, value)
+
+def _ensure_extra(po):
+    if not getattr(po, "extra", None):
+        po.extra = {}
+
+def parse_purchase_order(pdf_path):
+    po = old_parse(pdf_path)
+
+    text = ""
+    with pdfplumber.open(pdf_path) as pdf:
+        for page in pdf.pages:
+            text += page.extract_text() or ""
+            text += "\n"
+
+    parsed = detect_and_parse(text)
+    if not parsed:
+        return po
+
+    if not parsed.get("customer_name", "").startswith("יובל אלון"):
+        return po
+
+    _ensure_extra(po)
+
+    _set_if_attr(po, ["po_number"], parsed.get("po_number"))
+    _set_if_attr(po, ["po_date"], parsed.get("po_date"))
+    _set_if_attr(po, ["customer_name"], parsed.get("customer_name"))
+    _set_if_attr(po, ["customer_id"], parsed.get("customer_id"))
+    _set_if_attr(po, ["customer_phone", "phone"], parsed.get("customer_phone"))
+    _set_if_attr(po, ["customer_email", "email"], parsed.get("customer_email"))
+    _set_if_attr(po, ["delivery_address", "address", "supply_address"], parsed.get("delivery_address"))
+    _set_if_attr(po, ["subtotal"], parsed.get("subtotal"))
+    _set_if_attr(po, ["vat"], parsed.get("vat"))
+    _set_if_attr(po, ["total"], parsed.get("total"))
+
+    po.extra["project"] = parsed.get("extra", {}).get("project", "")
+    po.extra["contact_name"] = parsed.get("extra", {}).get("contact_name", "")
+    po.extra["contact_phone"] = parsed.get("extra", {}).get("contact_phone", "")
+    po.extra["footer_text"] = parsed.get("extra", {}).get("footer_text", "")
+
+    _set_if_attr(po, ["project"], po.extra["project"])
+    _set_if_attr(po, ["contact_name", "contact"], po.extra["contact_name"])
+    _set_if_attr(po, ["contact_phone"], po.extra["contact_phone"])
+    _set_if_attr(po, ["footer_text", "notes", "remarks"], po.extra["footer_text"])
+
+    if getattr(po, "items", None) and parsed.get("items"):
+        item = parsed["items"][0]
+        first = po.items[0]
+
+        _set_if_attr(first, ["description", "name", "item_description"], item.get("description"))
+        _set_if_attr(first, ["sku", "catalog_number", "item_code", "מקט", "מק״ט"], item.get("sku"))
+        _set_if_attr(first, ["quantity", "qty"], item.get("quantity"))
+        _set_if_attr(first, ["unit_price", "price"], item.get("unit_price"))
+        _set_if_attr(first, ["line_total", "total", "total_price", "amount"], item.get("line_total"))
+
+    return po

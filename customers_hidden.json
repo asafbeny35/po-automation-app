@@ -1,0 +1,29 @@
+{
+  "updated_at": "2026-06-20T01:18:53",
+  "hidden_keys": [
+    "PROD|guid:7eec2231-d0fa-4992-9c4c-ac584c00c1fb",
+    "PROD|guid:aefe8d6c-02b4-4d83-ab88-c801cb53bf4b",
+    "PROD|guid:d910e580-1889-4e8b-b82f-c7683aa55f54",
+    "PROD|name:הזמנות בעבודה",
+    "PROD|name:הזמנות רכש ספקים",
+    "PROD|name:עובדים ושכר",
+    "SB|guid:201ae27f-56e8-460a-8dd5-1d9283a05e2d",
+    "SB|guid:23e1b373-33dd-455d-852b-1a3942e4803c",
+    "SB|guid:390fe1d1-01bd-46fa-810a-c7dc24c1b86d",
+    "SB|guid:4ac10e19-0df7-4662-8fb9-a421c1ccae5d",
+    "SB|guid:701e201c-0398-484e-90a0-2523a07795fe",
+    "SB|guid:71ca7e0e-a93b-466d-8e4c-c6a937ebd075",
+    "SB|guid:79ad92a5-69bb-4892-8f8c-55be5fc15200",
+    "SB|guid:7a944477-1495-4ec2-b15f-c9c039fb3746",
+    "SB|guid:7e14dc72-7593-4c53-8f76-13db14a9ddf5",
+    "SB|guid:828ec38e-2ee0-4f54-8b0c-9597471d4918",
+    "SB|guid:8ef9c6b0-25bc-4677-8714-af008ffc4e8f",
+    "SB|guid:9041074e-3ff8-412e-8cdf-73b12d247714",
+    "SB|guid:923ba77b-f050-4919-99c4-d3414b709dea",
+    "SB|guid:bd6fcd4f-9802-4929-a785-44ce7129fc19",
+    "SB|guid:cc64cd3c-8bd0-42a0-979f-7c3e17148493",
+    "SB|guid:d81c0588-70d7-4a2c-b131-bcf67fbe5abb",
+    "SB|guid:fd03ee3c-247e-4756-a4cf-a9b309c6a06d",
+    "SB|guid:test-guid"
+  ]
+}

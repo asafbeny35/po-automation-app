@@ -1,0 +1,31 @@
+#!/bin/zsh
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+SERVER_SCRIPT="$APP_DIR/server_supervisor.sh"
+SERVER_CMD="cd '$APP_DIR' && chmod +x '$SERVER_SCRIPT' && exec '$SERVER_SCRIPT'"
+
+cd "$APP_DIR" || exit 1
+
+if curl -s --max-time 2 http://localhost:8000/ >/dev/null 2>&1; then
+  open "http://localhost:8000/"
+  exit 0
+fi
+
+osascript <<EOF
+tell application "Terminal"
+  do script "$SERVER_CMD"
+  activate
+end tell
+EOF
+
+for _ in {1..30}; do
+  sleep 1
+  if curl -s --max-time 2 http://localhost:8000/ >/dev/null 2>&1; then
+    break
+  fi
+done
+
+open "http://localhost:8000/"
+
+exit 0

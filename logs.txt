@@ -1,0 +1,683 @@
+2026-04-13 18:17:35,573 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:17:35,574 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:19:08,125 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:19:08,125 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:22:07,771 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:22:07,772 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:23:40,600 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:23:40,600 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:24:54,656 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:24:54,656 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:26:27,222 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:26:27,222 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:27:09,149 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:27:09,149 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:28:14,880 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:28:14,880 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:28:52,726 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:28:52,726 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:30:11,599 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:30:11,599 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:32:01,097 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:32:01,098 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:32:43,415 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:32:43,415 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:32:49,689 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 400 Bad Request"
+2026-04-13 18:41:46,998 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:41:46,999 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:41:50,477 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 400 Bad Request"
+2026-04-13 18:43:29,463 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:43:29,464 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:43:37,254 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:43:37,693 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:44:51,650 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:44:51,651 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:44:56,823 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:44:57,223 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:44:57,654 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:44:58,433 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:44:59,315 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:45:04,821 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=HvbEvmc40nUKVmLj8WRd7D4fQRQ4i8jY9SfDZ9nQKSbDxvSnrOEU45OVl1g7YmK8iMbueT65fwXNApmElR6QcDpNplA%2FFuB5VkGulocnCD%2Fhm0vun1HT4c%2FAcxRdBbngDWL9enZEsjqZgLKmGpMNrW0HNkRf%2BZLntpIqEBkVh38StT7q3hsrJD0JZ57IKp%2Bs3XN050wffATUBGTndEEmFQ%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:45:10,082 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=HvbEvmc40nUKVmLj8WRd7D4fQRQ4i8jY9SfDZ9nQKSbDxvSnrOEU45OVl1g7YmK8iMbueT65fwXNApmElR6QcDpNplA%2FFuB5VkGulocnCD%2Fhm0vun1HT4c%2FAcxRdBbngDWL9enZEsjqZgLKmGpMNrW0HNkRf%2BZLntpIqEBkVh38StT7q3hsrJD0JZ57IKp%2Bs3XN050wffATUBGTndEEmFQ%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 18:45:10,387 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=HvbEvmc40nUKVmLj8WRd7D4fQRQ4i8jY9SfDZ9nQKSbDxvSnrOEU45OVl1g7YmK8iMbueT65fwXNApmElR6QcDpNplA%2FFuB5VkGulocnCD%2Fhm0vun1HT4c%2FAcxRdBbngDWL9enZEsjqZgLKmGpMNrW0HNkRf%2BZLntpIqEBkVh38StT7q3hsrJD0JZ57IKp%2Bs3XN050wffATUBGTndEEmFQ%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:45:11,188 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=NhT6jAN8NuofHqXPfrnJcXOM49adgnQPR4VAuYKKDnBonkTkMjsDq%2FetMGL9UaV5103xM596RIPgbGmR2hFeXW2ba6t5hm0%2BdGoPffnTWhXfnMuXsQUCsArxXcG60KaBmqJqGV9bM2LNwYxCjRsFWSgLrx1alRr1c1Nw4annLzPlDFvsGGuWGMJc4Oyra9%2FppeuwjbyxLYh9ETFRGXBIpQ%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:45:11,806 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:45:12,177 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:45:12,857 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:45:13,451 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:45:18,950 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=DE4rqP%2FulthETl%2B6qmX0l4%2BAHm8mZQMB7IbIbWkpc%2FiPBx2WUNSg4XpW0A%2BlnYlyHL%2FwDwoCc0vZVHjR9DLZcaOkgGOXKuxzsKFhtp1C3Od4LJND43pHORm5YXK714lRzrQR0pkLFVeYZP%2BbxxvVKBn%2F6pCWlmNzYS1gzwG3zHh348C074w197zHaJJ4XVPgcODRZBIlN6vMPk5SP9AYdA%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:45:19,245 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=DE4rqP%2FulthETl%2B6qmX0l4%2BAHm8mZQMB7IbIbWkpc%2FiPBx2WUNSg4XpW0A%2BlnYlyHL%2FwDwoCc0vZVHjR9DLZcaOkgGOXKuxzsKFhtp1C3Od4LJND43pHORm5YXK714lRzrQR0pkLFVeYZP%2BbxxvVKBn%2F6pCWlmNzYS1gzwG3zHh348C074w197zHaJJ4XVPgcODRZBIlN6vMPk5SP9AYdA%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:45:19,945 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=4%2BxmDhS8litUjkyhsjSNLBpv98W4%2Bnl3cvKWY5liO6Z%2ByvqCsY7VSz%2B0B2%2Bo71dWWS%2BpDTD0yTEq43be9hlniyofLol59%2B6VbhhvJ5u2Nrkj0UE6jUq6P%2F7efinyZwg%2FLBLoeTrgzXGZ0JroQuiNTG2lFUEPMEgnQd4uo0%2Fwyak31rRn5CZ0VKEsf5T0D4eVqA9Y%2B8pO7fmUcjWSa890AA%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:48:16,623 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:48:16,623 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:48:22,868 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:48:23,298 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:48:23,729 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:48:24,793 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:48:25,821 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:48:31,266 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=eU4qCcifgqJTBIgAKFY7y3fYKL8iEniHGgiA0PjgS6Fw5tl1pBg55exToLJgiz3HCbWX1NOqD%2FhAnvTcY%2FxabenHx6ZNPVuxDEOVhUsYnktRfKB%2B34Lp5W0N1VjDx5CdIoYmkltmIteDiNUuR6pi0Y61BXkGlKVRWtBQRI7zIILHL3IJecvffup%2FcXlGEC6WqzaiMmSLKrfzo8332Nj8zw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:48:36,469 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=eU4qCcifgqJTBIgAKFY7y3fYKL8iEniHGgiA0PjgS6Fw5tl1pBg55exToLJgiz3HCbWX1NOqD%2FhAnvTcY%2FxabenHx6ZNPVuxDEOVhUsYnktRfKB%2B34Lp5W0N1VjDx5CdIoYmkltmIteDiNUuR6pi0Y61BXkGlKVRWtBQRI7zIILHL3IJecvffup%2FcXlGEC6WqzaiMmSLKrfzo8332Nj8zw%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 18:48:36,822 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=eU4qCcifgqJTBIgAKFY7y3fYKL8iEniHGgiA0PjgS6Fw5tl1pBg55exToLJgiz3HCbWX1NOqD%2FhAnvTcY%2FxabenHx6ZNPVuxDEOVhUsYnktRfKB%2B34Lp5W0N1VjDx5CdIoYmkltmIteDiNUuR6pi0Y61BXkGlKVRWtBQRI7zIILHL3IJecvffup%2FcXlGEC6WqzaiMmSLKrfzo8332Nj8zw%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:48:37,576 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=V25hymEDwKRHxa%2FTqS%2BlUw%2BubpIOHgCBltl8zaBcqccaI5RBmnps0HbHDxwqp8muubG43RGUH%2FHh59agZWxBAt386qmXE8YUUABdLyFoydy1eRkCwcL6Os7%2BdjLKmjITFAmoJABF%2Boc9pB2D%2Bl4zL3z%2BkYvXSjOm0Bbh4%2BWECCbQI3djMWvPdzMn1gEY4dDiBDzFFd8nfm99hNzIETps0w%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:48:38,243 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:48:38,663 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:48:39,263 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:48:39,966 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:48:45,459 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=XiBuktUXsmdQixRXr8u0P5VZK%2BWeJ3DNn%2FEqp2IEGqeOR9%2BAR%2F5RGzeARp6goLJm5K%2BEdpz2o92jNwfAxMeCo%2FhTzh9e9LJ%2FETGHseMy0k7p7M8PFOPdnlcb3RrvZVYQnZ6ypirAWsydJylqCYeAMjywvMV%2F5ZiBBGM9slOkwJCTz56YbkPafm3%2BWim4I7A2b7BHuHBaL3m2okZkfdLVAg%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:48:45,911 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=XiBuktUXsmdQixRXr8u0P5VZK%2BWeJ3DNn%2FEqp2IEGqeOR9%2BAR%2F5RGzeARp6goLJm5K%2BEdpz2o92jNwfAxMeCo%2FhTzh9e9LJ%2FETGHseMy0k7p7M8PFOPdnlcb3RrvZVYQnZ6ypirAWsydJylqCYeAMjywvMV%2F5ZiBBGM9slOkwJCTz56YbkPafm3%2BWim4I7A2b7BHuHBaL3m2okZkfdLVAg%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:48:48,878 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=3XLlm4M%2B05v4%2BMstDossbEhUAGN1bm5tcakav0ZcTc4mQdlM7ayDrHT3avSu9D%2BV193hRSPl5CUvQoy7efEStbM5Pveh4Nyiu8p79csZnwDL4pjQfVx5o%2FWJ0UFQKgZNYUBx1Pi8JeL%2Fpj38Z3wxo%2B%2FGQf4vG3H1wy5ai%2BmHWbkrSFVqKfVYe0Zqr74J%2F1GJN7PqFmWv1Gfjm%2Bc1p1tGVA%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:49:59,720 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:50:00,385 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:50:00,855 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:50:01,560 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:50:02,287 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:50:07,807 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=5tpBNLuyxtiw8jWqCpt8EWhoP5ncz%2BWAEQ66cNwII03ToWiRX4Mr3xlgWE61QR65oThG3rEkVk0p4EfnKMAKEn07avA4ZzaeffLTXJi7eJktg9%2BFIgRAp1ztrVp5ti9FMJXirc4lg61m1bn%2FYYm0QnfsT2dL43p%2FWPF0ASmw6pdNLXlqTzn8wfl%2FM%2Foig1kMeYaf6R7J%2Fr%2BvxWlPOf2kGQ%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:50:08,125 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=5tpBNLuyxtiw8jWqCpt8EWhoP5ncz%2BWAEQ66cNwII03ToWiRX4Mr3xlgWE61QR65oThG3rEkVk0p4EfnKMAKEn07avA4ZzaeffLTXJi7eJktg9%2BFIgRAp1ztrVp5ti9FMJXirc4lg61m1bn%2FYYm0QnfsT2dL43p%2FWPF0ASmw6pdNLXlqTzn8wfl%2FM%2Foig1kMeYaf6R7J%2Fr%2BvxWlPOf2kGQ%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:50:09,097 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=mz9ZeK%2B79tRJygxJiCqYwO9SmC%2B2Xa%2FvluUJeqW0uNi5aT2KMaS%2BVgaiUMOrDBZ%2FEBMfhPLbdWsiP%2Bp3vmREg6LjiRMfOJmY8Eo7yWge4z8Rp66Brgeub5fUd3XnhjFDkzfLsP4aNYZ5RZPdrxJTWLUFmmYuxxy114UFqoAlGNVS9YHt%2FtviEyRa1aoXpDWDDhN0sjTyeGclnPbk%2BDuvHA%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:50:09,620 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:50:09,995 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:50:10,575 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:50:11,230 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:50:16,662 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Wp8avwH0gE9av7QuqmXkMIfVPKgYb%2B%2BqQ6DJz3wXhly4dRjRWlhnXWb5b46nehWi%2FddoO0tcxhjHcacyu%2B8VMmg56A70Cd1dKtGxBlsltCLnYPM66Wu2HhOiYhTHH7T5EvKJUKJb8DerHYXM6A9zBUua2b4D1cBOG8bmLMwXSh9K2R3jtvakiskvyjVxlyTzYBSu6QYbprcK%2FmPctX%2FraA%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:50:17,044 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Wp8avwH0gE9av7QuqmXkMIfVPKgYb%2B%2BqQ6DJz3wXhly4dRjRWlhnXWb5b46nehWi%2FddoO0tcxhjHcacyu%2B8VMmg56A70Cd1dKtGxBlsltCLnYPM66Wu2HhOiYhTHH7T5EvKJUKJb8DerHYXM6A9zBUua2b4D1cBOG8bmLMwXSh9K2R3jtvakiskvyjVxlyTzYBSu6QYbprcK%2FmPctX%2FraA%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:50:17,875 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=TZgaD6KrKE%2BFXU8kVhHWBPN1q66szwxRTE50Glk1WbtbJ7rdhSi3Fv4YS3ypjLANVUeD773Z%2BUqO3gKuQv4VCPCSVfbuPJX2%2FX7KKxNePg5ux2YlWPQp38Z7MgCDMYizZP5DaPmvOqbcp0w8vH7kBZmE%2FQpajUrWp%2BzG2DfhvmVNzNjG93GtbG8qa2hNuYQx7vF4tFyfHFYk93ykVQVNbQ%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:51:22,388 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:51:22,748 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:51:23,158 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:51:23,879 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:51:24,709 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:51:30,239 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Ur%2B%2Fs7pS5VN22wR6M304IMgq2HxnChX6HASp%2B9E76COap48o4fZBjjn2nmLGu9mbpXYcn51%2F9f09n1YVYTC6vP92nd5%2B4S7h%2FyfuC2rqyMzuHXMjqs04hKX4vMdEPF0OcA3%2F2vFRBYi%2FoBUD%2FyH7EoWtHhMpfKK5WsZZINpWhqHZCbSbElATqHXFA6o65igKS3zJ%2FmoWh%2Fth0sApCS265Q%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:51:35,450 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Ur%2B%2Fs7pS5VN22wR6M304IMgq2HxnChX6HASp%2B9E76COap48o4fZBjjn2nmLGu9mbpXYcn51%2F9f09n1YVYTC6vP92nd5%2B4S7h%2FyfuC2rqyMzuHXMjqs04hKX4vMdEPF0OcA3%2F2vFRBYi%2FoBUD%2FyH7EoWtHhMpfKK5WsZZINpWhqHZCbSbElATqHXFA6o65igKS3zJ%2FmoWh%2Fth0sApCS265Q%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 18:51:35,732 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Ur%2B%2Fs7pS5VN22wR6M304IMgq2HxnChX6HASp%2B9E76COap48o4fZBjjn2nmLGu9mbpXYcn51%2F9f09n1YVYTC6vP92nd5%2B4S7h%2FyfuC2rqyMzuHXMjqs04hKX4vMdEPF0OcA3%2F2vFRBYi%2FoBUD%2FyH7EoWtHhMpfKK5WsZZINpWhqHZCbSbElATqHXFA6o65igKS3zJ%2FmoWh%2Fth0sApCS265Q%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:51:36,481 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=io1u4KL9bMzol8TJyx4gLNIoG%2BpIezLa18QJIBjMtZ6GnRddLtBDPXMg99iVegr%2Bv0VgS0C%2BR2dVivJcXBFCVq%2BLS%2BiT0ZYeC7eJhZSL3qdzG8ZO1EQPVuQHYOApVPRP2gQaidRsyo3XMD%2Fx%2FuydjVXnb%2BaIn%2FKXscIKd1v%2FzGGpbNynCFgYiuXqZJ0ApwZZV%2FEn44kwZV6%2Fy0SXxA10Bw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:51:37,022 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:51:37,452 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:51:38,043 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:51:38,747 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:51:44,170 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=qCxaf4lRZoq3EKoiISo%2BwZlOxOG8Je8dm4ZvbIyjrn6O5vzBGj62H1m6cOMV%2F4CG0NWpLqt1jVmBR4KTRmlzcfISTdJOxelHUeoBKE07Wb0P%2FbrJiZR8O7PurnRFXgkaFF%2FNrAoopkB1rJDYG9d4Zv9EiRPNkAKG96FBnChXS1a51PnsFZudbQVs6nVsQ8zhfb1GK5vyLV6ig%2FU6YUH%2BLw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:51:44,516 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=qCxaf4lRZoq3EKoiISo%2BwZlOxOG8Je8dm4ZvbIyjrn6O5vzBGj62H1m6cOMV%2F4CG0NWpLqt1jVmBR4KTRmlzcfISTdJOxelHUeoBKE07Wb0P%2FbrJiZR8O7PurnRFXgkaFF%2FNrAoopkB1rJDYG9d4Zv9EiRPNkAKG96FBnChXS1a51PnsFZudbQVs6nVsQ8zhfb1GK5vyLV6ig%2FU6YUH%2BLw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:51:45,214 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wJMscuap4xrp4WXFpkJcaYklZeqWSqe0NOz%2FDF3b4GpM5YJt1t3vsd4%2FKpRHB%2B3AQeWkzaMPqwGt3lNHZlshRVXv4fvL5UGzic2O%2BYWybGuf9HBl4uE7iZcKVg%2FXoggc7aNs5Eb3fOw3fTNQuh5v%2BWTalaGWDin%2FGbq45Ntuinrre73btjcpdo7Oorr2pMilwhCURITneKj7B2uzAL4PNQ%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:53:01,311 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:53:01,311 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:53:09,835 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:53:10,246 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:53:10,716 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:53:11,614 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:53:12,187 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:53:17,603 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Gpmcfi64BeCnEF99n2wEXlPkoeZGbsf4gqieQ9bMat%2FdmmB2U5koaGTkbZjn5hMCIMcstXfcq6AsrHI3ybrphm4%2FNh00OwqTuDrKec5n5a%2FJ%2Fr2plhy8lUSt58EwAuAl8Ukin1SNVulP2KvHMolyQQ22a7meqeXHjsaAsQZ59k4cgcBf9TqhKQs9ocL1MBCrCvC8OwFhpUmvPb6i9%2ByCeg%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:53:17,925 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Gpmcfi64BeCnEF99n2wEXlPkoeZGbsf4gqieQ9bMat%2FdmmB2U5koaGTkbZjn5hMCIMcstXfcq6AsrHI3ybrphm4%2FNh00OwqTuDrKec5n5a%2FJ%2Fr2plhy8lUSt58EwAuAl8Ukin1SNVulP2KvHMolyQQ22a7meqeXHjsaAsQZ59k4cgcBf9TqhKQs9ocL1MBCrCvC8OwFhpUmvPb6i9%2ByCeg%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:53:18,628 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=xbTQ4qM1T7leWTQDJAfF%2BM5hXDYztAIKKVLMKqKRg%2BsVZKAbgd1SZ3OC0P2556QK0qypiQQiEt6LJo0hBe1HsCFH9MepwSNvytr72QuQb98UfrwjqDTSL8jYBfdTdyBHADfKXuASm0Y06joQu5lxm1TlThHpMUMbwFxuIFKbujX%2Fkf7DePacnrN74ozkI2PCq1NnxK%2BHyMlWJXBLAHzbGg%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:53:19,165 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:53:19,615 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:53:20,185 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:53:20,776 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:53:26,242 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=GM0xdg%2FIvaQTm2tBh90o9W%2FLYpGs3qolA0Ua9XrVrBPPysRGArtH1hLzN%2B3e2S4yqVZxwYrwccQGuNyRz7D3cVSRdRzn8G3HE6tlZMz6GjMcqftfLQNl3%2FTR2l27B1JQIcQzz6NNDLXknQINs%2B44C0rW%2FkCc3r%2BnESALqKWVRGkU8v%2BAN5rs08z8Trogmv10H1tJfdYon8vex%2FXZYXt%2BNw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:53:26,516 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=GM0xdg%2FIvaQTm2tBh90o9W%2FLYpGs3qolA0Ua9XrVrBPPysRGArtH1hLzN%2B3e2S4yqVZxwYrwccQGuNyRz7D3cVSRdRzn8G3HE6tlZMz6GjMcqftfLQNl3%2FTR2l27B1JQIcQzz6NNDLXknQINs%2B44C0rW%2FkCc3r%2BnESALqKWVRGkU8v%2BAN5rs08z8Trogmv10H1tJfdYon8vex%2FXZYXt%2BNw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:53:27,354 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=JCsxLSzYK5X0CuKNWV1H9eaW1M35ia%2BgBoVDWmO3K7kEPFOa0Ok7xE79IiVhqzYJOiFv9Grb3HgEAsyqfiqz8%2F2ybffb52RExctg%2F4XGqVQtOMCsGvxm8NQ0zD%2FoZkQ3kSco2HSW1XpNw68zaXzwfe10i8p4p34XS5VTLu04vHK0zrdicH3%2FFdR4P1WsAjS6lwEXJWxm%2F5SExsStjo3tRw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:55:59,392 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 18:55:59,392 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 18:56:04,567 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:56:04,950 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:56:05,393 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 18:56:07,844 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:56:08,473 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:56:13,999 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=8%2FxuCLXT8uGya26BsFazHrI%2Bu%2BR8w%2FfMqRbcuYa4swC3Q7WZbelYC0UWKTbvnPE19%2FAbe%2FoX0v2b4EHHya59sG%2BSvG4s7RVQfBFV%2BPM5YdboxlDaB5WTPrkzDFtCFa8tDVDZ99GDGz56LLa%2FOZHLP6FclbfUyRE2JOsFtIo3871rYODGCJq%2FW8v4uKjBwQcMZTYnhk6%2BXteC5XcVYyVYog%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:56:14,281 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=8%2FxuCLXT8uGya26BsFazHrI%2Bu%2BR8w%2FfMqRbcuYa4swC3Q7WZbelYC0UWKTbvnPE19%2FAbe%2FoX0v2b4EHHya59sG%2BSvG4s7RVQfBFV%2BPM5YdboxlDaB5WTPrkzDFtCFa8tDVDZ99GDGz56LLa%2FOZHLP6FclbfUyRE2JOsFtIo3871rYODGCJq%2FW8v4uKjBwQcMZTYnhk6%2BXteC5XcVYyVYog%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:56:15,134 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=hYFBgYEuDfF%2BpV5KdmvQwrrY4CNbmq1H2PosJm4akTLJwgMLCpKZeGhq5UqzLZ100UO1uG4oWeZ2VudWrseUYxZ%2F67MVRVnJeOLBpr5S6dz8vt95CpoCZqZl4JkM6f0e5dvqwmE59QA3NiSsa8BsGgahzzfTe64xBqykOaDgYAf%2B2YEbDDDhcXs%2FsFFxiqYVRMHCqocKyudWMXR6YXoXEw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 18:56:15,691 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 18:56:16,098 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 18:56:16,732 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:56:17,313 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 18:56:22,793 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=SumXT3I%2BJPX97sFez9E2%2F2%2BA7RwmU8%2BVtVeyEmCrp1Ktor8m7fdwZgce0tzJHLl3iSfPzNm4WK58Gz7GR5ThGPJejJ%2BzXcdIz6Ugxfp%2FAsgZa0Xea3FoEGWKAwHqHr1a84tzoUYGfGLGMEvttONIK%2F57X13k%2F6fDs9vBe4GAjLEh087Zl3PlOKpAYKoVmF%2FjhRUdRPKGGhZlo0fiTElRhw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 18:56:23,106 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=SumXT3I%2BJPX97sFez9E2%2F2%2BA7RwmU8%2BVtVeyEmCrp1Ktor8m7fdwZgce0tzJHLl3iSfPzNm4WK58Gz7GR5ThGPJejJ%2BzXcdIz6Ugxfp%2FAsgZa0Xea3FoEGWKAwHqHr1a84tzoUYGfGLGMEvttONIK%2F57X13k%2F6fDs9vBe4GAjLEh087Zl3PlOKpAYKoVmF%2FjhRUdRPKGGhZlo0fiTElRhw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 18:56:23,790 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=FXIBbR%2FukHFYASVL19%2FMugqrlQKD%2B%2F9BzpNdqu5DrWUsXFba0JGqXRD7ps8XHhjIMokZUTur%2FdV8olZG%2B3z%2BAcQPViB8inBil7ulYWUtfeNFb7HWhaQH7UF5bhojJT12j0Q2qdpAg48J2oUQSOzVTtUVkqbmkLWMwwZtOTysBL%2FKwNGzPSw63Yx0jcXePOTOM0Xu%2FdZdemjb5nLKgd7WCw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:08:04,414 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 19:08:04,414 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 19:08:12,018 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:08:12,474 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:08:12,955 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 19:08:13,936 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:08:14,537 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:08:20,005 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=OmjWoEcYq3QPgwsFIhOfgg5xLZvQSIfeQihblIXJCailgQgB6eKiWB1Fxcy396PIGFvUwZfYD7CuDKUWZijkPzJWH0%2BF3ScWhYYv0UpcchUF%2B6zxsZVnhsOaaivm0L9shW9%2BaNiTo%2FFgHHgiSHoipOHMAHnWqeMakO5GPexuFy%2FeniydiZDpJiGvN1XzuzvnPXGXh8GQ8g2eAanY8W4XOw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:08:25,228 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=OmjWoEcYq3QPgwsFIhOfgg5xLZvQSIfeQihblIXJCailgQgB6eKiWB1Fxcy396PIGFvUwZfYD7CuDKUWZijkPzJWH0%2BF3ScWhYYv0UpcchUF%2B6zxsZVnhsOaaivm0L9shW9%2BaNiTo%2FFgHHgiSHoipOHMAHnWqeMakO5GPexuFy%2FeniydiZDpJiGvN1XzuzvnPXGXh8GQ8g2eAanY8W4XOw%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 19:08:25,519 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=OmjWoEcYq3QPgwsFIhOfgg5xLZvQSIfeQihblIXJCailgQgB6eKiWB1Fxcy396PIGFvUwZfYD7CuDKUWZijkPzJWH0%2BF3ScWhYYv0UpcchUF%2B6zxsZVnhsOaaivm0L9shW9%2BaNiTo%2FFgHHgiSHoipOHMAHnWqeMakO5GPexuFy%2FeniydiZDpJiGvN1XzuzvnPXGXh8GQ8g2eAanY8W4XOw%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:08:26,706 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=L1EMoQUiqhgkVmzIt4Vv8u8%2BVSh4p5WqhasNeBgVpmdZoAVWYMmXcjZvnNEYXnKjtn2HbXBPDn2WahTD5dVQhYRYsPYe2PpRccYUj8Q8hEdvhYlOfp3IeH%2Fdxddv%2B0TGwgRgjzuYJa07yMqTFxHORemWQxZvIObhEIaKIfg8wqjr2k74%2F%2B2Am0nz5cilrrnlPIIIDb%2FSViIBmlRcq6RL7Q%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:08:27,666 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:08:28,031 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:08:28,721 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:08:29,281 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:08:35,049 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=N8C75MDISkHHmLrZIPRp4f6BTqVUZgIEZMYyzbvkTEmy1qdaXUMHMKuqlxQAxRMqI0tvKLbWWMO2HB9XMnBRs405dak1LYqtki1Ba4twG5KwPC1MHMcXYOK3iqLsTUJAWUV1tOO0EYu5fAHUUg2ELUHxU77wxl8CiFi36DlEJrBQrurmOW8wOzyY9sPhiIzRcoej4s6q%2FvH3D7NAuhejFw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:08:35,439 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=N8C75MDISkHHmLrZIPRp4f6BTqVUZgIEZMYyzbvkTEmy1qdaXUMHMKuqlxQAxRMqI0tvKLbWWMO2HB9XMnBRs405dak1LYqtki1Ba4twG5KwPC1MHMcXYOK3iqLsTUJAWUV1tOO0EYu5fAHUUg2ELUHxU77wxl8CiFi36DlEJrBQrurmOW8wOzyY9sPhiIzRcoej4s6q%2FvH3D7NAuhejFw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:08:36,220 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=xl1ie78i9UWEu32n8TNOEYtPNITcqUHrejoHgn6GT27evwfbGgclMhE%2BPAgVEzhapMCRg9IvZFwWjUoN6Rl6GfmbRp9sE3vRIYyfh%2BzZ3uz9aYqBM95zZBcP5E%2FFzzrrKFIFIlPaAR8gIcdVMwaQr7YYmuDLqglf%2BDLzNFRTaC3MY6DHXNHvJ0FZPs%2Fs8bBHdJJvpoxwsP5WOXyKQAB0eg%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:12:15,027 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:12:15,428 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:12:15,869 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 19:12:16,809 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:12:17,450 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:12:22,896 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=vFYw2JxguV%2BvTDBQN4s1SvUyNgyK5M5tKh6x8Zi7OQks6jXqdpQqMLsSvq%2F3vNIEItTQpdXatnoUBGa%2Fe%2BwXPSEVej2wVn1TDqEx6CnfoDGc%2Fx7%2BIhMsuDW%2FQYg6ihvmO47izEN2oCUIWaSTz2N2rtGOJJ20OqDTvhqZCxag7clOJmDyn%2Fhi7yZrywbD01G9wTpLazFzd86FCgl8eNhoSA%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:12:28,136 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=vFYw2JxguV%2BvTDBQN4s1SvUyNgyK5M5tKh6x8Zi7OQks6jXqdpQqMLsSvq%2F3vNIEItTQpdXatnoUBGa%2Fe%2BwXPSEVej2wVn1TDqEx6CnfoDGc%2Fx7%2BIhMsuDW%2FQYg6ihvmO47izEN2oCUIWaSTz2N2rtGOJJ20OqDTvhqZCxag7clOJmDyn%2Fhi7yZrywbD01G9wTpLazFzd86FCgl8eNhoSA%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 19:12:28,425 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=vFYw2JxguV%2BvTDBQN4s1SvUyNgyK5M5tKh6x8Zi7OQks6jXqdpQqMLsSvq%2F3vNIEItTQpdXatnoUBGa%2Fe%2BwXPSEVej2wVn1TDqEx6CnfoDGc%2Fx7%2BIhMsuDW%2FQYg6ihvmO47izEN2oCUIWaSTz2N2rtGOJJ20OqDTvhqZCxag7clOJmDyn%2Fhi7yZrywbD01G9wTpLazFzd86FCgl8eNhoSA%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:12:29,273 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=yw2Vae7%2F12p7OgSw78PDvk9kB64VXlimmRhm6ZYEomkPguZIMPcgzO054r%2Fiu12OGQdL7jGt3WMo%2BCEgPX6JJGeDDfIC8EDYZwX6usRgsxf2sUKh3zrCS5Uvs3bd3BSXfSgM5UP9twioF6%2B0s8l23ITfO%2FAJTwk034qKj9c8UW3xic7xuoynNXgmvgbJW8ETKjxOylRmOQLOZZMPmV576g%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:12:29,822 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:12:30,233 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:12:30,954 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:12:31,615 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:12:37,079 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=4W%2BwA5twLuIO3ZKo98CjIuFBdWtR6sq9SXH3kF1UOTJxpaYX%2BalyR8%2FoCyAmzu3to7n9EdH37Uw9eyoADVTh2gCu5H2lsqHqzUbcwx2XAEVd0IfGBzFctztLSczjzFoGnIbgeJZCPms3L7VamKCwb7myzPX5aFnjtPxrtg1K9yByXPuSNJ0uONo%2F9D7A9YRDB4zLmaUH%2BvO21AMmxIvVVw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:12:37,392 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=4W%2BwA5twLuIO3ZKo98CjIuFBdWtR6sq9SXH3kF1UOTJxpaYX%2BalyR8%2FoCyAmzu3to7n9EdH37Uw9eyoADVTh2gCu5H2lsqHqzUbcwx2XAEVd0IfGBzFctztLSczjzFoGnIbgeJZCPms3L7VamKCwb7myzPX5aFnjtPxrtg1K9yByXPuSNJ0uONo%2F9D7A9YRDB4zLmaUH%2BvO21AMmxIvVVw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:12:38,172 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=LMRk9x0b9YzehYlmBpewvr2YuhBafEe4vfSZO7s0PbYIwkWhFUY%2FUzB5HTou4S7PP%2FaJLmLnNjb4F62joIavq9uBSULnpIP2y2eqFnpKMi%2BHTyvhFM5hA22JqdoEJldyMrNZLzaZ0hJD164L6RKmJ9Vjn9Ydt4gM96rmZqWIrcBesWKNe1Sdz4MVmnrSYSlizPOiSGtkCPC2GXnRH0L4NA%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:19:27,071 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 19:19:27,071 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 19:19:34,382 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:19:34,773 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:19:35,192 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 19:19:37,762 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:19:38,378 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:19:43,903 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=B%2Ftpo0%2Fc8JEW5fhyds%2B%2FvgHv56tUHtsIFXk%2BKElnaUxF03PmH7IlV0OaPY6vp34fSVMkYj9xXpBm2WPWQeI7U3wBMb9wJoM%2FYwoKDQiX0Ay54%2BxPmzkEHASlKySKgJ1LlTICiEbL11%2B%2FjRaOZITtn%2F2mbxGTh0iqmSlmi52gHA%2BXlgJEMJ15sb9oe7a8c6FbR4%2B84AMlXbwKO41oA%2BnGAQ%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:19:49,076 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=B%2Ftpo0%2Fc8JEW5fhyds%2B%2FvgHv56tUHtsIFXk%2BKElnaUxF03PmH7IlV0OaPY6vp34fSVMkYj9xXpBm2WPWQeI7U3wBMb9wJoM%2FYwoKDQiX0Ay54%2BxPmzkEHASlKySKgJ1LlTICiEbL11%2B%2FjRaOZITtn%2F2mbxGTh0iqmSlmi52gHA%2BXlgJEMJ15sb9oe7a8c6FbR4%2B84AMlXbwKO41oA%2BnGAQ%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 19:19:49,326 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=B%2Ftpo0%2Fc8JEW5fhyds%2B%2FvgHv56tUHtsIFXk%2BKElnaUxF03PmH7IlV0OaPY6vp34fSVMkYj9xXpBm2WPWQeI7U3wBMb9wJoM%2FYwoKDQiX0Ay54%2BxPmzkEHASlKySKgJ1LlTICiEbL11%2B%2FjRaOZITtn%2F2mbxGTh0iqmSlmi52gHA%2BXlgJEMJ15sb9oe7a8c6FbR4%2B84AMlXbwKO41oA%2BnGAQ%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:19:50,092 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=FjelaXQiXsBF72OYvEXAMKiA6RqS2QoQQyL7xHVMgXKwkqxbCAwZQWx4f%2BylgrRB7wHfqUo0kkNrs8hnoXg%2FueQRNFXJO%2FAutu45DR7CDcvqECDfCvjuKmnPbpQTAIdF44vigqQtNECai4clNKeVNltmSAk9YcR98uOY8atkQVaa4SKHPFEXDnpXvmL9TMBqxxPu8um18FeGXle81CemMA%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:19:50,646 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:19:51,015 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:19:51,994 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:19:52,611 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:19:58,036 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Ud3WFvAX5RajUJdSAWuxJ%2FFnwRMGtmcTmLCJtRbPIqhBwf1HxqVBJgoLWB8mlusbFMvHDQAqFa2uiUwM%2FzXvD6sz5CDUZLU8mL2WV%2BGv6FoR2V2bPJyEaTtH%2Fw4jC50jCK2urcLtsvrTna2DFGrEeR8J6526Cb5PtgPho%2BWZx1zWzfJ%2FNOML5n288CP8tbWpzMPFP94gRXyo5PyGB2brBw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:19:58,475 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=Ud3WFvAX5RajUJdSAWuxJ%2FFnwRMGtmcTmLCJtRbPIqhBwf1HxqVBJgoLWB8mlusbFMvHDQAqFa2uiUwM%2FzXvD6sz5CDUZLU8mL2WV%2BGv6FoR2V2bPJyEaTtH%2Fw4jC50jCK2urcLtsvrTna2DFGrEeR8J6526Cb5PtgPho%2BWZx1zWzfJ%2FNOML5n288CP8tbWpzMPFP94gRXyo5PyGB2brBw%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:19:59,210 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=%2FBnl%2FTplR%2B60yQ9pVJ%2FuOBzGFhaWGnkQfkao09iOLBU2VO4f8T0mp3wbN%2FtCsOBxdh0hWKTWRtkXX%2BBTUwSDwEBYxftu%2Fnh0vcZaCMzXnKF3tWF6QmQAkjW4EaWKG5spkSXjUM%2FVq0wM%2FAPCKz7euRKR8J280w0D%2BtE%2Fe841drwepZMAxnnSFBQkvot4aLGemrHfrNyGiF2L2yxPufxWAw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:22:10,346 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:22:10,796 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:22:11,276 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 19:22:12,074 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:22:12,817 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:22:18,242 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wXqRiVqqe%2BwwVLAjpaFYKN8jC9xCAbneH%2F5%2FY03nCnh5SWLorG0T5OfWMAeSUT4YdpHug0xnq1U%2BKPAqmUzo%2FJ5tHvoh5yYr%2FUwkIVWZ2zlE6Ouh6uHsfbtn50ahoroVLVvov%2BfU54Nphg04qjYIoZpjm2V%2B3AptRG7BRBbMtnWl1P4inDstJqpV9cIxbpo68vF4xPqFx4kuljR3MA7SFA%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:22:18,633 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wXqRiVqqe%2BwwVLAjpaFYKN8jC9xCAbneH%2F5%2FY03nCnh5SWLorG0T5OfWMAeSUT4YdpHug0xnq1U%2BKPAqmUzo%2FJ5tHvoh5yYr%2FUwkIVWZ2zlE6Ouh6uHsfbtn50ahoroVLVvov%2BfU54Nphg04qjYIoZpjm2V%2B3AptRG7BRBbMtnWl1P4inDstJqpV9cIxbpo68vF4xPqFx4kuljR3MA7SFA%3D%3D&retry=1&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:22:21,901 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=2EImR6qT72kFpctmvYcOuPelruu5XT9M%2Fu07i3gjwaWq1SqgfCjBFZXsos7%2Bv4YWK8EV3hfFO5A1gl0N36AaepEWKYq3bJEqeRbaO3mRA%2B0XiI%2BsCbSrvZNgcEEwiC9Cmnh3oZfWmyLUpsKyzAoyhfKRU%2BBQDnWOLM3YgCGtSYAOM8QPSXP%2BCjaHT9hQSUMBHXn2M5A7qJiPz%2F8D4HOziQ%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:22:22,570 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:22:23,017 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:22:23,588 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:22:24,228 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:22:29,688 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wtF1IhgVTA6RGsNkxwgXAl6xMBmBooZ%2FY9wI%2FUPqDHtlyYut2k%2FcYaWq6k6r3cifS5vKId1mkay1YmN1jIM07YpWTapBBKnm0eaeKWPqZ90cQ5f37h%2BnAgkkjMrNIpuSfbihOM%2BmaQ%2F%2F6fOPw2jY6x3Huvixg0QJ9RomgOzvqgqdJw47IWMwvr7lTzXipBWg8CK8REAWu281%2FAKC3f89uw%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:22:34,860 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wtF1IhgVTA6RGsNkxwgXAl6xMBmBooZ%2FY9wI%2FUPqDHtlyYut2k%2FcYaWq6k6r3cifS5vKId1mkay1YmN1jIM07YpWTapBBKnm0eaeKWPqZ90cQ5f37h%2BnAgkkjMrNIpuSfbihOM%2BmaQ%2F%2F6fOPw2jY6x3Huvixg0QJ9RomgOzvqgqdJw47IWMwvr7lTzXipBWg8CK8REAWu281%2FAKC3f89uw%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 19:22:35,239 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=wtF1IhgVTA6RGsNkxwgXAl6xMBmBooZ%2FY9wI%2FUPqDHtlyYut2k%2FcYaWq6k6r3cifS5vKId1mkay1YmN1jIM07YpWTapBBKnm0eaeKWPqZ90cQ5f37h%2BnAgkkjMrNIpuSfbihOM%2BmaQ%2F%2F6fOPw2jY6x3Huvixg0QJ9RomgOzvqgqdJw47IWMwvr7lTzXipBWg8CK8REAWu281%2FAKC3f89uw%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:22:35,892 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=UaVJKBu14QO3mThkjyoaoGcJ2JPjEcdhKRr%2F9bT6tPNKHWPww7CnUoOB3ORYCVbKGfaHcqxJOXuoeoh0tgpuYYYyAN5oXwtl1wjXzHeJgqLvoqZLlpNCwLgd9UDYlM43rTS7SRjm6tGRRkGmE5ST18ulX3%2Bau1NdP5QOy9QHTUD%2FlO7PC26jGR51SoPD1JJqyMjbA2IjtamPOEYuTDsLhg%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 19:27:04,019 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 19:27:04,420 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 19:27:04,944 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 19:27:05,803 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:27:06,630 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 19:27:12,105 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=hpdYN878EtTjerqKLoK9H1jVU6kSUk4GjstCg0qrwO3IsW7CM63CUGKUplUFK4ROGkMbvPTPK4%2FFrBpiTJlLUS2tcDu6%2BMm%2BNwm28InAvtdxDXkevigmQKfQ83b8qPtCiiPUNblH5j5yZuIDgqtn9k%2FrrAWcoEu1udvcgbwbnXIZ5Vj5rF2HmrvsFnxGsDjtJgFX8x%2FzVfHdu17ujt6GJg%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 19:27:17,333 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=hpdYN878EtTjerqKLoK9H1jVU6kSUk4GjstCg0qrwO3IsW7CM63CUGKUplUFK4ROGkMbvPTPK4%2FFrBpiTJlLUS2tcDu6%2BMm%2BNwm28InAvtdxDXkevigmQKfQ83b8qPtCiiPUNblH5j5yZuIDgqtn9k%2FrrAWcoEu1udvcgbwbnXIZ5Vj5rF2HmrvsFnxGsDjtJgFX8x%2FzVfHdu17ujt6GJg%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 19:27:17,634 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=hpdYN878EtTjerqKLoK9H1jVU6kSUk4GjstCg0qrwO3IsW7CM63CUGKUplUFK4ROGkMbvPTPK4%2FFrBpiTJlLUS2tcDu6%2BMm%2BNwm28InAvtdxDXkevigmQKfQ83b8qPtCiiPUNblH5j5yZuIDgqtn9k%2FrrAWcoEu1udvcgbwbnXIZ5Vj5rF2HmrvsFnxGsDjtJgFX8x%2FzVfHdu17ujt6GJg%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 19:27:18,462 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=fGDN%2FhIKACTBMDD4aoRPF4r3PqeV%2FAZNXn3e%2FKoFTFmQ%2F3HfB3T3DiiC6G9OoZjcv0PeeIg9F78VWv%2Fl9QTmRZMDGPyaXwMSMiGV6wye91b9xkV1AHz6gIProAKD%2FBFEAGDzdtXFOWgP8aJCxZkEAGqZL3xIFghKHqP8F5rc9qyKXfJZj2q89CiTDEF29SzqCEz4U8TT%2F%2FxMKwF155Qoyw%3D%3D "HTTP/1.1 200 OK"
+2026-04-13 22:12:38,437 - INFO - ===== BEFORE RESPONSE =====
+2026-04-13 22:12:38,437 - INFO - {
+  "po_number": "PO26000656",
+  "po_date": "13/04/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+  "customer_id": "512598749",
+  "customer_email": "info@brosh.co.il",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 4-2 ת\"א",
+  "extra": {
+    "project": "לואי מרשל 2-4 ת\"א",
+    "contact_name": "עמית פרץ",
+    "contact_phone": "054-4847360",
+    "footer_text": "הזמנת רכש PO26000656 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 4-2 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360",
+    "item_description": "מגן לדלת 100/230",
+    "item_sku": "10150009",
+    "item_quantity": 30.0,
+    "item_unit_price": 75.0,
+    "item_line_total": 2250.0
+  },
+  "subtotal": 2250.0,
+  "vat": 405.0,
+  "total": 2655.0
+}
+2026-04-13 22:12:45,354 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/account/token "HTTP/1.1 200 OK"
+2026-04-13 22:12:45,721 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/types "HTTP/1.1 200 OK"
+2026-04-13 22:12:46,202 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/clients/search "HTTP/1.1 200 OK"
+2026-04-13 22:12:49,035 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 22:12:49,675 - INFO - HTTP Request: POST https://sandbox.d.greeninvoice.co.il/api/v1/documents "HTTP/1.1 201 Created"
+2026-04-13 22:12:55,119 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=NxSi1RX9SFwqZJMLSUnS00AcIc54z3RSfDovXQQco5wx509iONsV8ql8pII3hz3rg%2BQFZ3C0boCZt1QjpcKKrspU9k9YSyRBK5pKJ3FKI422hmy1QLOSy5%2Bd63dyFYelSkEL7KbpmaOjw0RPnUzyOrLZ77rez1sKeBVa%2B4nFy2Pw6qS2qS2UQHUtPB2K0ODiPLjOl4GuulE5jNNK%2BI7CsQ%3D%3D "HTTP/1.1 302 Found"
+2026-04-13 22:13:00,294 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=NxSi1RX9SFwqZJMLSUnS00AcIc54z3RSfDovXQQco5wx509iONsV8ql8pII3hz3rg%2BQFZ3C0boCZt1QjpcKKrspU9k9YSyRBK5pKJ3FKI422hmy1QLOSy5%2Bd63dyFYelSkEL7KbpmaOjw0RPnUzyOrLZ77rez1sKeBVa%2B4nFy2Pw6qS2qS2UQHUtPB2K0ODiPLjOl4GuulE5jNNK%2BI7CsQ%3D%3D&retry=1&flow=wait "HTTP/1.1 302 Found"
+2026-04-13 22:13:00,627 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=NxSi1RX9SFwqZJMLSUnS00AcIc54z3RSfDovXQQco5wx509iONsV8ql8pII3hz3rg%2BQFZ3C0boCZt1QjpcKKrspU9k9YSyRBK5pKJ3FKI422hmy1QLOSy5%2Bd63dyFYelSkEL7KbpmaOjw0RPnUzyOrLZ77rez1sKeBVa%2B4nFy2Pw6qS2qS2UQHUtPB2K0ODiPLjOl4GuulE5jNNK%2BI7CsQ%3D%3D&retry=2&flow=wait "HTTP/1.1 200 OK"
+2026-04-13 22:13:01,427 - INFO - HTTP Request: GET https://sandbox.d.greeninvoice.co.il/api/v1/documents/download?d=dosgzHKh5jadkjwT1KK2mg2i4rgX0rpSYTIUGlf4Ud6AwNxyfXvxV7GXbJgCdu%2F1jINO6J1vk7xpSgQmwL18L2OtQEZHQwLjvxVjsaplSJJqLM460b6XobbMFfpjDaEECG5wBTXVX%2BQhIscMHkgfROYYIKZjgBgw30%2BJo%2B5F9FDxuB6kqTa86Xq3mc4KBivZRRrC5QFB8nsgn3U1%2FOWJjA%3D%3D "HTTP/1.1 200 OK"

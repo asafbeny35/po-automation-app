@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PO Management App Redesign V2</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="shell">
+      <header class="topbar">
+        <div class="brand">
+          <div class="brand__mark">BY</div>
+          <div>
+            <div class="eyebrow">מחקר מבוסס מוצרים קיימים</div>
+            <h1>אפליקציית הניהול, כיוון חדש</h1>
+            <p>
+              בנייה מחדש של ה־UX למובייל לפי דפוסים שעובדים באפליקציות ניהול
+              מורכבות, לא לפי התאמת־מובייל של מערכת דסקטופ.
+            </p>
+          </div>
+        </div>
+        <div class="actions">
+          <a class="pill-link" href="./research.md">מסמך המחקר</a>
+          <button class="pill-link pill-link--active" type="button">
+            מסכי קונספט
+          </button>
+        </div>
+      </header>
+
+      <section class="research">
+        <article class="research-card">
+          <span class="research-card__source">Apple HIG</span>
+          <h2>ניווט ראשי קצר</h2>
+          <p>
+            מובייל צריך מספר מצומצם של אזורי־על. לכן נשארים עם 5 טאבים בלבד
+            בתחתית, וכל שאר העומק נכנס פנימה למסכים ול־sheets.
+          </p>
+        </article>
+        <article class="research-card">
+          <span class="research-card__source">Linear Mobile</span>
+          <h2>עבודה “away from keyboard”</h2>
+          <p>
+            המובייל לא צריך לשחזר כל מסך דסקטופ. הוא צריך להצטיין בפעולות מהירות:
+            יצירה, עדכון, תגובה, העלאה, שליחה ומעקב.
+          </p>
+        </article>
+        <article class="research-card">
+          <span class="research-card__source">ClickUp Mobile</span>
+          <h2>Home מרכזי אחד</h2>
+          <p>
+            מסך בית אחד מרכז משימות, תזכורות, התראות וחיפוש. זה מחליף מסכי־על
+            מפוזרים שלא ברור מהם להתחיל.
+          </p>
+        </article>
+        <article class="research-card">
+          <span class="research-card__source">Notion Mobile</span>
+          <h2>שוני אמיתי מדסקטופ</h2>
+          <p>
+            במובייל אין hover, אין פריסות עמודות מורכבות, ואין מקום להעמיס. לכן
+            המסכים עוברים לרשימות, גילוי מדורג, וסרגלי פעולה ברורים.
+          </p>
+        </article>
+        <article class="research-card">
+          <span class="research-card__source">Salesforce Mobile</span>
+          <h2>ניווט ותוכן מותאמים לתפקיד</h2>
+          <p>
+            אין טעם לחשוף הכל בכל מקום. לכל תחום יש תצוגת מובייל ממוקדת עם
+            פעולות שימושיות בלבד.
+          </p>
+        </article>
+        <article class="research-card">
+          <span class="research-card__source">monday.com</span>
+          <h2>ויזואליזציה דרך views</h2>
+          <p>
+            במקום "עמוד אחד שעושה הכל", יש views ברורים: עבודה, היסטוריה, אישורי
+            מסירה, גבייה, שיווק.
+          </p>
+        </article>
+      </section>
+
+      <section class="principles">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">עקרונות יישום</div>
+            <h2>מה משתנה מהיסוד</h2>
+          </div>
+        </div>
+        <div class="principles-grid">
+          <article class="principle">
+            <h3>1. פחות עמודי־על</h3>
+            <p>5 טאבים תחתונים בלבד: מרכז, הזמנות, תשלומים, כספים, לקוחות.</p>
+          </article>
+          <article class="principle">
+            <h3>2. Home אחד</h3>
+            <p>המשתמש נוחת למסך אחד שמרכז חריגים, משימות ופעולות מהירות.</p>
+          </article>
+          <article class="principle">
+            <h3>3. שורות קומפקטיות</h3>
+            <p>פחות כרטיסי ענק, יותר שורות iPhone-style עם מטא־דאטה ו־CTA.</p>
+          </article>
+          <article class="principle">
+            <h3>4. Sheets במקום עומס</h3>
+            <p>פרטי עומק, פרסור, הערות ומסמכים נפתחים ב־sheet ולא דוחפים מסך שלם.</p>
+          </article>
+          <article class="principle">
+            <h3>5. RTL כשכבת בסיס</h3>
+            <p>כל יישור, hierarchy, badge וניווט נבנים מימין, לא מתוקנים בדיעבד.</p>
+          </article>
+          <article class="principle">
+            <h3>6. מובייל לא שווה דסקטופ</h3>
+            <p>לא כל פיצ'ר צריך להופיע באותו עומק. כן צריך לכסות את כל הזרימות הקריטיות.</p>
+          </article>
+        </div>
+      </section>
+
+      <section class="architecture">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">מפת מוצר</div>
+            <h2>חלוקת המבנה באפליקציה החדשה</h2>
+          </div>
+          <div class="legend">
+            <span class="legend__item legend__item--core">ליבת מובייל</span>
+            <span class="legend__item legend__item--sheet">פתיחה ב־Sheet</span>
+            <span class="legend__item legend__item--desktop">עומק שנשמר לדסקטופ</span>
+          </div>
+        </div>
+        <div class="architecture-grid">
+          <article class="arch-card">
+            <h3>מרכז</h3>
+            <ul>
+              <li class="tag-core">Inbox / חריגים</li>
+              <li class="tag-core">קיצורי דרך</li>
+              <li class="tag-core">פעילות אחרונה</li>
+            </ul>
+          </article>
+          <article class="arch-card">
+            <h3>הזמנות</h3>
+            <ul>
+              <li class="tag-core">יצירה חדשה</li>
+              <li class="tag-core">הזמנות בעבודה</li>
+              <li class="tag-core">אישורי מסירה</li>
+              <li class="tag-sheet">פרטי שורה / מסמכים</li>
+            </ul>
+          </article>
+          <article class="arch-card">
+            <h3>תשלומים</h3>
+            <ul>
+              <li class="tag-core">לגבייה</li>
+              <li class="tag-core">לתשלום</li>
+              <li class="tag-sheet">עדכון סטטוס / קבלה</li>
+            </ul>
+          </article>
+          <article class="arch-card">
+            <h3>כספים</h3>
+            <ul>
+              <li class="tag-core">חשבוניות</li>
+              <li class="tag-sheet">מסך פרסור ושמירה</li>
+              <li class="tag-core">ניכויים</li>
+              <li class="tag-desktop">דוחות כבדים</li>
+            </ul>
+          </article>
+          <article class="arch-card">
+            <h3>לקוחות</h3>
+            <ul>
+              <li class="tag-core">חיפוש</li>
+              <li class="tag-core">שיוך</li>
+              <li class="tag-sheet">מסמכים אחרונים</li>
+              <li class="tag-sheet">עריכת פרטים</li>
+            </ul>
+          </article>
+          <article class="arch-card">
+            <h3>עוד</h3>
+            <ul>
+              <li class="tag-core">עובדים ושכר</li>
+              <li class="tag-core">שיווק</li>
+              <li class="tag-core">מנהלה</li>
+              <li class="tag-desktop">מסכים פחות תדירים</li>
+            </ul>
+          </article>
+        </div>
+      </section>
+
+      <section class="gallery">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">מסכי קונספט</div>
+            <h2>הכיוון החדש למסכים עצמם</h2>
+          </div>
+          <div class="filters">
+            <button class="filter active" data-filter="all">הכל</button>
+            <button class="filter" data-filter="core">ליבה</button>
+            <button class="filter" data-filter="ops">תפעול</button>
+            <button class="filter" data-filter="finance">כספים</button>
+            <button class="filter" data-filter="people">לקוחות ואנשים</button>
+          </div>
+        </div>
+
+        <div class="phones" id="phones">
+          <article class="phone-card" data-group="core">
+            <header class="phone-card__meta">
+              <span>כניסה</span>
+              <strong>Face ID + קוד למייל</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>12:40</span><span>100%</span></div>
+                <div class="login-hero">
+                  <div class="login-hero__logo">BY</div>
+                  <div>
+                    <div class="chip chip--accent">כניסה מאובטחת</div>
+                    <h3>PO Management</h3>
+                    <p>כניסה מהירה עם משתמש שמור ופעולת Face ID ראשית.</p>
+                  </div>
+                </div>
+                <div class="panel">
+                  <div class="panel__title">משתמשים שמורים</div>
+                  <div class="user-grid">
+                    <div class="user-box user-box--active">
+                      <strong>אסף</strong><span>asafbeny@gmail.com</span>
+                    </div>
+                    <div class="user-box">
+                      <strong>אמא</strong><span>ללא מייל שמור</span>
+                    </div>
+                  </div>
+                  <div class="field-row">
+                    <span>קוד למייל</span>
+                    <strong>יישלח ל־asafbeny@gmail.com</strong>
+                  </div>
+                  <div class="button-row">
+                    <button class="btn btn--primary">שלח קוד</button>
+                    <button class="btn btn--secondary">פתח עם Face ID</button>
+                  </div>
+                  <div class="inline-ok">הקוד נשלח למייל.</div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="core">
+            <header class="phone-card__meta">
+              <span>מרכז</span>
+              <strong>Home / Inbox</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>רשת מאובטחת</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">+</button>
+                  <h3>מרכז</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">⌕</button>
+                    <button class="icon-button">🔔</button>
+                  </div>
+                </div>
+                <div class="summary">
+                  <div>
+                    <div class="chip chip--accent">מוכן לעבודה</div>
+                    <h4>דברים שדורשים ממך טיפול</h4>
+                  </div>
+                  <div class="mini-kpis">
+                    <div><span>חריגים</span><strong>1</strong></div>
+                    <div><span>ממתינים</span><strong>3</strong></div>
+                    <div><span>פתוחים</span><strong>9</strong></div>
+                  </div>
+                </div>
+                <div class="segmented">
+                  <button class="segmented__item segmented__item--active">Inbox</button>
+                  <button class="segmented__item">פעולות</button>
+                  <button class="segmented__item">אחרונים</button>
+                </div>
+                <div class="native-list">
+                  <div class="native-row">
+                    <div>
+                      <strong>אישורי מסירה ממתינים</strong>
+                      <small>6 רשומות טרם נשלחו להנה"ח</small>
+                    </div>
+                    <span class="badge badge--warn">דחוף</span>
+                  </div>
+                  <div class="native-row">
+                    <div>
+                      <strong>יצירת הזמנה חדשה</strong>
+                      <small>טען PDF, ערוך, צור מסמכים ושלח</small>
+                    </div>
+                    <button class="row-cta">פתח</button>
+                  </div>
+                  <div class="native-row">
+                    <div>
+                      <strong>חשבונית חדשה לפירסור</strong>
+                      <small>סריקה חדשה ממתינה לאישור ושמירה</small>
+                    </div>
+                    <button class="row-cta">בדוק</button>
+                  </div>
+                </div>
+                <div class="tabbar">
+                  <div class="tabbar__item tabbar__item--active">מרכז</div>
+                  <div class="tabbar__item">הזמנות</div>
+                  <div class="tabbar__item">תשלומים</div>
+                  <div class="tabbar__item">כספים</div>
+                  <div class="tabbar__item">לקוחות</div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="ops">
+            <header class="phone-card__meta">
+              <span>הזמנות</span>
+              <strong>יצירה חדשה</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>PROD</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">＋</button>
+                  <h3>יצירת הזמנה</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">📎</button>
+                  </div>
+                </div>
+                <div class="stack">
+                  <div class="field-row">
+                    <span>לקוח</span><strong>גרופו ג׳רומין ישראל</strong>
+                  </div>
+                  <div class="field-row">
+                    <span>ח.פ</span><strong>512345678</strong>
+                  </div>
+                  <div class="field-row">
+                    <span>תנאי תשלום</span><strong>שוטף + 60</strong>
+                  </div>
+                  <div class="field-row">
+                    <span>מספר הזמנה</span><strong>654/243066</strong>
+                  </div>
+                </div>
+                <div class="line-items">
+                  <div class="line-items__head">
+                    <strong>שורות הזמנה</strong><small>עדכון נגזרות אוטומטי</small>
+                  </div>
+                  <div class="item-row">
+                    <span>יחידת מגן דלת פרו דור</span><strong>100 יח'</strong>
+                  </div>
+                  <div class="item-row">
+                    <span>הובלה</span><strong>1 יח'</strong>
+                  </div>
+                </div>
+                <div class="button-row">
+                  <button class="btn btn--primary">צור אמיתי + משלוח</button>
+                  <button class="btn btn--secondary">צור סנדבוקס</button>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="ops">
+            <header class="phone-card__meta">
+              <span>אישורי מסירה</span>
+              <strong>רשימת טרם נשלח</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>6 טרם נשלח</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">⌕</button>
+                  <h3>אישורי מסירה</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">⟳</button>
+                  </div>
+                </div>
+                <div class="segmented segmented--dual">
+                  <button class="segmented__item segmented__item--active">טרם נשלח</button>
+                  <button class="segmented__item">נשלח</button>
+                </div>
+                <div class="native-list">
+                  <div class="delivery-row">
+                    <div class="delivery-row__head">
+                      <strong>ברוש ניר עבודות הנדסה ובנין בע"מ</strong>
+                      <span class="badge">PROD</span>
+                    </div>
+                    <small>PO26001090 · ₪1,150.50 · invoice@brosh.co.il</small>
+                    <div class="delivery-row__footer">
+                      <span class="file-pill">PO26001090.conf</span>
+                      <div class="delivery-actions">
+                        <button class="row-cta">הצג</button>
+                        <button class="row-cta row-cta--primary">שלח</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="delivery-row">
+                    <div class="delivery-row__head">
+                      <strong>אקו סיטי</strong>
+                      <span class="badge badge--warn">ממתין</span>
+                    </div>
+                    <small>654/243066 · אין אישור חתום · billing@ecocity.co.il</small>
+                    <div class="delivery-row__footer">
+                      <span class="file-pill file-pill--empty">העלה אישור מסירה</span>
+                      <div class="delivery-actions">
+                        <button class="row-cta">בחר קובץ</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="finance">
+            <header class="phone-card__meta">
+              <span>תשלומים</span>
+              <strong>לגבייה / לתשלום</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>עודכן עכשיו</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">⌕</button>
+                  <h3>תשלומים</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">⇅</button>
+                  </div>
+                </div>
+                <div class="summary summary--compact">
+                  <div class="mini-kpis">
+                    <div><span>פתוחים</span><strong>136</strong></div>
+                    <div><span>לגבייה</span><strong>73</strong></div>
+                    <div><span>לתשלום</span><strong>63</strong></div>
+                  </div>
+                </div>
+                <div class="segmented segmented--triple">
+                  <button class="segmented__item segmented__item--active">הכל</button>
+                  <button class="segmented__item">לגבייה</button>
+                  <button class="segmented__item">לתשלום</button>
+                </div>
+                <div class="native-list">
+                  <div class="native-row native-row--stack">
+                    <div class="native-row__top">
+                      <strong>ארוטקס</strong><span class="badge badge--warn">פתוח</span>
+                    </div>
+                    <small>549112 · שוטף + 60 · יעד 01/08/2026</small>
+                    <div class="meta-strip">
+                      <span>₪18,450</span><span>לתשלום</span><span>קבלה: —</span>
+                    </div>
+                  </div>
+                  <div class="native-row native-row--stack">
+                    <div class="native-row__top">
+                      <strong>פז קמעונאות ואנרגיה בע"מ</strong><span class="badge badge--ok">שולם</span>
+                    </div>
+                    <small>550410 · דיווח 15/07/2026</small>
+                    <div class="meta-strip">
+                      <span>₪7,820</span><span>לגבייה</span><span>קבלה 850332</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="finance">
+            <header class="phone-card__meta">
+              <span>כספים</span>
+              <strong>Sheet לפרסור חשבונית</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen phone__screen--sheet">
+                <div class="status"><span>דיווח 15/07</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">⌕</button>
+                  <h3>חשבוניות</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">＋</button>
+                  </div>
+                </div>
+                <div class="native-list">
+                  <div class="native-row native-row--stack">
+                    <div class="native-row__top">
+                      <strong>פלציב</strong><span class="badge badge--warn">טרם שולם</span>
+                    </div>
+                    <small>SI2601337 · מספר הקצאה 127016987</small>
+                  </div>
+                </div>
+                <div class="sheet">
+                  <div class="sheet__handle"></div>
+                  <div class="sheet__head">
+                    <strong>פרטי חשבונית לאחר פרסור</strong>
+                    <span class="chip">שמור ל־Drive ולתשלום</span>
+                  </div>
+                  <div class="stack">
+                    <div class="field-row"><span>ספק</span><strong>פלציב</strong></div>
+                    <div class="field-row"><span>אסמכתא</span><strong>SI2601337</strong></div>
+                    <div class="field-row"><span>סכום</span><strong>₪12,640</strong></div>
+                    <div class="field-row"><span>מטבע</span><strong>ILS</strong></div>
+                    <div class="field-row"><span>סטטוס</span><strong>טרם שולם</strong></div>
+                  </div>
+                  <div class="button-row">
+                    <button class="btn btn--primary">שמור חשבונית</button>
+                    <button class="btn btn--secondary">סמן לתשלום</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="people">
+            <header class="phone-card__meta">
+              <span>לקוחות</span>
+              <strong>רשימה + מסמכים אחרונים</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>157 לקוחות</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">⌕</button>
+                  <h3>לקוחות</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">↻</button>
+                  </div>
+                </div>
+                <div class="searchbox">חפש לקוח, ח.פ, מייל או טלפון</div>
+                <div class="segmented segmented--triple">
+                  <button class="segmented__item segmented__item--active">הכל</button>
+                  <button class="segmented__item">פעילים</button>
+                  <button class="segmented__item">ללא שיוך</button>
+                </div>
+                <div class="native-list">
+                  <div class="native-row native-row--stack">
+                    <div class="native-row__top">
+                      <strong>night heron</strong><span class="badge">PROD</span>
+                    </div>
+                    <small>516944600 · שוטף + 60</small>
+                    <div class="delivery-actions">
+                      <button class="row-cta">מסמכים</button>
+                      <button class="row-cta">פרטים</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="sheet sheet--mini">
+                  <div class="sheet__head">
+                    <strong>3 מסמכים אחרונים</strong>
+                  </div>
+                  <div class="native-list">
+                    <div class="native-row">
+                      <div>
+                        <strong>הצעת מחיר 50325</strong>
+                        <small>15/05/2026</small>
+                      </div>
+                      <button class="row-cta row-cta--primary">שכפל</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+
+          <article class="phone-card" data-group="people">
+            <header class="phone-card__meta">
+              <span>עובדים ושכר</span>
+              <strong>נוכחות + חבילת שכר</strong>
+            </header>
+            <div class="phone">
+              <div class="phone__island"></div>
+              <div class="phone__screen">
+                <div class="status"><span>יוני 2026</span><span>12:40</span></div>
+                <div class="appbar">
+                  <button class="icon-button">⌕</button>
+                  <h3>עובדים ושכר</h3>
+                  <div class="appbar__icons">
+                    <button class="icon-button">＋</button>
+                  </div>
+                </div>
+                <div class="summary summary--compact">
+                  <div class="mini-kpis">
+                    <div><span>עובדים</span><strong>4</strong></div>
+                    <div><span>מחכים לשיוך</span><strong>1</strong></div>
+                    <div><span>חבילות</span><strong>2</strong></div>
+                  </div>
+                </div>
+                <div class="segmented segmented--triple">
+                  <button class="segmented__item segmented__item--active">נוכחות</button>
+                  <button class="segmented__item">מחלה</button>
+                  <button class="segmented__item">תלושים</button>
+                </div>
+                <div class="native-list">
+                  <div class="native-row native-row--stack">
+                    <div class="native-row__top">
+                      <strong>טוואצ׳או דמלאו</strong><span class="badge badge--accent">70% 127.4 ש׳</span>
+                    </div>
+                    <small>עבד 121.5 ש׳ · הפרש ל־70%: 5.9- ש׳ · 3 ימי מחלה</small>
+                  </div>
+                </div>
+                <div class="sheet sheet--mini">
+                  <div class="sheet__head">
+                    <strong>חבילת הפקה - מאי 2026</strong>
+                  </div>
+                  <div class="button-row">
+                    <button class="btn btn--primary">שלח לרו"ח</button>
+                    <button class="btn btn--secondary">שלח טסט</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="flow">
+        <div class="section-head">
+          <div>
+            <div class="eyebrow">זרימת על</div>
+            <h2>איך המערכת צריכה להרגיש בפועל</h2>
+          </div>
+        </div>
+        <div class="flow-steps">
+          <div class="flow-step"><strong>1</strong><span>פתיחה למסך Home ממוקד חריגים</span></div>
+          <div class="flow-step"><strong>2</strong><span>כניסה מהירה ליצירת הזמנה או לחשבונית חדשה</span></div>
+          <div class="flow-step"><strong>3</strong><span>פתיחת פרטי עומק ב־sheet, לא במסך ענק</span></div>
+          <div class="flow-step"><strong>4</strong><span>שליחה, העלאה, עדכון סטטוס, וחזרה מיידית לרשימה</span></div>
+          <div class="flow-step"><strong>5</strong><span>מעבר חלק בין טאבים בלי מסך טעינה מלא בכל צעד</span></div>
+        </div>
+      </section>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "saved_at": "2026-06-23T13:21:11",
+  "rows": [
+    {
+      "row_id": "prep_2026-05_live_20260602T180000",
+      "month_key": "2026-05",
+      "month_label": "מאי 2026",
+      "send_mode": "live",
+      "sent_to": "shayalon222@gmail.com",
+      "sent_at": "2026-06-02T18:00:00",
+      "employees_total": "4",
+      "gross_total_label": "23,891.00 ₪",
+      "attachments_count": "2",
+      "supporting_summaries_json": "[]",
+      "notes": "שוחזר רטרואקטיבית לפי שליחה שבוצעה ב-02/06/2026. מספר הצרופות משקף רק קבצי שעות שנשמרו במערכת.",
+      "updated_at": "2026-06-03T11:12:07"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "saved_at": "2026-06-23T13:21:18",
+  "rows": [
+    {
+      "component_id": "TEST-COMP-001",
+      "item_id": "TEST-PRICING-ITEM-001",
+      "line_order": "",
+      "component_kind": "חומר גלם",
+      "inventory_key": "",
+      "supplier": "TEST Supplier",
+      "supplier_sku": "",
+      "inventory_product": "",
+      "material": "",
+      "length": "",
+      "width": "",
+      "thickness": "",
+      "unit": "",
+      "unit_count": "",
+      "consumption_quantity": "",
+      "consumption_basis": "ליחידה",
+      "option_group": "",
+      "waste_percent": "",
+      "notes": "",
+      "updated_at": "2026-06-20T01:25:49"
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "customers": [
+    "customers_001.sql",
+    "customers_002.sql",
+    "customers_003.sql",
+    "customers_004.sql",
+    "customers_005.sql",
+    "customers_006.sql",
+    "customers_007.sql"
+  ],
+  "inactive_customers": [
+    "inactive_customers_001.sql",
+    "inactive_customers_002.sql"
+  ]
+}

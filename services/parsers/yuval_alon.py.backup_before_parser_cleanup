@@ -1,0 +1,118 @@
+import re
+from typing import Optional
+
+
+def parse_yuval_alon(text: str) -> Optional[dict]:
+    if "יובל אלון" not in text or "הזמנת רכש" not in text:
+        return None
+
+    text = text.replace("\r", "\n")
+
+    data = {
+        "customer_name": 'יובל אלון פרוייקטים בנדל"ן בע"מ',
+        "customer_id": "513013359",
+        "customer_phone": "",
+        "customer_email": "",
+        "delivery_address": "",
+        "po_number": "",
+        "po_date": None,
+        "subtotal": 0.0,
+        "vat": 0.0,
+        "total": 0.0,
+        "items": [],
+        "extra": {},
+    }
+
+    m = re.search(r"הזמנת רכש\s+(\d+)", text)
+    if m:
+        data["po_number"] = m.group(1)
+
+    m = re.search(r"תאריך שליחת ההזמנה\s+(\d{1,2}\.\d{1,2}\.\d{4})", text)
+    if m:
+        data["po_date"] = m.group(1)
+
+    m = re.search(r"טל:\s*(0\d{8,9})\s*\|\s*פקס", text)
+    if m:
+        data["customer_phone"] = m.group(1)
+
+    m = re.search(r"(?m)^פרויקט:\s*(.+)$", text)
+    if m:
+        data["extra"]["project"] = m.group(1).strip()
+
+    m = re.search(r"(?m)^סה.?כ לפני מע.?מ:\s*([\d.]+)", text)
+    if m:
+        data["subtotal"] = float(m.group(1))
+
+    m = re.search(r"(?m)^מע.?מ:\s*([\d.]+)", text)
+    if m:
+        data["vat"] = float(m.group(1))
+
+    m = re.search(r"(?m)^סה.?כ כולל מע.?מ:\s*([\d.]+)", text)
+    if m:
+        data["total"] = float(m.group(1))
+
+    delivery_line = None
+    for line in text.splitlines():
+        if "תאריך אספקה:" in line:
+            delivery_line = " ".join(line.split())
+            break
+
+    if delivery_line:
+        m = re.search(
+            r"תאריך אספקה:\s*\d{2}/\d{2}/\d{4}\s+(.+?,\s*[א-ת]+)\s+([א-ת]+(?:\s+[א-ת]+)+)\s+(05\d{8})$",
+            delivery_line
+        )
+        if m:
+            data["delivery_address"] = m.group(1).strip()
+            data["extra"]["contact_name"] = m.group(2).strip()
+            data["extra"]["contact_phone"] = m.group(3).strip()
+
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    desc = ""
+    qty = 0.0
+    sku = ""
+    unit_price = 0.0
+    line_total = 0.0
+
+    for i, line in enumerate(lines):
+        if "יריעה אקוסטית" in line and ("קווואיטפייפ" in line or "קוואיטפייפ" in line):
+            desc = line.strip()
+            if i + 1 < len(lines):
+                next_line = lines[i + 1]
+                m = re.search(
+                    r"([\d.]+)\s*מ\"?ר\s*-\s*([0-9.]+)\s+([\d.]+)\s*ש.?ח\s+([\d.]+)\s*ש.?ח",
+                    next_line
+                )
+                if m:
+                    qty = float(m.group(1))
+                    sku = m.group(2)
+                    unit_price = float(m.group(3))
+                    line_total = float(m.group(4))
+            break
+
+    if desc:
+        data["items"] = [{
+            "description": desc,
+            "sku": sku,
+            "quantity": qty,
+            "unit_price": unit_price,
+            "line_total": line_total,
+        }]
+
+    footer_parts = []
+    if data["customer_id"]:
+        footer_parts.append(f'ח.פ / ע.מ: {data["customer_id"]}')
+    if data["po_number"]:
+        footer_parts.append(f'הזמנת רכש {data["po_number"]}')
+    if data["extra"].get("project"):
+        footer_parts.append(f'פרויקט: {data["extra"]["project"]}')
+    if data["delivery_address"]:
+        footer_parts.append(f'כתובת לאספקה: {data["delivery_address"]}')
+    if data["extra"].get("contact_name"):
+        footer_parts.append(f'איש קשר: {data["extra"]["contact_name"]}')
+    if data["extra"].get("contact_phone"):
+        footer_parts.append(f"טל': {data['extra']['contact_phone']}")
+
+    data["extra"]["footer_text"] = " | ".join(footer_parts)
+
+    return data

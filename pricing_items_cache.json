@@ -1,0 +1,22 @@
+{
+  "saved_at": "2026-06-23T13:21:17",
+  "rows": [
+    {
+      "item_id": "pricing20260620012549260665",
+      "kind": "product",
+      "name": "TEST | נעלולי פלא | מוצר",
+      "pricing_unit": "יחידה",
+      "default_width_m": "",
+      "default_length_m": "",
+      "labor_minutes": "",
+      "labor_hour_cost": "",
+      "shipping_total": "",
+      "shipping_divisor": "1",
+      "selected_dimension_id": "",
+      "dimensions_json": "",
+      "notes": "TEST",
+      "active": "TRUE",
+      "updated_at": "2026-06-20T01:25:49"
+    }
+  ]
+}

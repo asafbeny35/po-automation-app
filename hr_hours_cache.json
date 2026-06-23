@@ -1,0 +1,89 @@
+{
+  "saved_at": "2026-06-23T13:21:11",
+  "rows": [
+    {
+      "row_id": "hours_emp_solomon_shibshi_2026-05",
+      "employee_id": "emp_solomon_shibshi",
+      "employee_name": "שיבשי סלומון",
+      "month_key": "2026-05",
+      "regular_hours": "99.82",
+      "overtime_hours": "0.00",
+      "hourly_rate": "50.00",
+      "status": "reported",
+      "hours_file_name": "monthHour(סלומון שיבשי)_4009_260602080807.xlsx",
+      "hours_drive_file_id": "1d0B9YCCzluvHFh7DexEu4k4hSF_IpRNi",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/1d0B9YCCzluvHFh7DexEu4k4hSF_IpRNi/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-06-02T11:43:38"
+    },
+    {
+      "row_id": "hours_emp_tawuchao_damlau_2026-05",
+      "employee_id": "emp_tawuchao_damlau",
+      "employee_name": "דמלאו טווצ'או",
+      "month_key": "2026-05",
+      "regular_hours": "99.19",
+      "overtime_hours": "0.00",
+      "hourly_rate": "",
+      "status": "reported",
+      "hours_file_name": "monthHour(טוואצ׳או דמלאו)_4009_260602113254.xlsx",
+      "hours_drive_file_id": "1ghhMaQIfJGIawlTWA_cGU-lkf6ZXvLmg",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/1ghhMaQIfJGIawlTWA_cGU-lkf6ZXvLmg/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-06-02T11:43:32"
+    },
+    {
+      "row_id": "hours_emp_solomon_shibshi_2026-04",
+      "employee_id": "emp_solomon_shibshi",
+      "employee_name": "שיבשי סלומון",
+      "month_key": "2026-04",
+      "regular_hours": "30.02",
+      "overtime_hours": "0.00",
+      "hourly_rate": "50.00",
+      "status": "reported",
+      "hours_file_name": "monthHour(סלומון שיבשי)_4009_260503030153.xlsx",
+      "hours_drive_file_id": "10qDOHKmF9t_1HONbMWw_Kw4VaU-KLQee",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/10qDOHKmF9t_1HONbMWw_Kw4VaU-KLQee/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-05-03T22:46:12"
+    },
+    {
+      "row_id": "hours_emp_tawuchao_damlau_2026-04",
+      "employee_id": "emp_tawuchao_damlau",
+      "employee_name": "דמלאו טווצ'או",
+      "month_key": "2026-04",
+      "regular_hours": "80.71",
+      "overtime_hours": "0.00",
+      "hourly_rate": "",
+      "status": "reported",
+      "hours_file_name": "monthHour(טוואצ׳או דמלאו)_4009_260506123726.xlsx",
+      "hours_drive_file_id": "1OW1pUxJ2PmPncXJ7uIr05Np0z6XIT8o5",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/1OW1pUxJ2PmPncXJ7uIr05Np0z6XIT8o5/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-05-06T00:37:52"
+    },
+    {
+      "row_id": "hours_emp_solomon_shibshi_2026-02",
+      "employee_id": "emp_solomon_shibshi",
+      "employee_name": "שיבשי סלומון",
+      "month_key": "2026-02",
+      "regular_hours": "26.31",
+      "overtime_hours": "0.00",
+      "hourly_rate": "50.00",
+      "status": "reported",
+      "hours_file_name": "monthHour(סלומון שיבשי)_4009_260301105045.xlsx",
+      "hours_drive_file_id": "1g2otu-tN_2OojULZ09AYDG2RUeAl89IS",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/1g2otu-tN_2OojULZ09AYDG2RUeAl89IS/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-05-03T22:46:07"
+    },
+    {
+      "row_id": "hours_emp_solomon_shibshi_2026-01",
+      "employee_id": "emp_solomon_shibshi",
+      "employee_name": "שיבשי סלומון",
+      "month_key": "2026-01",
+      "regular_hours": "36.59",
+      "overtime_hours": "0.00",
+      "hourly_rate": "50.00",
+      "status": "reported",
+      "hours_file_name": "סלומון ינואר 2026.xlsx",
+      "hours_drive_file_id": "1jWe2llXPcZ2zjKUmdiy-y3i2dKlQKe3k",
+      "hours_drive_url": "https://docs.google.com/spreadsheets/d/1jWe2llXPcZ2zjKUmdiy-y3i2dKlQKe3k/edit?usp=drivesdk&ouid=115439121291521534185&rtpof=true&sd=true",
+      "updated_at": "2026-05-03T22:45:59"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "mode": "sandbox",
+  "source_file": "הדפסת הזמנת רכש - PO26001090.pdf",
+  "source_file_path": "/Users/asafbeny/Downloads/po_automation_app/uploads/9565272adf5a4c1eb1eb0d00c7f08410_הדפסת הזמנת רכש - PO26001090.pdf",
+  "po_number": "PO26001090",
+  "po_date": "17/06/2026",
+  "customer_name": "ברוש ניר עבודות הנדסה ובנין בע״מ",
+  "customer_id": "512598749",
+  "customer_email": "",
+  "customer_phone": "09-7475000",
+  "delivery_address": "לואי מרשל 2-4 ת\"א",
+  "project": "לואי מרשל 2-4 ת\"א",
+  "contact_name": "עמית פרץ",
+  "contact_phone": "054-4847360",
+  "payment_terms_days": 60,
+  "payment_terms_label": "שוטף + 60",
+  "subtotal": 975.0,
+  "vat": 175.5,
+  "total": 1150.5,
+  "item_description": "מגן לדלת 90/230",
+  "item_sku": "10150008",
+  "item_quantity": 10.0,
+  "item_unit_price": 75.0,
+  "item_line_total": 750.0,
+  "item_unit": "",
+  "items_count": 2,
+  "items_summary": "מגן לדלת 90/230, מגן לדלת 100/230",
+  "items": [
+    {
+      "description": "מגן לדלת 90/230",
+      "sku": "10150008",
+      "unit": "יחידה",
+      "quantity": 10.0,
+      "unit_price": 75.0,
+      "line_total": 750.0
+    },
+    {
+      "description": "מגן לדלת 100/230",
+      "sku": "10150009",
+      "unit": "יחידה",
+      "quantity": 3.0,
+      "unit_price": 75.0,
+      "line_total": 225.0
+    }
+  ],
+  "footer_text": "הזמנת רכש PO26001090 | פרויקט: לואי מרשל 2-4 ת\"א | כתובת לאספקה: לואי מרשל 2-4 ת\"א | איש קשר: עמית פרץ | טל': 054-4847360"
+}

@@ -1,0 +1,124 @@
+<html dir="rtl">
+<head>
+<meta charset="UTF-8">
+<style>
+@page { size: 100mm 150mm; margin:0; }
+
+body {
+  margin:0;
+  font-family: Arial;
+  background:#f0f0f0;
+}
+
+.box {
+  width:100mm;
+  height:150mm;
+  padding:15px;
+  border:2px solid black;
+  box-sizing:border-box;
+  position:relative;
+}
+
+.line {
+  border-top:4px solid black;
+  margin:15px 0;
+}
+
+.right {
+  text-align:right;
+}
+
+.center {
+  text-align:center;
+}
+
+.big {
+  font-size:50px;
+  font-weight:bold;
+}
+
+.qr {
+  position:absolute;
+  bottom:120px;
+  left:20px;
+  width:120px;
+}
+
+.company {
+  position:absolute;
+  bottom:120px;
+  right:20px;
+  font-size:18px;
+}
+
+.logo {
+  position:absolute;
+  bottom:20px;
+  left:20px;
+  width:120px;
+  height:120px;
+  background:black;
+  color:white;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:40px;
+}
+
+.brand {
+  position:absolute;
+  bottom:30px;
+  right:180px;
+  font-size:40px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="box">
+
+<div class="right">
+לקוח: {{customer}}<br>
+כתובת/אתר: {{address}}<br>
+איש קשר: {{contact}} {{phone}}
+</div>
+
+<div class="line"></div>
+
+<div class="center">
+מספר הזמנה: {{po}}<br><br>
+<div style="font-size:30px">{{product1}}</div>
+<div style="font-size:24px">{{product2}}</div><br>
+<div style="font-size:40px">כמות: {{qty}} יח׳</div>
+</div>
+
+<div class="line"></div>
+
+<div class="center big">
+מק״ט {{sku}}
+</div>
+
+<div class="line"></div>
+
+<img class="qr" src="{{qr}}">
+
+<div class="company">
+בן יעקב פתרונות טקסטיל<br>
+הגורן 34 עתלית<br>
+054-7720142<br>
+050-5204010<br>
+office@ben-yacov.com
+</div>
+
+<div class="logo">BY</div>
+
+<div class="brand">
+Ben<br>Yacov<br>
+<span style="font-size:20px">Textile Solutions</span>
+</div>
+
+</div>
+
+</body>
+</html>

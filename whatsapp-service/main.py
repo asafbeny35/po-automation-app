@@ -1,0 +1,221 @@
+"""
+WhatsApp Web microservice — runs on Railway with persistent Playwright session.
+The main Vercel app calls POST /send with JSON body.
+"""
+from __future__ import annotations
+
+import asyncio
+import base64
+import os
+import re
+import tempfile
+from pathlib import Path
+from typing import Any
+
+import httpx
+from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
+from playwright.async_api import async_playwright
+
+SECRET_TOKEN = os.environ.get("WHATSAPP_SERVICE_SECRET", "")
+
+app = FastAPI()
+
+_PLAYWRIGHT = None
+_CONTEXT = None
+_CONTEXT_LOCK = asyncio.Lock()
+_BIDI_CHARS = {0x200F, 0x200E, 0x202B, 0x202A, 0x202C, 0x202D, 0x202E}
+
+PROFILE_DIR = Path(os.environ.get("WHATSAPP_PROFILE_DIR", "/app/whatsapp-profile"))
+PROFILE_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _normalize_phone(phone: str) -> str:
+    digits = re.sub(r"\D", "", phone or "")
+    if digits.startswith("0"):
+        digits = "972" + digits[1:]
+    return digits
+
+
+def _file_send_wait_ms(size_bytes: int) -> int:
+    size_mb = max(size_bytes, 1) / (1024 * 1024)
+    return max(8000, min(int(7000 + size_mb * 4500), 30000))
+
+
+def _file_post_send_wait_ms(size_bytes: int) -> int:
+    size_mb = max(size_bytes, 1) / (1024 * 1024)
+    return max(18000, min(int(14000 + size_mb * 7000), 60000))
+
+
+async def _get_context_and_page():
+    global _PLAYWRIGHT, _CONTEXT
+    async with _CONTEXT_LOCK:
+        if _CONTEXT is not None:
+            try:
+                _ = _CONTEXT.pages
+            except Exception:
+                _CONTEXT = None
+
+        if _CONTEXT is None:
+            _PLAYWRIGHT = await async_playwright().start()
+            _CONTEXT = await _PLAYWRIGHT.chromium.launch_persistent_context(
+                user_data_dir=str(PROFILE_DIR),
+                headless=True,
+                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-session-crashed-bubble"],
+            )
+
+        pages = [p for p in _CONTEXT.pages if not p.is_closed()]
+        page = pages[0] if pages else await _CONTEXT.new_page()
+        await page.bring_to_front()
+        return _CONTEXT, page
+
+
+async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
+    """file_items: list of {name, content_b64, size_bytes}"""
+    phone = _normalize_phone(phone)
+    _, page = await _get_context_and_page()
+
+    from urllib.parse import quote
+    send_url = f"https://web.whatsapp.com/send?phone={phone}"
+    if message:
+        send_url += f"&text={quote(message)}"
+
+    await page.goto(send_url, wait_until="domcontentloaded", timeout=30000)
+    await page.bring_to_front()
+
+    attach_button = page.locator("button[aria-label='Attach']")
+    message_box = page.locator(
+        "footer div[contenteditable='true'], "
+        "div[contenteditable='true'][data-tab='10'], "
+        "div[contenteditable='true'][role='textbox'], "
+        "div[contenteditable='true']"
+    ).last
+    send_icon = page.locator(
+        "span[data-icon='send'], button[aria-label='Send'], "
+        "div[role='button'][aria-label='Send']"
+    )
+
+    async def _chat_ready():
+        for loc in (attach_button, message_box, send_icon):
+            try:
+                if await loc.count() and await loc.first.is_visible():
+                    return True
+            except Exception:
+                pass
+        return False
+
+    for attempt in range(360):
+        if await _chat_ready():
+            break
+        await page.wait_for_timeout(500 if attempt < 60 else 1000)
+    else:
+        raise RuntimeError("WhatsApp chat did not become ready in time")
+
+    if message:
+        try:
+            await send_icon.first.wait_for(timeout=10000)
+            await send_icon.first.click()
+        except Exception:
+            try:
+                await message_box.wait_for(timeout=10000)
+                await message_box.fill(message)
+                await page.keyboard.press("Enter")
+            except Exception:
+                await page.keyboard.press("Enter")
+        await page.wait_for_timeout(1200)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        tmp_path = Path(tmp)
+        for item in file_items:
+            file_path = tmp_path / item["name"]
+            file_path.write_bytes(base64.b64decode(item["content_b64"]))
+            size_bytes = item.get("size_bytes", file_path.stat().st_size)
+
+            attachment_send_button = page.locator(
+                "div[role='button'][aria-label='Send'], button[aria-label='Send']"
+            ).last
+            preview_thumbnail = page.locator(
+                "div[role='tab'][aria-label^='Document thumbnail'], "
+                "div[role='tab'][aria-label^='Open document'], "
+                "div[role='button'][aria-label^='Open document']"
+            ).last
+
+            await attach_button.first.wait_for(timeout=30000)
+            await attach_button.first.click()
+            await page.wait_for_timeout(250)
+
+            async with page.expect_file_chooser() as fc_info:
+                await page.get_by_role("menuitem", name="Document").click()
+            fc = await fc_info.value
+            await fc.set_files(str(file_path))
+
+            await attachment_send_button.wait_for(timeout=30000)
+            await page.wait_for_timeout(max(2500, _file_send_wait_ms(size_bytes) - 3500))
+
+            # try direct click first
+            clicked = False
+            for attempt_cfg in [{"force": False}, {"force": True}]:
+                try:
+                    await attachment_send_button.click(timeout=4000, **attempt_cfg)
+                    await page.wait_for_timeout(900)
+                    clicked = True
+                    break
+                except Exception:
+                    pass
+
+            async def _preview_open():
+                try:
+                    return await preview_thumbnail.is_visible()
+                except Exception:
+                    return False
+
+            if clicked:
+                for _ in range(16):
+                    if not await _preview_open():
+                        break
+                    await page.wait_for_timeout(250)
+
+            if await _preview_open():
+                try:
+                    await preview_thumbnail.evaluate(
+                        "el => { el.scrollIntoView({block:'center'}); el.focus(); }"
+                    )
+                except Exception:
+                    pass
+                for _ in range(5):
+                    await page.keyboard.press("Tab")
+                    await page.wait_for_timeout(350)
+                await page.keyboard.press("Enter")
+
+            if await _preview_open():
+                raise RuntimeError(f"WhatsApp attachment preview did not close for {item['name']}")
+
+            await page.wait_for_timeout(_file_post_send_wait_ms(size_bytes))
+
+    await page.wait_for_timeout(10000)
+    try:
+        if not page.is_closed():
+            await page.close()
+    except Exception:
+        pass
+    return {"status": "ok", "phone": phone}
+
+
+@app.get("/health")
+async def health():
+    return {"ok": True}
+
+
+@app.post("/send")
+async def send_endpoint(body: dict):
+    if SECRET_TOKEN and body.get("secret") != SECRET_TOKEN:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    try:
+        result = await _send(
+            phone=body["phone"],
+            message=body.get("message", ""),
+            file_items=body.get("files", []),
+        )
+        return result
+    except Exception as exc:
+        return JSONResponse({"error": str(exc)}, status_code=500)

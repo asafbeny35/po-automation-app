@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>הזמנת רכש</title>
+
+<style>
+:root {
+  --brand: #ff7d12;
+  --brand-dark: #c2410c;
+  --brand-soft: #fff1e6;
+  --ink: #18212f;
+  --muted: #667085;
+  --line: #e6eaf0;
+  --panel: #ffffff;
+  --page: linear-gradient(180deg, #fff8f2 0%, #f4f7fb 36%, #edf2f7 100%);
+  --shadow-lg: 0 24px 70px rgba(15, 23, 42, 0.10);
+  --shadow-md: 0 14px 34px rgba(15, 23, 42, 0.08);
+  --shadow-sm: 0 10px 22px rgba(15, 23, 42, 0.06);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--page);
+  margin: 0;
+  color: var(--ink);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 28px;
+  padding: 28px 40px 18px;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.hero-copy {
+  max-width: 620px;
+}
+
+.hero-copy p {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 17px;
+  line-height: 1.65;
+}
+
+.logo {
+  height: 78px;
+  width: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgba(2, 12, 83, 0.10));
+}
+
+.container {
+  max-width: 1180px;
+  margin: 0 auto 40px;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  border-radius: 28px;
+  padding: 28px;
+  box-shadow: var(--shadow-lg);
+}
+
+.shell {
+  display: grid;
+  gap: 22px;
+}
+
+.step-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.step-card {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.step-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.step-card strong {
+  display: block;
+  margin-top: 14px;
+  font-size: 16px;
+}
+
+.step-card span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.main-grid {
+  display: grid;
+  grid-template-columns: 360px minmax(0, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.sidebar,
+.workspace {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 22px;
+  box-shadow: var(--shadow-md);
+}
+
+.section-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sidebar h2,
+.workspace h2 {
+  margin: 14px 0 8px;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.section-copy {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.upload-area {
+  border: 1.5px dashed #f0b485;
+  background:
+    radial-gradient(circle at top right, rgba(255, 125, 18, 0.16), transparent 34%),
+    linear-gradient(180deg, #fffaf6 0%, #fff 100%);
+  border-radius: 22px;
+  padding: 34px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.upload-area:hover {
+  transform: translateY(-1px);
+  border-color: var(--brand);
+  box-shadow: 0 16px 32px rgba(255, 125, 18, 0.12);
+}
+
+.upload-icon {
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 16px;
+  border-radius: 22px;
+  background: linear-gradient(135deg, var(--brand) 0%, #ff9c49 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  box-shadow: 0 16px 30px rgba(255, 125, 18, 0.24);
+}
+
+.upload-area strong {
+  display: block;
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.upload-area p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.file-name {
+  margin-top: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  min-height: 24px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+button {
+  background: var(--brand);
+  color: white;
+  border: none;
+  padding: 13px 24px;
+  font-size: 16px;
+  font-weight: 800;
+  border-radius: 14px;
+  cursor: pointer;
+  margin: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+  box-shadow: 0 14px 28px rgba(255, 125, 18, 0.22);
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 32px rgba(255, 125, 18, 0.28);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.create-btn:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  box-shadow: none;
+  filter: grayscale(100%);
+}
+
+#fields {
+  margin-top: 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.field-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 6px;
+}
+
+.summary-card {
+  padding: 16px 18px;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-sm);
+}
+
+.summary-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.card {
+  background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+  padding: 16px;
+  border-radius: 18px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.card.edited {
+  border-color: #fdba74;
+  background: linear-gradient(180deg, #fffaf5 0%, #fff1e6 100%);
+}
+
+.card.invalid {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+.field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.field-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  cursor: pointer;
+}
+
+.field-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #334155;
+}
+
+input {
+  width: 100%;
+  padding: 12px 14px;
+  margin-top: 10px;
+  box-sizing: border-box;
+  border-radius: 12px;
+  border: 1px solid #d8dee7;
+  background: #fff;
+  font-size: 15px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+input:focus {
+  outline: none;
+  border-color: #fdba74;
+  box-shadow: 0 0 0 4px rgba(255, 125, 18, 0.12);
+}
+
+.value-input:disabled {
+  background: #e5e7eb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.edited-badge {
+  display: none;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ffedd5;
+  color: #c2410c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.edited-badge.visible {
+  display: inline-flex;
+}
+
+.field-error {
+  display: none;
+  margin-top: 8px;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.field-error.visible {
+  display: block;
+}
+
+.status {
+  margin: 0 auto 18px;
+  max-width: 1180px;
+  background: #111827;
+  color: #fff;
+  padding: 14px 20px;
+  font-size: 14px;
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.status.success {
+  background: #16a34a;
+}
+
+.status.error {
+  background: #dc2626;
+}
+
+.progress-wrap {
+  margin-top: 24px;
+  padding: 20px;
+  background: linear-gradient(180deg, #fff7ed 0%, #fff2e2 100%);
+  border: 1px solid #fed7aa;
+  border-radius: 18px;
+  display: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.progress-wrap.visible {
+  display: block;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.progress-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #9a3412;
+}
+
+.progress-percent {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--brand);
+}
+
+.progress-track {
+  width: 100%;
+  height: 12px;
+  background: #fed7aa;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  width: 0%;
+  height: 100%;
+  background: var(--brand);
+  border-radius: inherit;
+  transition: width 0.35s ease;
+}
+
+.progress-message {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #7c2d12;
+}
+
+.download-links {
+  margin-top: 24px;
+  padding: 22px;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  display: none;
+  box-shadow: var(--shadow-sm);
+}
+
+.download-links.visible {
+  display: block;
+}
+
+.download-links h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.download-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.download-card {
+  display: block;
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  color: #111827;
+  text-decoration: none;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.download-card:hover {
+  border-color: #fdba74;
+  background: #fff7ed;
+  transform: translateY(-1px);
+}
+
+.download-card strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.download-meta {
+  margin-top: 12px;
+  color: #475569;
+  font-size: 13px;
+}
+
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  border: 1px solid #dbe5f0;
+  background: #fff;
+  color: #334155;
+}
+
+.status-badge.ok {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.status-badge.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.edited-summary {
+  margin-top: 20px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf5 0%, #fff 100%);
+  border: 1px solid #fde2c4;
+  display: none;
+}
+
+.edited-summary.visible {
+  display: block;
+}
+
+.edited-summary h3 {
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.edited-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.edited-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #fff1e6;
+  color: #c2410c;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 18px;
+  flex-wrap: wrap;
+}
+
+.ghost-btn {
+  background: white;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: none;
+}
+
+.ghost-btn:hover {
+  box-shadow: var(--shadow-sm);
+}
+
+.toast-stack {
+  position: fixed;
+  top: 22px;
+  left: 22px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: min(360px, calc(100vw - 24px));
+}
+
+.toast {
+  padding: 14px 16px;
+  border-radius: 16px;
+  color: white;
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.22);
+  transform: translateY(-8px);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+}
+
+.toast.error {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+}
+
+.toast.info {
+  background: linear-gradient(135deg, #1f2937 0%, #0f172a 100%);
+}
+
+.toast strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.toast span {
+  display: block;
+  font-size: 13px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.primary-btn {
+  flex: 1 1 100%;
+}
+
+.muted-btn {
+  background: linear-gradient(180deg, #fff7ed 0%, #ffe8d2 100%);
+  color: var(--brand-dark);
+  box-shadow: none;
+  border: 1px solid #ffd1a6;
+}
+
+.workspace-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+@media (max-width: 1080px) {
+  .step-strip,
+  .field-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .main-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .header {
+    flex-direction: column-reverse;
+    align-items: flex-start;
+    padding: 22px 18px 10px;
+  }
+
+  .container,
+  .status {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+
+  .container {
+    padding: 18px;
+    border-radius: 22px;
+  }
+
+  .step-strip,
+  .field-summary,
+  #fields {
+    grid-template-columns: 1fr;
+  }
+
+  button,
+  .primary-btn {
+    width: 100%;
+  }
+}
+</style>
+</head>
+
+<body>
+<div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
+
+<div class="header">
+  <div class="hero-copy">
+    <div class="section-kicker">PO Automation</div>
+    <h1>הזמנת רכש → Morning</h1>
+    <p>ממשק עבודה אחד לניהול כל הזרימה: העלאת PDF, בדיקת נתונים, יצירת מסמכים, הורדה, שליחה ועדכון מערכות צד.</p>
+  </div>
+  <img class="logo" src="/static/logo.svg" alt="לוגו בן יעקב פתרונות טקסטיל">
+</div>
+
+<div class="status" id="statusBar">מוכן</div>
+<div class="container">
+  <div class="shell">
+    <div class="step-strip">
+      <div class="step-card">
+        <div class="step-index">1</div>
+        <strong>העלאת הזמנה</strong>
+        <span>גרירת PDF או בחירה מהמחשב כדי להתחיל את התהליך.</span>
+      </div>
+      <div class="step-card">
+        <div class="step-index">2</div>
+        <strong>בדיקת נתונים</strong>
+        <span>טעינת ערכי ה־PO, עריכה ידנית רק בשדות שתרצה לפתוח.</span>
+      </div>
+      <div class="step-card">
+        <div class="step-index">3</div>
+        <strong>יצירת מסמכים</strong>
+        <span>תעודת משלוח, חשבונית, לייבל, שיטס, שליחה ואפשרות למשלוח.</span>
+      </div>
+      <div class="step-card">
+        <div class="step-index">4</div>
+        <strong>הורדה ומעקב</strong>
+        <span>המסמכים המוכנים מופיעים בסוף עם קישורי הורדה ישירים.</span>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <aside class="sidebar">
+        <div class="section-kicker">שלב 1</div>
+        <h2>העלאת קובץ</h2>
+        <p class="section-copy">בחר את קובץ ה־PDF של הזמנת הרכש, הפק את הנתונים למסך ורק אחר כך המשך ליצירת המסמכים בפועל.</p>
+
+        <div id="dropZone" class="upload-area">
+          <div class="upload-icon">↑</div>
+          <strong>גרור קובץ לכאן</strong>
+          <p>או לחץ לבחירה מהמחשב. המערכת תחלץ את הנתונים ותכין אותם לבדיקה לפני יצירה.</p>
+          <div id="fileName" class="file-name"></div>
+        </div>
+
+        <input type="file" id="file" style="display:none;">
+
+        <div class="workspace-actions">
+          <button class="primary-btn" onclick="upload('sandbox')">הפק סנדבוקס</button>
+          <button class="primary-btn muted-btn" onclick="upload('prod')">הפק אמיתי</button>
+        </div>
+      </aside>
+
+      <section class="workspace">
+        <div class="section-kicker">שלבים 2–4</div>
+        <h2>בדיקה, יצירה והורדה</h2>
+        <p class="section-copy">בדוק את הנתונים שחולצו, פתח עריכה רק לשדות שרלוונטיים לך, ואז הפעל את אחד מזרמי היצירה.</p>
+
+        <div class="field-summary" id="fieldSummary">
+          <div class="summary-card">
+            <span>מספר הזמנה</span>
+            <strong id="summaryPo">—</strong>
+          </div>
+          <div class="summary-card">
+            <span>לקוח</span>
+            <strong id="summaryCustomer">—</strong>
+          </div>
+          <div class="summary-card">
+            <span>סה״כ</span>
+            <strong id="summaryTotal">—</strong>
+          </div>
+          <div class="summary-card">
+            <span>כתובת אספקה</span>
+            <strong id="summaryAddress">—</strong>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="section-copy" style="margin:0;">אפשר לערוך רק שדות שתפתח ידנית, וכל שינוי ייכנס ישירות למסמכים.</div>
+          <button class="ghost-btn" type="button" id="resetButton">התחל מחדש</button>
+        </div>
+
+        <div id="fields"></div>
+
+        <div id="editedSummary" class="edited-summary" aria-live="polite">
+          <h3>שדות שנערכו ידנית</h3>
+          <div id="editedTags" class="edited-tags"></div>
+        </div>
+
+        <div class="workspace-actions">
+          <button class="create-btn" onclick="send('sandbox')">צור סנדבוקס</button>
+          <button class="create-btn" onclick="send('sandbox_with_transport')">צור סנדבוקס + משלוח</button>
+          <button class="create-btn muted-btn" onclick="send('prod')">צור אמיתי</button>
+          <button class="create-btn muted-btn" onclick="send('prod_with_transport')">צור אמיתי + משלוח</button>
+        </div>
+
+        <div id="downloadLinks" class="download-links" aria-live="polite"></div>
+
+        <div id="progressWrap" class="progress-wrap" aria-live="polite">
+          <div class="progress-head">
+            <div id="progressTitle" class="progress-title">מתחיל תהליך...</div>
+            <div id="progressPercent" class="progress-percent">0%</div>
+          </div>
+          <div class="progress-track">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+          <div id="progressMessage" class="progress-message">מכין את הנתונים לשליחה...</div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const fileInput = document.getElementById("file");
+  const dropZone = document.getElementById("dropZone");
+  const fileNameEl = document.getElementById("fileName");
+  const statusBar = document.getElementById("statusBar");
+  const progressWrap = document.getElementById("progressWrap");
+  const progressFill = document.getElementById("progressFill");
+  const progressPercent = document.getElementById("progressPercent");
+  const progressTitle = document.getElementById("progressTitle");
+  const progressMessage = document.getElementById("progressMessage");
+  const downloadLinks = document.getElementById("downloadLinks");
+  const resetButton = document.getElementById("resetButton");
+  const toastStack = document.getElementById("toastStack");
+  const editedSummary = document.getElementById("editedSummary");
+  const editedTags = document.getElementById("editedTags");
+  const summaryPo = document.getElementById("summaryPo");
+  const summaryCustomer = document.getElementById("summaryCustomer");
+  const summaryTotal = document.getElementById("summaryTotal");
+  const summaryAddress = document.getElementById("summaryAddress");
+  const createButtons = Array.from(document.querySelectorAll(".create-btn"));
+  const requiredFields = {
+    po_number: "מספר הזמנה הוא שדה חובה",
+    customer_name: "שם לקוח הוא שדה חובה",
+    customer_id: "ח.פ / ע.מ הוא שדה חובה",
+    delivery_address: "כתובת אספקה היא שדה חובה",
+    total: "סה״כ חייב להיות גדול מ-0"
+  };
+  window.fieldRegistry = {};
+
+  if (!fileInput || !dropZone) return;
+
+  let progressInterval = null;
+
+  dropZone.addEventListener("click", () => fileInput.click());
+  dropZone.addEventListener("dragover", event => event.preventDefault());
+  dropZone.addEventListener("drop", event => {
+    event.preventDefault();
+    fileInput.files = event.dataTransfer.files;
+    showFileName();
+  });
+
+  fileInput.addEventListener("change", showFileName);
+
+  function showFileName() {
+    if (fileInput.files.length) {
+      fileNameEl.innerText = "📄 " + fileInput.files[0].name;
+    } else {
+      fileNameEl.innerText = "";
+    }
+  }
+
+  function resetDownloadLinks() {
+    downloadLinks.classList.remove("visible");
+    downloadLinks.innerHTML = "";
+  }
+
+  function resetEditedSummary() {
+    editedSummary.classList.remove("visible");
+    editedTags.innerHTML = "";
+  }
+
+  function updateSummary() {
+    const data = window.currentData || {};
+    summaryPo.textContent = data.po_number || "—";
+    summaryCustomer.textContent = data.customer_name || "—";
+    summaryTotal.textContent = data.total ? `₪ ${data.total}` : "—";
+    summaryAddress.textContent = data.delivery_address || "—";
+  }
+
+  function showToast(type, title, message) {
+    const toast = document.createElement("div");
+    toast.className = `toast ${type}`;
+    toast.innerHTML = `<strong>${title}</strong><span>${message}</span>`;
+    toastStack.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add("visible"));
+    window.setTimeout(() => {
+      toast.classList.remove("visible");
+      window.setTimeout(() => toast.remove(), 220);
+    }, 3200);
+  }
+
+  function syncDraftStorage() {
+    try {
+      if (window.currentData) {
+        sessionStorage.setItem("poAutomationDraft", JSON.stringify(window.currentData));
+      } else {
+        sessionStorage.removeItem("poAutomationDraft");
+      }
+    } catch (error) {
+      console.warn("draft storage failed", error);
+    }
+  }
+
+  function clearUiState() {
+    window.currentData = null;
+    window.originalData = null;
+    window.fieldRegistry = {};
+    fileInput.value = "";
+    showFileName();
+    document.getElementById("fields").innerHTML = "";
+    stopProgressTimer();
+    progressWrap.classList.remove("visible");
+    progressFill.style.width = "0%";
+    progressPercent.textContent = "0%";
+    progressTitle.textContent = "מתחיל תהליך...";
+    progressMessage.textContent = "מכין את הנתונים לשליחה...";
+    resetDownloadLinks();
+    resetEditedSummary();
+    updateSummary();
+    updateStatus("מוכן", null);
+    syncDraftStorage();
+  }
+
+  function setCreateButtonsDisabled(disabled) {
+    createButtons.forEach(button => {
+      button.disabled = disabled;
+    });
+  }
+
+  function updateStatus(text, variant) {
+    statusBar.textContent = text;
+    statusBar.classList.remove("success", "error");
+    if (variant) {
+      statusBar.classList.add(variant);
+    }
+  }
+
+  function setProgress(value, title, message) {
+    const safeValue = Math.max(0, Math.min(100, value));
+    progressWrap.classList.add("visible");
+    progressFill.style.width = `${safeValue}%`;
+    progressPercent.textContent = `${Math.round(safeValue)}%`;
+    if (title) progressTitle.textContent = title;
+    if (message) progressMessage.textContent = message;
+  }
+
+  function updateEditedState(key, input, card, badge, errorEl) {
+    const originalValue = String((window.originalData && window.originalData[key]) ?? "");
+    const currentValue = String(input.value ?? "");
+    const edited = currentValue !== originalValue;
+
+    card.classList.toggle("edited", edited);
+    badge.classList.toggle("visible", edited);
+
+    if (errorEl && errorEl.classList.contains("visible")) {
+      card.classList.add("invalid");
+    }
+  }
+
+  function validateBeforeSend() {
+    let firstInvalidInput = null;
+
+    Object.entries(window.fieldRegistry).forEach(([key, refs]) => {
+      refs.card.classList.remove("invalid");
+      refs.errorEl.classList.remove("visible");
+      refs.errorEl.textContent = "";
+
+      if (!(key in requiredFields)) return;
+
+      const rawValue = String((window.currentData && window.currentData[key]) ?? "").trim();
+      let isValid = rawValue.length > 0;
+
+      if (key === "total") {
+        isValid = Number(rawValue) > 0;
+      }
+
+      if (!isValid) {
+        refs.card.classList.add("invalid");
+        refs.errorEl.textContent = requiredFields[key] + (refs.input.disabled ? " — סמן עריכה ידנית כדי לתקן." : "");
+        refs.errorEl.classList.add("visible");
+        if (!firstInvalidInput) {
+          firstInvalidInput = refs.input;
+        }
+      }
+    });
+
+    if (firstInvalidInput) {
+      updateStatus("יש שדות חובה שחייבים השלמה לפני יצירת מסמכים", "error");
+      firstInvalidInput.scrollIntoView({ behavior: "smooth", block: "center" });
+      return false;
+    }
+
+    return true;
+  }
+
+  function updateEditedSummary() {
+    const editedKeys = Object.entries(window.fieldRegistry)
+      .filter(([, refs]) => refs.editedBadge.classList.contains("visible"))
+      .map(([key]) => key);
+
+    if (!editedKeys.length) {
+      resetEditedSummary();
+      return;
+    }
+
+    const labels = {
+      po_number: "מספר הזמנה",
+      po_date: "תאריך",
+      customer_name: "שם לקוח",
+      customer_phone: "טלפון",
+      customer_email: "אימייל",
+      customer_id: "ח.פ / ע.מ",
+      delivery_address: "כתובת אספקה",
+      project: "פרויקט",
+      contact_name: "איש קשר",
+      contact_phone: "טלפון איש קשר",
+      payment_terms_label: "תנאי תשלום",
+      payment_terms_days: "ימי אשראי",
+      subtotal: "סכום ביניים",
+      vat: "מע״מ",
+      total: "סה״כ",
+      item_description: "תיאור מוצר",
+      item_quantity: "כמות",
+      item_unit_price: "מחיר יחידה",
+      item_line_total: "סכום שורה",
+      item_sku: "מק״ט",
+      footer_text: "הערות"
+    };
+
+    editedTags.innerHTML = editedKeys
+      .map(key => `<span class="edited-tag">${labels[key] || key}</span>`)
+      .join("");
+    editedSummary.classList.add("visible");
+  }
+
+  function renderDownloadLinks(result) {
+    const links = [
+      {
+        label: "תעודת משלוח",
+        sublabel: result.delivery_document_number ? `מספר ${result.delivery_document_number}` : "מסמך מוכן להורדה",
+        file: result.files && result.files[0]
+      },
+      {
+        label: "חשבונית מס",
+        sublabel: result.invoice_document_number ? `מספר ${result.invoice_document_number}` : "מסמך מוכן להורדה",
+        file: result.files && result.files[1]
+      }
+    ].filter(item => item.file);
+
+    if (!links.length) {
+      resetDownloadLinks();
+      return;
+    }
+
+    const cards = links.map(item => `
+      <a class="download-card" href="/files/${encodeURIComponent(item.file).replace(/%2F/g, "/")}" target="_blank" rel="noopener noreferrer">
+        <strong>${item.label}</strong>
+        <span>${item.sublabel}</span>
+      </a>
+    `).join("");
+
+    const sheetsOk = result.sheets_status === "ok";
+    const whatsappOk = !!(result.files && result.files.length);
+
+    downloadLinks.innerHTML = `
+      <h3>המסמכים שנוצרו</h3>
+      <div class="download-grid">${cards}</div>
+      <div class="status-badges">
+        <div class="status-badge ok">תעודת משלוח נוצרה</div>
+        <div class="status-badge ok">חשבונית נוצרה</div>
+        <div class="status-badge ${sheetsOk ? "ok" : "error"}">${sheetsOk ? "Google Sheets עודכן" : "Google Sheets לא עודכן"}</div>
+        <div class="status-badge ${whatsappOk ? "ok" : "error"}">${whatsappOk ? "קבצים מוכנים להורדה" : "לא נמצאו קבצים להורדה"}</div>
+      </div>
+      <div class="download-meta">אפשר לפתוח כל מסמך בחלון חדש ולהוריד אותו ישירות מהמערכת.</div>
+    `;
+    downloadLinks.classList.add("visible");
+  }
+
+  function stopProgressTimer() {
+    if (progressInterval) {
+      window.clearInterval(progressInterval);
+      progressInterval = null;
+    }
+  }
+
+  function startFinalizeProgress() {
+    const stages = [
+      { threshold: 12, title: "מתחיל ליצור מסמכים...", message: "הנתונים נשלחים לעיבוד." },
+      { threshold: 32, title: "מייצר מסמכי חשבונית...", message: "נוצרת תעודת משלוח וחשבונית." },
+      { threshold: 56, title: "בונה מסמכים נלווים...", message: "נוצר לייבל ומתבצע מיזוג קבצים." },
+      { threshold: 78, title: "משלים פעולות צד...", message: "מתבצעת כתיבה לשיטס והכנה לשליחה." },
+      { threshold: 92, title: "כמעט סיימנו...", message: "מחכה לאישור סופי מהשרת." }
+    ];
+
+    let current = 4;
+    setProgress(current, "מתחיל ליצור מסמכים...", "מכין את התהליך...");
+
+    progressInterval = window.setInterval(() => {
+      if (current >= 92) return;
+      current += current < 56 ? 6 : 3;
+      const stage = stages.find(step => current <= step.threshold) || stages[stages.length - 1];
+      setProgress(current, stage.title, stage.message);
+    }, 550);
+  }
+
+  function restoreDraftIfExists() {
+    try {
+      const saved = sessionStorage.getItem("poAutomationDraft");
+      if (!saved) return;
+      const data = JSON.parse(saved);
+      if (!data || typeof data !== "object") return;
+      window.currentData = data;
+      window.originalData = { ...data };
+      renderFields(data);
+      updateSummary();
+      updateStatus("טיוטה קודמת שוחזרה", "success");
+      showToast("info", "טיוטה שוחזרה", "הערכים האחרונים שלך נטענו מחדש מהדפדפן.");
+    } catch (error) {
+      console.warn("draft restore failed", error);
+    }
+  }
+
+  window.upload = async function(mode) {
+    const file = fileInput.files[0];
+    if (!file) {
+      showToast("info", "צריך לבחור קובץ", "בחר PDF כדי להתחיל את תהליך ההפקה.");
+      return;
+    }
+
+    updateStatus("מעבד את ה-PDF...", null);
+    resetDownloadLinks();
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("mode", mode);
+
+    try {
+      const response = await fetch("/process", { method: "POST", body: formData });
+      if (!response.ok) {
+        throw new Error("שגיאה בעיבוד ה-PDF");
+      }
+
+      const data = await response.json();
+      window.currentData = data;
+      window.originalData = { ...data };
+      renderFields(data);
+      updateSummary();
+      updateStatus("הנתונים מוכנים", "success");
+      syncDraftStorage();
+      showToast("success", "העיבוד הושלם", "הנתונים חולצו מה-PDF ומוכנים לבדיקה.");
+    } catch (error) {
+      updateStatus(error.message || "שגיאה בעיבוד", "error");
+      showToast("error", "שגיאה בעיבוד", error.message || "לא הצלחנו לעבד את ה-PDF.");
+    }
+  };
+
+  window.send = async function(mode) {
+    if (!window.currentData) {
+      showToast("info", "צריך קודם להפיק נתונים", "בחר קובץ והפעל הפקה לפני יצירת המסמכים.");
+      return;
+    }
+
+    if (!validateBeforeSend()) {
+      showToast("error", "חסרים נתונים חובה", "בדוק את השדות המסומנים באדום לפני יצירת המסמכים.");
+      return;
+    }
+
+    setCreateButtonsDisabled(true);
+    updateStatus("יוצר מסמכים...", null);
+    startFinalizeProgress();
+
+    try {
+      const response = await fetch("/finalize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode: mode, data: window.currentData })
+      });
+
+      if (!response.ok) {
+        throw new Error("השרת החזיר שגיאה בזמן יצירת המסמכים");
+      }
+
+      const result = await response.json();
+      stopProgressTimer();
+      setProgress(100, "המסמכים נוצרו בהצלחה", "התהליך הושלם.");
+      updateStatus("המסמכים נוצרו בהצלחה", "success");
+      renderDownloadLinks(result);
+      syncDraftStorage();
+      showToast("success", "המסמכים מוכנים", "המסמכים נוצרו בהצלחה וקישורי ההורדה זמינים למטה.");
+    } catch (error) {
+      stopProgressTimer();
+      setProgress(100, "אירעה שגיאה בתהליך", error.message || "לא הצלחנו להשלים את התהליך.");
+      updateStatus(error.message || "שגיאה בתהליך", "error");
+      showToast("error", "שגיאה בתהליך", error.message || "לא הצלחנו להשלים את התהליך.");
+    } finally {
+      setCreateButtonsDisabled(false);
+    }
+  };
+
+  resetButton.addEventListener("click", () => {
+    clearUiState();
+    showToast("info", "המסך אופס", "הקובץ, השדות והתוצאות נוקו ואפשר להתחיל מחדש.");
+  });
+
+  restoreDraftIfExists();
+  window.renderFields = function(data) {
+  const names = {
+    po_number: "מספר הזמנה",
+    po_date: "תאריך",
+    customer_name: "שם לקוח",
+    customer_phone: "טלפון",
+    customer_email: "אימייל",
+    customer_id: "ח.פ / ע.מ",
+    delivery_address: "כתובת אספקה",
+    project: "פרויקט",
+    contact_name: "איש קשר",
+    contact_phone: "טלפון איש קשר",
+    payment_terms_label: "תנאי תשלום",
+    payment_terms_days: "ימים",
+    subtotal: "סכום ביניים",
+    vat: "מע״מ",
+    total: "סה״כ",
+    item_description: "תיאור מוצר",
+    item_quantity: "כמות",
+    item_unit_price: "מחיר יחידה",
+    item_line_total: "סכום שורה",
+    item_sku: "מק״ט",
+    footer_text: "הערות"
+  };
+
+  const fields = document.getElementById("fields");
+  fields.innerHTML = "";
+  window.fieldRegistry = {};
+
+  Object.entries(data).forEach(([key, value]) => {
+    if (!value) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+
+    const head = document.createElement("div");
+    head.className = "field-head";
+
+    const label = document.createElement("label");
+    label.innerText = names[key] || key;
+
+    const fieldMeta = document.createElement("div");
+    fieldMeta.className = "field-meta";
+
+    const editedBadge = document.createElement("span");
+    editedBadge.className = "edited-badge";
+    editedBadge.innerText = "נערך ידנית";
+
+    const toggleWrap = document.createElement("label");
+    toggleWrap.className = "field-toggle";
+
+    const toggle = document.createElement("input");
+    toggle.type = "checkbox";
+
+    const toggleText = document.createElement("span");
+    toggleText.innerText = "עריכה ידנית";
+
+    const input = document.createElement("input");
+    input.className = "value-input";
+    input.value = value;
+    input.disabled = true;
+    input.addEventListener("input", event => {
+      if (!window.currentData) return;
+      window.currentData[key] = event.target.value;
+      updateSummary();
+      updateEditedState(key, input, card, editedBadge, errorEl);
+      updateEditedSummary();
+      syncDraftStorage();
+      if (errorEl.classList.contains("visible")) {
+        errorEl.classList.remove("visible");
+        errorEl.textContent = "";
+        card.classList.remove("invalid");
+      }
+    });
+
+    const errorEl = document.createElement("div");
+    errorEl.className = "field-error";
+
+    toggle.addEventListener("change", () => {
+      input.disabled = !toggle.checked;
+      if (toggle.checked) {
+        input.focus();
+        input.select();
+      }
+      if (errorEl.classList.contains("visible")) {
+        errorEl.textContent = errorEl.textContent.replace(" — סמן עריכה ידנית כדי לתקן.", "");
+      }
+    });
+
+    toggleWrap.appendChild(toggle);
+    toggleWrap.appendChild(toggleText);
+    fieldMeta.appendChild(editedBadge);
+    fieldMeta.appendChild(toggleWrap);
+    head.appendChild(label);
+    head.appendChild(fieldMeta);
+    card.appendChild(head);
+    card.appendChild(input);
+    card.appendChild(errorEl);
+    fields.appendChild(card);
+
+    window.fieldRegistry[key] = { card, input, toggle, editedBadge, errorEl };
+    updateEditedState(key, input, card, editedBadge, errorEl);
+  });
+  updateEditedSummary();
+  };
+});
+</script>
+
+</body>
+</html>

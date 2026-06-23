@@ -1,0 +1,27 @@
+.DS_Store
+.env
+.env.*
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.zip
+*.bak
+auth_state.json
+gmail-oauth-client.json
+gmail-oauth-client.json.json
+gmail-oauth-token.json
+google-credentials.json
+google-drive-oauth-client.json
+google-drive-oauth-token.json
+ios
+logs
+output
+uploads
+backups
+tmp
+tmp_*
+tests_full_system
+whatsapp-profile
+whatsapp-state
+PO Automation Launcher.app

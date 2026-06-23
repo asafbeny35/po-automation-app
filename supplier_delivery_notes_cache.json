@@ -1,0 +1,33 @@
+{
+  "saved_at": "2026-06-23T16:59:31",
+  "rows": [
+    {
+      "record_id": "bb76da38dce645e48a30d5c85f5c6299",
+      "supplier_name": "TEST | נעלולי פלא | ספק",
+      "parser_name": "",
+      "source_document_name": "",
+      "delivery_note_number": "DN-TEST-001",
+      "delivery_date": "01/05/2026",
+      "customer_name": "",
+      "customer_id": "",
+      "delivery_address": "",
+      "contact_name": "",
+      "contact_phone": "",
+      "item_index": "1",
+      "supplier_sku": "",
+      "item_description": "",
+      "product": "",
+      "material": "",
+      "length": "",
+      "width": "",
+      "thickness": "",
+      "quantity": "1.00",
+      "unit": "",
+      "notes": "",
+      "source_local_path": "",
+      "source_drive_file_id": "",
+      "source_drive_url": "",
+      "updated_at": "2026-06-20T01:20:29"
+    }
+  ]
+}

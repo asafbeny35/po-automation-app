@@ -1,0 +1,55 @@
+{
+  "saved_at": "2026-06-23T16:59:39",
+  "rows": [
+    {
+      "setting_key": "app_auth_state",
+      "setting_value": "",
+      "updated_at": "1782024446"
+    },
+    {
+      "setting_key": "app_delivery_confirmation_suppressions",
+      "setting_value": "",
+      "updated_at": "2026-06-21T18:47:15"
+    },
+    {
+      "setting_key": "app_gmail_oauth_token",
+      "setting_value": "",
+      "updated_at": "1782222274"
+    },
+    {
+      "setting_key": "app_hidden_customer_keys",
+      "setting_value": "",
+      "updated_at": "2026-06-20T01:18:53"
+    },
+    {
+      "setting_key": "app_hidden_marketing_pipeline_keys",
+      "setting_value": "",
+      "updated_at": "2026-06-15T13:36:10"
+    },
+    {
+      "setting_key": "app_inventory_purchase_order_hidden_keys",
+      "setting_value": "",
+      "updated_at": "2026-06-18T17:55:05.673291+00:00"
+    },
+    {
+      "setting_key": "app_manual_order_recent_customers",
+      "setting_value": "",
+      "updated_at": "2026-06-18T17:55:07.271367+00:00"
+    },
+    {
+      "setting_key": "app_marketing_pipeline_quote_updates",
+      "setting_value": "",
+      "updated_at": "2026-06-18T17:55:06.487695+00:00"
+    },
+    {
+      "setting_key": "app_payments_receipt_sync_meta",
+      "setting_value": "",
+      "updated_at": "2026-06-22T09:41:27"
+    },
+    {
+      "setting_key": "income_tax_rate_percent",
+      "setting_value": "3",
+      "updated_at": "2026-06-20T01:19:01"
+    }
+  ]
+}

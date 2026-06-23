@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    @page { size: 768px 1024px; margin: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 768px;
+      height: 1024px;
+      font-family: Arial, "Arial Unicode MS", sans-serif;
+      background: #fff;
+    }
+
+    .sheet {
+      position: relative;
+      width: 768px;
+      height: 1024px;
+      overflow: hidden;
+    }
+
+    .bg {
+      position: absolute;
+      inset: 0;
+      width: 768px;
+      height: 1024px;
+      object-fit: cover;
+    }
+
+    .field {
+      position: absolute;
+      text-align: center;
+      color: #111;
+      line-height: 1.05;
+      white-space: nowrap;
+    }
+
+    .customer { left: 120px; top: 66px; width: 430px; font-size: 26px; }
+    .address  { left: 120px; top: 126px; width: 430px; font-size: 24px; }
+    .contact  { left: 120px; top: 200px; width: 430px; font-size: 23px; }
+
+    .po       { left: 140px; top: 310px; width: 390px; font-size: 30px; }
+    .item     { left: 90px;  top: 390px; width: 500px; font-size: 28px; white-space: normal; }
+
+    .qty      { left: 170px; top: 535px; width: 280px; font-size: 34px; font-weight: 400; }
+    .sku      { left: 120px; top: 635px; width: 370px; font-size: 38px; font-weight: 700; }
+
+    .fit-1 { font-size: 26px; }
+    .fit-2 { font-size: 24px; }
+    .fit-3 { font-size: 22px; }
+    .fit-4 { font-size: 20px; }
+  </style>
+</head>
+<body>
+  <div class="sheet">
+    <img class="bg" src="{{ background_uri }}" alt="" />
+
+    <div class="field customer {{ customer_class }}">{{ customer }}</div>
+    <div class="field address {{ address_class }}">{{ address }}</div>
+    <div class="field contact {{ contact_class }}">{{ contact_line }}</div>
+
+    <div class="field po">{{ po_number }}</div>
+    <div class="field item {{ item_class }}">{{ item }}</div>
+
+    <div class="field qty">{{ quantity_text }}</div>
+    <div class="field sku">{{ sku_text }}</div>
+  </div>
+</body>
+</html>

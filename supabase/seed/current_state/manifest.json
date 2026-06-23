@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-06-18T12:26:14.522236+00:00",
+  "domains": {
+    "customers": {
+      "source_file": "customers_cache.json",
+      "rows": 157,
+      "export_file": "supabase/seed/current_state/customers.json"
+    },
+    "inactive_customers": {
+      "source_file": "inactive_customers_cache.json",
+      "rows": 29,
+      "export_file": "supabase/seed/current_state/inactive_customers.json"
+    },
+    "order_history": {
+      "source_file": "order_history_cache.json",
+      "rows": 335,
+      "export_file": "supabase/seed/current_state/order_history.json"
+    },
+    "quote_history": {
+      "source_file": "quote_history_cache.json",
+      "rows": 9,
+      "export_file": "supabase/seed/current_state/quote_history.json"
+    },
+    "working_orders": {
+      "source_file": "working_orders_cache.json",
+      "rows": 1,
+      "export_file": "supabase/seed/current_state/working_orders.json"
+    },
+    "delivery_confirmations": {
+      "source_file": "delivery_confirmations_cache.json",
+      "rows": 39,
+      "export_file": "supabase/seed/current_state/delivery_confirmations.json"
+    },
+    "delivery_contacts": {
+      "source_file": "delivery_contacts_cache.json",
+      "rows": 2,
+      "export_file": "supabase/seed/current_state/delivery_contacts.json"
+    },
+    "project_managers": {
+      "source_file": "project_managers_cache.json",
+      "rows": 70,
+      "export_file": "supabase/seed/current_state/project_managers.json"
+    },
+    "marketing_pipeline": {
+      "source_file": "marketing_pipeline_cache.json",
+      "rows": 80,
+      "export_file": "supabase/seed/current_state/marketing_pipeline.json"
+    },
+    "marketing_history": {
+      "source_file": "marketing_history_cache.json",
+      "rows": 74,
+      "export_file": "supabase/seed/current_state/marketing_history.json"
+    },
+    "marketing_reminders": {
+      "source_file": "marketing_reminders_cache.json",
+      "rows": 2,
+      "export_file": "supabase/seed/current_state/marketing_reminders.json"
+    },
+    "marketing_work_managers": {
+      "source_file": "marketing_work_managers_cache.json",
+      "rows": 3546,
+      "export_file": "supabase/seed/current_state/marketing_work_managers.json"
+    },
+    "marketing_construction_companies": {
+      "source_file": "marketing_construction_companies_cache.json",
+      "rows": 966,
+      "export_file": "supabase/seed/current_state/marketing_construction_companies.json"
+    },
+    "finance_invoices": {
+      "source_file": "finance_invoices_cache.json",
+      "rows": 146,
+      "export_file": "supabase/seed/current_state/finance_invoices.json"
+    },
+    "finance_customer_withholdings": {
+      "source_file": "finance_customer_withholdings_cache.json",
+      "rows": 41,
+      "export_file": "supabase/seed/current_state/finance_customer_withholdings.json"
+    },
+    "finance_bank_movements": {
+      "source_file": "finance_bank_movements_cache.json",
+      "rows": 468,
+      "export_file": "supabase/seed/current_state/finance_bank_movements.json"
+    },
+    "payments_transfer": {
+      "source_file": "payments_transfer_cache.json",
+      "rows": 1,
+      "export_file": "supabase/seed/current_state/payments_transfer.json"
+    },
+    "hr_employees": {
+      "source_file": "hr_employees_cache.json",
+      "rows": 4,
+      "export_file": "supabase/seed/current_state/hr_employees.json"
+    },
+    "hr_hours": {
+      "source_file": "hr_hours_cache.json",
+      "rows": 6,
+      "export_file": "supabase/seed/current_state/hr_hours.json"
+    },
+    "hr_payroll": {
+      "source_file": "hr_payroll_cache.json",
+      "rows": 17,
+      "export_file": "supabase/seed/current_state/hr_payroll.json"
+    },
+    "hr_contributions": {
+      "source_file": "hr_contributions_cache.json",
+      "rows": 6,
+      "export_file": "supabase/seed/current_state/hr_contributions.json"
+    },
+    "hr_documents": {
+      "source_file": "hr_documents_cache.json",
+      "rows": 5,
+      "export_file": "supabase/seed/current_state/hr_documents.json"
+    },
+    "hr_payslip_prep_history": {
+      "source_file": "hr_payslip_prep_history_cache.json",
+      "rows": 1,
+      "export_file": "supabase/seed/current_state/hr_payslip_prep_history.json"
+    }
+  }
+}

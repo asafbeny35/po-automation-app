@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="he">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: 595px 842px; margin: 0; }
+
+  body {
+    margin: 0;
+    width: 595px;
+    height: 842px;
+    font-family: Arial, sans-serif;
+  }
+
+  .page {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .bg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .field {
+    position: absolute;
+    direction: rtl;
+    text-align: right;
+    font-size: 14px;
+  }
+
+  .title {
+    font-size: 20px;
+    font-weight: bold;
+  }
+
+  /* HEADER */
+  #header {
+    top: 70px;
+    right: 40px;
+    font-size: 16px;
+  }
+
+  /* TITLE - FIX RTL */
+  #po {
+    top: 120px;
+    right: 120px;
+    direction: rtl;
+  }
+
+  #po span {
+    direction: ltr;
+    unicode-bidi: embed;
+  }
+
+  /* META */
+  #date   { top: 170px; right: 100px; }
+  #sku    { top: 200px; right: 100px; }
+  #expiry { top: 230px; right: 100px; }
+
+  /* 🔥 מס׳ מנה ליד ה־META (תוקן) */
+  #batch  { top: 260px; right: 100px; }
+
+  /* DESCRIPTION BOX */
+  #desc {
+    position: absolute;
+    top: 320px;
+    left: 120px;
+    right: 120px;
+    height: 120px;
+
+    text-align: center;
+    direction: ltr;
+
+    font-size: 13px;
+    line-height: 1.4;
+
+    overflow: hidden;
+    word-break: break-word;
+  }
+
+  /* 🔥 יותר רווח */
+  #qty {
+    top: 470px;
+    right: 100px;
+  }
+
+  /* 🔥 סעיפים – מיקום חדש */
+  #statements {
+    position: absolute;
+    top: 520px;
+    right: 60px;
+    left: 60px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  /* FOOTER */
+  #footer {
+    position: absolute;
+    bottom: 90px;
+    right: 60px;
+    font-size: 14px;
+  }
+
+</style>
+</head>
+
+<body>
+<div class="page">
+
+  <img class="bg" src="{{ bg }}" />
+
+  <!-- HEADER -->
+  <div id="header" class="field">
+    לכבוד: פלסן סאסא בע״מ
+  </div>
+
+  <!-- TITLE (FIXED) -->
+  <div id="po" class="field title">
+    C.O.C עבור הזמנה מספר: <span>{{ po }}</span>
+  </div>
+
+  <!-- META -->
+  <div id="date" class="field">תאריך: {{ date }}</div>
+  <div id="sku" class="field">מק״ט פריט: {{ sku }}</div>
+  <div id="expiry" class="field">תוקף: {{ expiry }}</div>
+  <div id="batch" class="field">מס׳ מנה: {{ batch }}</div>
+
+  <!-- DESCRIPTION -->
+  <div id="desc">{{ desc }}</div>
+
+  <!-- QUANTITY -->
+  <div id="qty" class="field">
+    כמות: {{ qty }} מ״ר | אספקה ב {{ rolls }} גלילים
+  </div>
+
+  <!-- 🔥 סעיפים חזרו -->
+  <div id="statements" class="field">
+    1. אנו מאשרים בזאת שהפריטים המפורטים לעיל המסופקים לכם עומדים בכל הדרישות המופיעות במפרט המתואר בהזמנה.<br><br>
+    2. הפריטים שסופקו לכם נבדקו על ידי היצרן ועומדים בכל הדרישות הרלוונטיות.
+  </div>
+
+  <!-- FOOTER -->
+  <div id="footer" class="field">
+    שם הספק: בן יעקב פתרונות טקסטיל
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,944 @@
+[
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Chats",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Status",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Channels",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Communities",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Tools",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Media",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Settings",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Profile",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Close",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": "Powered by Adobe Acrobat"
+  },
+  {
+    "tag": "DIV",
+    "role": "textbox",
+    "aria": "Type a message",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "tab",
+    "aria": "Open document, 554-111430_כל המסמכים.pdf, item 1 of 1",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Remove attachment",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Add file",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Send 1 selected",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "WhatsApp",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "New chat",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Menu",
+    "text": ""
+  },
+  {
+    "tag": "INPUT",
+    "role": "textbox",
+    "aria": "Search or start a new chat",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "tablist",
+    "aria": "chat-list-filters",
+    "text": "All\nUnread\n23\nFavorites\nGroups\n15"
+  },
+  {
+    "tag": "BUTTON",
+    "role": "tab",
+    "aria": null,
+    "text": "All"
+  },
+  {
+    "tag": "BUTTON",
+    "role": "tab",
+    "aria": null,
+    "text": "Unread\n23"
+  },
+  {
+    "tag": "BUTTON",
+    "role": "tab",
+    "aria": null,
+    "text": "Favorites"
+  },
+  {
+    "tag": "BUTTON",
+    "role": "tab",
+    "aria": null,
+    "text": "Groups\n15"
+  },
+  {
+    "tag": "BUTTON",
+    "role": "tab",
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "grid",
+    "aria": "Chat list",
+    "text": "FedEx שלנו\n19:31\nTamir\n: \nהגיוני, ראיתי את זה כבר בעבר. תסתכל מקרוב, תיראה שיש קוים לבנים שמפרידים את המרצפות.\nReminders"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Pinned chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Pinned chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "2 unread messages",
+    "text": "2"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "New messages will disappear from this chat 7 days after they're sent, except when kept.",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "New messages will disappear from this chat 90 days after they're sent, except when kept.",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "14 unread messages",
+    "text": "14"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "1 unread message",
+    "text": "1"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "16 unread messages",
+    "text": "16"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "5 unread messages",
+    "text": "5"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "1 unread message",
+    "text": "1"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "1 unread message",
+    "text": "1"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "New messages will disappear from this chat 90 days after they're sent, except when kept.",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "37 unread messages",
+    "text": "37"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "New messages will disappear from this chat 90 days after they're sent, except when kept.",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "New messages will disappear from this chat 7 days after they're sent, except when kept.",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "7 unread messages",
+    "text": "7"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "2 unread messages",
+    "text": "2"
+  },
+  {
+    "tag": "DIV",
+    "role": null,
+    "aria": "Muted chat",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "4 unread messages",
+    "text": "4"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "1 unread message",
+    "text": "1"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "1 unread message",
+    "text": "1"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Asaf Ben Ben Yaakov\n(You)\nMessage yourself"
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Catalog",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Add to list",
+    "text": "Add to list"
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Search",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Menu",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": null,
+    "text": "Click here to get older messages from your phone."
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "18:07"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "PDF\n005_כל המסמכים.pdf\n3 pages•PDF•418 kB"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "18:07"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Forward media",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "15:32"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "PDF\nPO26003485_כל המסמכים.pdf\n6 pages•PDF•796 kB"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "15:32"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Forward media",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "16:44"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "PDF\n001_כל המסמכים.pdf\n3 pages•PDF•409 kB"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "16:44"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Forward media",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "10:13"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "PDF\n002_כל המסמכים.pdf\n3 pages•PDF•409 kB"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "10:13"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Forward media",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Something went wrong. Click to learn more.",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Something went wrong. Click to learn more.",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "PDF\n26-56-02-01528_invoice_550565.pdf\n1 page•PDF•149 kB"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "Messages to yourself are end-to-end encrypted. No one else, not even WhatsApp, can read, listen to, or share them. Click"
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": "Something went wrong. Click to learn more.",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "20:32"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "20:34"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "20:49"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "20:56"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": "You:",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "button",
+    "aria": null,
+    "text": "20:57"
+  },
+  {
+    "tag": "SPAN",
+    "role": null,
+    "aria": " Read ",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Attach",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Emojis, GIFs, Stickers",
+    "text": ""
+  },
+  {
+    "tag": "DIV",
+    "role": "textbox",
+    "aria": "Type a message to Asaf Ben Ben Yaakov",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Voice message",
+    "text": ""
+  },
+  {
+    "tag": "BUTTON",
+    "role": null,
+    "aria": "Voice message",
+    "text": ""
+  }
+]

@@ -1,0 +1,2658 @@
+[
+  {
+    "customer_name": "Elgo/D",
+    "customer_id": "516637964",
+    "customer_emails": [],
+    "document_numbers": [
+      "50229"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "א. ליפמן עבודות בניין ופיתוח בע\"מ",
+    "customer_id": "511556789",
+    "customer_emails": [],
+    "document_numbers": [
+      "550563",
+      "50342",
+      "250379"
+    ],
+    "document_dates": [
+      "2026-05-27",
+      "2026-05-27",
+      "2026-05-27"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת 95/235 - לפי יחידה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "עידו",
+        "phone": "054-7767802"
+      }
+    ],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "א. ליפמן עבודות בניין ופיתוח בעמ",
+    "customer_id": "511556789",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "001"
+    ],
+    "field_contacts": [
+      {
+        "name": "עידו",
+        "phone": "054-7767802"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "א.ב.ב אלומה חברה לניהול ובנייה",
+    "customer_id": "515416204",
+    "customer_emails": [],
+    "document_numbers": [
+      "50325"
+    ],
+    "document_dates": [
+      "2026-05-10"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת - פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "א.נ. נידם הנדסה",
+    "customer_id": "513743195",
+    "customer_emails": [],
+    "document_numbers": [
+      "550370",
+      "250227",
+      "50153"
+    ],
+    "document_dates": [
+      "2025-06-29",
+      "2025-06-29",
+      "2025-06-27"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת פרו דור",
+      "יחידת מגן דלת - פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "א.נ. נידם הנדסה",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "סלאח",
+        "phone": "052-4590202"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "אאורה",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50322"
+    ],
+    "document_dates": [
+      "2026-05-04"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור 100/200"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אברהם לוי חברה לבנייה בע\"מ",
+    "customer_id": "513788620",
+    "customer_emails": [
+      "office@avrahamlevi.co.il"
+    ],
+    "document_numbers": [
+      "50097"
+    ],
+    "document_dates": [
+      "2024-11-14"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת איכותי לבנייה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אוגלים",
+    "customer_id": "512964495",
+    "customer_emails": [],
+    "document_numbers": [
+      "50330"
+    ],
+    "document_dates": [
+      "2026-05-10"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אורן שדות בניה",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50224"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אחוזת אריה בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "רם",
+        "phone": "055-5645827"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "אחוזת אריה בע״מ",
+    "customer_id": "515242378",
+    "customer_emails": [
+      "office@ariyebuild.co.il"
+    ],
+    "document_numbers": [
+      "550340",
+      "250204"
+    ],
+    "document_dates": [
+      "2025-03-13",
+      "2025-03-13"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור 97/208"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אחוזת אריה בע״מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50132"
+    ],
+    "document_dates": [
+      "2025-03-12"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגיני דלתות"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אי.וי.איי פרוייקטים - פיתוח ובניה בע״מ",
+    "customer_id": "515053882",
+    "customer_emails": [],
+    "document_numbers": [
+      "550423",
+      "250266",
+      "550421",
+      "250264",
+      "550269",
+      "250153",
+      "550252",
+      "250146",
+      "550239",
+      "250134",
+      "550229",
+      "250130"
+    ],
+    "document_dates": [
+      "2025-10-29",
+      "2025-10-29",
+      "2025-10-27",
+      "2025-10-27",
+      "2024-09-08",
+      "2024-09-08",
+      "2024-07-25",
+      "2024-07-25",
+      "2024-06-02",
+      "2024-06-02",
+      "2024-05-04",
+      "2024-05-04"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת 98/210",
+      "פרו דור - מגן דלת 90 ס״מ"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 12,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אי.וי.איי פרויקטים - פיתוח ובניה בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "",
+        "phone": "053-2461661"
+      },
+      {
+        "name": "גיא",
+        "phone": "054-2238860"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 2
+  },
+  {
+    "customer_name": "אלומיניום קונסטרקשן תעשיות בע״מ",
+    "customer_id": "512317777",
+    "customer_emails": [],
+    "document_numbers": [
+      "50274"
+    ],
+    "document_dates": [
+      "2026-01-19"
+    ],
+    "latest_item_names": [
+      "יח׳ מגן דלת / כנף"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אלון זקן בע״מ",
+    "customer_id": "514747138",
+    "customer_emails": [
+      "yaronalon82@gmail.com"
+    ],
+    "document_numbers": [
+      "50320"
+    ],
+    "document_dates": [
+      "2026-04-29"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור - לפי יח׳ / כנף - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אליהו גול",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50341"
+    ],
+    "document_dates": [
+      "2026-05-27"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אלמוג",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50164",
+      "50123"
+    ],
+    "document_dates": [
+      "2025-08-10",
+      "2025-02-25"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור - ללא התקנה",
+      "פרו דור להגנה על דלתות"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אפי קפיטל",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50240"
+    ],
+    "document_dates": [
+      "2025-11-24"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אשטרום",
+    "customer_id": "510381601",
+    "customer_emails": [
+      "marina_t@ashtrom.co.il"
+    ],
+    "document_numbers": [
+      "50332"
+    ],
+    "document_dates": [
+      "2026-05-10"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת -לא כולל התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אשטרום",
+    "customer_id": "",
+    "customer_emails": [
+      "marina_t@ashtrom.co.il"
+    ],
+    "document_numbers": [
+      "50100"
+    ],
+    "document_dates": [
+      "2024-11-26"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "אשטרום הנדסה ובניה בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "משה עטר",
+        "phone": "052-5321493"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "אשטרום הנדסה ובניה בע\"מ - אלקטרה בניה בע\"מ - ככר המדינה",
+    "customer_id": "558495750",
+    "customer_emails": [],
+    "document_numbers": [
+      "550390",
+      "250241",
+      "550378",
+      "250233",
+      "50156",
+      "550368",
+      "250225"
+    ],
+    "document_dates": [
+      "2025-08-03",
+      "2025-08-03",
+      "2025-07-16",
+      "2025-07-16",
+      "2025-07-03",
+      "2025-06-10",
+      "2025-06-10"
+    ],
+    "latest_item_names": [
+      "מגן דלת",
+      "יחידת פרו דור - מגן דלת"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 7,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "בוני בניין",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50226"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "בונים אתכם ברמה",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550528",
+      "50319",
+      "250357"
+    ],
+    "document_dates": [
+      "2026-04-29",
+      "2026-04-29",
+      "2026-04-29"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור 90/205 - ללא התקנה - לפי יחידה - לפי יחידה",
+      "מגן דלת פרו דור 90/205 - ללא התקנה - לפי יחידה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "בונים אתכם ברמה",
+    "customer_id": "517011722",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "0010"
+    ],
+    "field_contacts": [
+      {
+        "name": "יונתן שור",
+        "phone": "050-8763452"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "בן שלום",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50344"
+    ],
+    "document_dates": [
+      "2026-06-02"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ברוש",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50151"
+    ],
+    "document_dates": [
+      "2025-05-20"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "רועי מתן",
+        "phone": "052-5962375"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+    "customer_id": "512598749",
+    "customer_emails": [
+      "anna@brosh.co.il",
+      "invoice@brosh.co.il"
+    ],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "חיים אסדון",
+        "phone": "053-3358399"
+      },
+      {
+        "name": "עמית פרץ",
+        "phone": "054-4847360"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 2
+  },
+  {
+    "customer_name": "ברוש ניר עבודות הנדסה ובנין בעמ",
+    "customer_id": "512598749",
+    "customer_emails": [
+      "anna@brosh.co.il",
+      "invoice@brosh.co.il"
+    ],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "PO26000837"
+    ],
+    "field_contacts": [
+      {
+        "name": "עמית פרץ",
+        "phone": "054-4847360"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ברוש ניר עבודות הנדסה ובנין בע״מ",
+    "customer_id": "512598749",
+    "customer_emails": [
+      "anna@brosh.co.il",
+      "invoice@brosh.co.il"
+    ],
+    "document_numbers": [
+      "550542",
+      "250366",
+      "550521",
+      "550520",
+      "250350",
+      "250349",
+      "550515",
+      "250344",
+      "550440",
+      "350017",
+      "250282",
+      "250281",
+      "550410",
+      "250255"
+    ],
+    "document_dates": [
+      "2026-05-11",
+      "2026-05-11",
+      "2026-04-13",
+      "2026-04-13",
+      "2026-04-13",
+      "2026-04-13",
+      "2026-03-31",
+      "2026-03-31",
+      "2025-11-26",
+      "2025-11-26",
+      "2025-11-26",
+      "2025-11-26",
+      "2025-09-17",
+      "2025-09-17"
+    ],
+    "latest_item_names": [
+      "מגן לדלת 90/230",
+      "מגן לדלת 100/230",
+      "מגן לדלת פרו דור 90/230"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 14,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "גילעם חברה לבניה ופיתוח בע\"מ",
+    "customer_id": "511996530",
+    "customer_emails": [
+      "gilam2000@gmail.com"
+    ],
+    "document_numbers": [
+      "50321"
+    ],
+    "document_dates": [
+      "2026-04-29"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור - לפי יח׳ / כנף - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "גל אריאל בנייה והשקעות בע״מ",
+    "customer_id": "514467091",
+    "customer_emails": [
+      "omri.s@avney-derech.co.il"
+    ],
+    "document_numbers": [
+      "50335",
+      "50297"
+    ],
+    "document_dates": [
+      "2026-05-10",
+      "2026-03-15"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - כולל התקנה",
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "גלבוע - חברה לבניין",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50241",
+      "50165"
+    ],
+    "document_dates": [
+      "2025-11-24",
+      "2025-08-10"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה",
+      "מגן דלת פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "גרופו גרומין ישראל",
+    "customer_id": "517086724",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "001"
+    ],
+    "field_contacts": [
+      {
+        "name": "תומר",
+        "phone": "052-7702852"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "גרופו ג׳רומין ישראל",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550531",
+      "250356",
+      "50316"
+    ],
+    "document_dates": [
+      "2026-05-01",
+      "2026-04-28",
+      "2026-04-21"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור כפול - לא כולל התקנה - לפי יחידה",
+      "מגן דלת פרו דור כפול - לא כולל התקנה - לפי יח׳"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ד.נ ימין יזום והשקעות בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "",
+        "phone": "058-5750850"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "ד.נ ימין יזום והשקעות בע״מ",
+    "customer_id": "513267542",
+    "customer_emails": [],
+    "document_numbers": [
+      "550489",
+      "250324"
+    ],
+    "document_dates": [
+      "2026-02-12",
+      "2026-02-12"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "דוניץ אלעד",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50239"
+    ],
+    "document_dates": [
+      "2025-11-16"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "דימרי",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50198",
+      "50106"
+    ],
+    "document_dates": [
+      "2025-10-19",
+      "2024-12-29"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת",
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "דניה סיבוס בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "",
+        "phone": "050-2898973"
+      },
+      {
+        "name": "לברוך",
+        "phone": "050-7527733"
+      },
+      {
+        "name": "יוסי",
+        "phone": "050-8319405"
+      },
+      {
+        "name": "אלכס",
+        "phone": "052-3304260"
+      },
+      {
+        "name": "רונלדו",
+        "phone": "053-4553269"
+      },
+      {
+        "name": "מנצור",
+        "phone": "054-2635483"
+      },
+      {
+        "name": "דרור",
+        "phone": "054-3545915"
+      },
+      {
+        "name": "דור",
+        "phone": "054-3663768"
+      },
+      {
+        "name": "דרור",
+        "phone": "054-5447025"
+      },
+      {
+        "name": "רמי",
+        "phone": "054-5447136"
+      },
+      {
+        "name": "ברוך",
+        "phone": "054-6735510"
+      },
+      {
+        "name": "אחמד",
+        "phone": "054-6735540"
+      },
+      {
+        "name": "אורי",
+        "phone": "054-6735560"
+      },
+      {
+        "name": "ביבקר",
+        "phone": "054-6735604"
+      },
+      {
+        "name": "אחמד",
+        "phone": "054-6735626"
+      },
+      {
+        "name": "דניאל",
+        "phone": "054-6735713"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 16
+  },
+  {
+    "customer_name": "דניה סיבוס בע״מ",
+    "customer_id": "512569237",
+    "customer_emails": [],
+    "document_numbers": [
+      "550466",
+      "250302",
+      "550451",
+      "250290",
+      "550450",
+      "350018",
+      "250289",
+      "250288",
+      "550442",
+      "250284",
+      "550433",
+      "250274",
+      "550424",
+      "250267",
+      "50205",
+      "550416",
+      "250258",
+      "550398",
+      "250249",
+      "550391",
+      "250242",
+      "550389",
+      "250240",
+      "50161",
+      "550385",
+      "250238",
+      "550379",
+      "250234",
+      "550377",
+      "250232",
+      "550374",
+      "250229",
+      "550367",
+      "250224",
+      "550362",
+      "250220",
+      "550360",
+      "250218",
+      "550352",
+      "250214",
+      "550351",
+      "250213",
+      "550344",
+      "250208",
+      "550343",
+      "250207",
+      "550342",
+      "250206",
+      "750018",
+      "550339",
+      "350012",
+      "250203",
+      "550338",
+      "250202",
+      "550336",
+      "250201",
+      "550334",
+      "250200",
+      "550330",
+      "250196",
+      "550324",
+      "250193",
+      "550319",
+      "250189",
+      "550317",
+      "550316",
+      "250188",
+      "250187",
+      "550315",
+      "250186",
+      "550314",
+      "250185",
+      "550312",
+      "550311",
+      "250183",
+      "250182",
+      "550310",
+      "250181",
+      "550308",
+      "250180",
+      "550307",
+      "250179",
+      "550304",
+      "250177",
+      "550297",
+      "250171",
+      "550293",
+      "250170",
+      "550290",
+      "250168",
+      "550278",
+      "250159",
+      "550275",
+      "250158",
+      "550273",
+      "250156",
+      "550271",
+      "250154",
+      "550257",
+      "250150",
+      "550250",
+      "250143",
+      "550245",
+      "250142",
+      "550243",
+      "250139",
+      "550242",
+      "550241",
+      "250138",
+      "250137",
+      "50071",
+      "550214",
+      "250122",
+      "550211",
+      "250121",
+      "550210",
+      "550209",
+      "250120",
+      "250119"
+    ],
+    "document_dates": [
+      "2026-01-12",
+      "2026-01-12",
+      "2025-12-16",
+      "2025-12-16",
+      "2025-12-14",
+      "2025-12-14",
+      "2025-12-14",
+      "2025-12-14",
+      "2025-11-27",
+      "2025-11-27",
+      "2025-11-17",
+      "2025-11-17",
+      "2025-11-01",
+      "2025-11-01",
+      "2025-10-27",
+      "2025-10-12",
+      "2025-10-12",
+      "2025-08-31",
+      "2025-08-31",
+      "2025-08-14",
+      "2025-08-14",
+      "2025-08-03",
+      "2025-08-03",
+      "2025-07-28",
+      "2025-07-24",
+      "2025-07-24",
+      "2025-07-21",
+      "2025-07-21",
+      "2025-07-13",
+      "2025-07-13",
+      "2025-07-06",
+      "2025-07-06",
+      "2025-06-09",
+      "2025-06-09",
+      "2025-05-21",
+      "2025-05-21",
+      "2025-05-14",
+      "2025-05-14",
+      "2025-04-24",
+      "2025-04-24",
+      "2025-04-23",
+      "2025-04-23",
+      "2025-03-27",
+      "2025-03-27",
+      "2025-03-24",
+      "2025-03-24",
+      "2025-03-19",
+      "2025-03-19",
+      "2025-03-13",
+      "2025-03-13",
+      "2025-03-13",
+      "2025-03-13",
+      "2025-03-09",
+      "2025-03-09",
+      "2025-03-02",
+      "2025-03-02",
+      "2025-02-25",
+      "2025-02-25",
+      "2025-02-12",
+      "2025-02-12",
+      "2025-01-29",
+      "2025-01-29",
+      "2025-01-15",
+      "2025-01-15",
+      "2025-01-13",
+      "2025-01-13",
+      "2025-01-13",
+      "2025-01-13",
+      "2025-01-12",
+      "2025-01-12",
+      "2025-01-11",
+      "2025-01-11",
+      "2025-01-05",
+      "2025-01-05",
+      "2025-01-05",
+      "2025-01-05",
+      "2025-01-02",
+      "2025-01-02",
+      "2024-12-28",
+      "2024-12-28",
+      "2024-12-27",
+      "2024-12-27",
+      "2024-12-17",
+      "2024-12-17",
+      "2024-12-02",
+      "2024-12-02",
+      "2024-11-24",
+      "2024-11-24",
+      "2024-11-16",
+      "2024-11-16",
+      "2024-10-02",
+      "2024-10-02",
+      "2024-09-27",
+      "2024-09-27",
+      "2024-09-17",
+      "2024-09-17",
+      "2024-09-10",
+      "2024-09-10",
+      "2024-07-30",
+      "2024-07-30",
+      "2024-07-02",
+      "2024-07-02",
+      "2024-06-29",
+      "2024-06-29",
+      "2024-06-17",
+      "2024-06-17",
+      "2024-06-15",
+      "2024-06-15",
+      "2024-06-15",
+      "2024-06-15",
+      "2024-05-22",
+      "2024-03-04",
+      "2024-03-04",
+      "2024-02-28",
+      "2024-02-28",
+      "2024-02-25",
+      "2024-02-25",
+      "2024-02-25",
+      "2024-02-25"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור 80/210",
+      "מגן דלת פרו דור 90/210",
+      "מגן דלת פרו דור 100/210",
+      "מגן דלת פרו דור 90/200",
+      "מגן דלת פרו דור",
+      "מגן דלת פרו דור - ללא התקנה",
+      "מגן דלת פרו דור 90/205",
+      "מגן דלת פרו דור 105/210"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 119,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "דניה סיבוס בע״מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550208",
+      "250118",
+      "50060"
+    ],
+    "document_dates": [
+      "2024-02-23",
+      "2024-02-23",
+      "2024-01-31"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור 90/210",
+      "מגן דלת פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "האחים מאיה - בניה ויזמות נדל״ן",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50222",
+      "50162"
+    ],
+    "document_dates": [
+      "2025-11-09",
+      "2025-07-30"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "הגבעה י.ח בע״מ",
+    "customer_id": "511164295",
+    "customer_emails": [],
+    "document_numbers": [
+      "50278"
+    ],
+    "document_dates": [
+      "2026-01-19"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "הייקון (א.ק) בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "עמית",
+        "phone": "054-8047504"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "הייקון (א.ק) בע''מ",
+    "customer_id": "516193430",
+    "customer_emails": [],
+    "document_numbers": [
+      "550506",
+      "250337",
+      "550485",
+      "250319",
+      "550472",
+      "250308",
+      "50275"
+    ],
+    "document_dates": [
+      "2026-03-10",
+      "2026-03-10",
+      "2026-02-10",
+      "2026-02-10",
+      "2026-01-21",
+      "2026-01-21",
+      "2026-01-19"
+    ],
+    "latest_item_names": [
+      "יח׳ מגן דלת / כנף"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 7,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "י.ח דימרי",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50313",
+      "50303",
+      "50122"
+    ],
+    "document_dates": [
+      "2026-04-15",
+      "2026-03-24",
+      "2025-02-19"
+    ],
+    "latest_item_names": [
+      "פרו דור להגנה על דלתות - לפי יח׳ דלת / כנף - כולל התקנה",
+      "פרו דור להגנה על דלתות - לפי יח׳ דלת / כנף - ללא התקנה",
+      "פרו דור להגנה על דלתות"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 3,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "י.ח. דמרי בניה ופיתוח בע\"מ",
+    "customer_id": "511399388",
+    "customer_emails": [],
+    "document_numbers": [
+      "50345",
+      "550538",
+      "250362",
+      "750030",
+      "550536"
+    ],
+    "document_dates": [
+      "2026-06-02",
+      "2026-05-05",
+      "2026-05-05",
+      "2026-05-04",
+      "2026-05-04"
+    ],
+    "latest_item_names": [
+      "מגן דלת ליח׳ דלת / כנף - בכל מידה - ללא התקנה",
+      "הגנה לדלת כולל התקנה - מידות 2.10/1.30",
+      "הגנה לדלת כולל התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "דניאל בר",
+        "phone": "052-3228011"
+      }
+    ],
+    "docs_count": 5,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "י.ח. דמרי בניה ופיתוח בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550533",
+      "250359"
+    ],
+    "document_dates": [
+      "2026-05-03",
+      "2026-05-03"
+    ],
+    "latest_item_names": [
+      "הגנה לדלת כולל התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "י.ח. דמרי בניה ופיתוח בעמ",
+    "customer_id": "511399388",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "111671",
+      "111718"
+    ],
+    "field_contacts": [
+      {
+        "name": "דניאל בר",
+        "phone": "052-3228011"
+      },
+      {
+        "name": "יוסי אלימלך",
+        "phone": ""
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 2,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ינושבסקי א. הנדסה ובנין בע\"מ",
+    "customer_id": "513617068",
+    "customer_emails": [],
+    "document_numbers": [
+      "50220",
+      "750016",
+      "550318",
+      "550313",
+      "250184"
+    ],
+    "document_dates": [
+      "2025-11-06",
+      "2025-01-14",
+      "2025-01-14",
+      "2025-01-07",
+      "2025-01-07"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה",
+      "מגן דלת פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 5,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "יעז",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50126"
+    ],
+    "document_dates": [
+      "2025-03-02"
+    ],
+    "latest_item_names": [
+      "פרו דור להגנה על דלתות"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "יצחק שטרן ושות בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "",
+        "phone": "054-5866620"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "יצחק שטרן ושו״ת בע״מ",
+    "customer_id": "557884566",
+    "customer_emails": [],
+    "document_numbers": [
+      "550452",
+      "250291"
+    ],
+    "document_dates": [
+      "2025-12-17",
+      "2025-12-17"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן הדלת"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "כמוס הנדסה בע\"מ",
+    "customer_id": "516938917",
+    "customer_emails": [
+      "yiftahcamus@gmail.com"
+    ],
+    "document_numbers": [
+      "50318"
+    ],
+    "document_dates": [
+      "2026-04-27"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור דו״צ - לפי מידות - כנף / יח׳ - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "כפיר",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50227"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "לוינשטין נתיב הנדסה ובנין בע\"מ",
+    "customer_id": "510374531",
+    "customer_emails": [],
+    "document_numbers": [
+      "50348",
+      "50347"
+    ],
+    "document_dates": [
+      "2026-06-04",
+      "2026-06-04"
+    ],
+    "latest_item_names": [
+      "מגן דלת ליח׳ דלת / כנף - בכל מידה - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "ליטל כהן",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550403"
+    ],
+    "document_dates": [
+      "2025-09-10"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "מ.ב.צ יזמות והשקעות בע״מ",
+    "customer_id": "512283599",
+    "customer_emails": [],
+    "document_numbers": [
+      "50338"
+    ],
+    "document_dates": [
+      "2026-05-17"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "מ.ג.א.ד בניין והשקעות בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "בדר קסום",
+        "phone": "052-8025461"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "מ.ג.א.ד בניין והשקעות בע״מ",
+    "customer_id": "510868342",
+    "customer_emails": [],
+    "document_numbers": [
+      "550505",
+      "550504",
+      "250336",
+      "250335",
+      "550487",
+      "250321"
+    ],
+    "document_dates": [
+      "2026-03-10",
+      "2026-03-10",
+      "2026-03-10",
+      "2026-03-10",
+      "2026-02-10",
+      "2026-02-10"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור",
+      "מגן דלת פרו דור 88/205"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 6,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "נועם סהר חברה לבניה בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "ניסים",
+        "phone": "052-5524459"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "נועם סהר חברה לבניה בע״מ",
+    "customer_id": "513099234",
+    "customer_emails": [],
+    "document_numbers": [
+      "550522",
+      "250351",
+      "550225",
+      "250128",
+      "150002"
+    ],
+    "document_dates": [
+      "2026-04-16",
+      "2026-04-16",
+      "2024-04-14",
+      "2024-04-14",
+      "2024-04-14"
+    ],
+    "latest_item_names": [
+      "פרו דור - הגנה לדלתות 92/205",
+      "פרו דור - הגנה לדלתות 1x2.1"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 5,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "נעמן - איתן חברה להנדסה ובנין בע\"מ",
+    "customer_id": "510909526",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "בן",
+        "phone": "050-9103303"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "נעמן - איתן חברה להנדסה ובנין בעמ",
+    "customer_id": "510909526",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "005"
+    ],
+    "field_contacts": [
+      {
+        "name": "בן",
+        "phone": "050-9103303"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "נעמן - איתן חברה להנדסה ובנין בע״מ",
+    "customer_id": "510909526",
+    "customer_emails": [],
+    "document_numbers": [
+      "550561",
+      "250377",
+      "550461",
+      "50269",
+      "250299",
+      "550458",
+      "50265",
+      "250297"
+    ],
+    "document_dates": [
+      "2026-05-26",
+      "2026-05-26",
+      "2026-01-05",
+      "2026-01-05",
+      "2026-01-05",
+      "2025-12-30",
+      "2025-12-30",
+      "2025-12-30"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת במידות 95/208",
+      "פרו דור - מגן דלת - ללא התקנה",
+      "פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 8,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "נעמן - איתן חברה להנדסה ובנין בע״מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "550432",
+      "50238",
+      "250273",
+      "50228"
+    ],
+    "document_dates": [
+      "2025-11-16",
+      "2025-11-16",
+      "2025-11-16",
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 4,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "נעמן איתן חברה להנדסה ובנין בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "מוחמד",
+        "phone": "058-6899566"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "סולם יעקב",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50104"
+    ],
+    "document_dates": [
+      "2024-12-15"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "סיון ביצוע",
+    "customer_id": "305416315",
+    "customer_emails": [],
+    "document_numbers": [
+      "750031",
+      "350024",
+      "550555",
+      "250374"
+    ],
+    "document_dates": [
+      "2026-05-25",
+      "2026-05-25",
+      "2026-05-20",
+      "2026-05-20"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 4,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "סיון ביצוע",
+    "customer_id": "513614503",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "654/243066"
+    ],
+    "field_contacts": [
+      {
+        "name": "נתן / אורי",
+        "phone": "054-7171123 / 052-4372573"
+      },
+      {
+        "name": "אורי",
+        "phone": "052-4372573"
+      },
+      {
+        "name": "נתן",
+        "phone": "054-7171123"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 2
+  },
+  {
+    "customer_name": "סיון ביצוע בע״מ",
+    "customer_id": "513614503",
+    "customer_emails": [],
+    "document_numbers": [
+      "550559",
+      "250376",
+      "550519",
+      "250348",
+      "550465",
+      "250301"
+    ],
+    "document_dates": [
+      "2026-05-25",
+      "2026-05-25",
+      "2026-04-12",
+      "2026-04-12",
+      "2026-01-12",
+      "2026-01-12"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת פרו דור",
+      "יחידת מגן דלת פרו דורג 93/220",
+      "מגן דלת פרו דור"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 6,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "סיטי פרויקטים",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50223"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "עמרם אברהם ביצועים",
+    "customer_id": "516008653",
+    "customer_emails": [
+      "office@amramb.co.il"
+    ],
+    "document_numbers": [
+      "550567",
+      "550566",
+      "250382",
+      "250381",
+      "550511",
+      "250343",
+      "550508",
+      "250339",
+      "550507",
+      "250338",
+      "550484",
+      "250318",
+      "550478",
+      "250313",
+      "550469",
+      "250305",
+      "550457",
+      "250296",
+      "550448",
+      "250287",
+      "550447",
+      "250286",
+      "550439",
+      "250280",
+      "550437",
+      "250278",
+      "550426",
+      "250269",
+      "550412",
+      "250257",
+      "550411",
+      "250256",
+      "550396",
+      "250247",
+      "550393",
+      "250244",
+      "550392",
+      "250243",
+      "550387",
+      "250239",
+      "550382",
+      "250236",
+      "550283",
+      "250163",
+      "50094"
+    ],
+    "document_dates": [
+      "2026-06-10",
+      "2026-06-10",
+      "2026-06-10",
+      "2026-06-10",
+      "2026-03-29",
+      "2026-03-29",
+      "2026-03-12",
+      "2026-03-12",
+      "2026-03-11",
+      "2026-03-11",
+      "2026-02-08",
+      "2026-02-08",
+      "2026-02-03",
+      "2026-02-03",
+      "2026-01-20",
+      "2026-01-20",
+      "2025-12-30",
+      "2025-12-30",
+      "2025-12-10",
+      "2025-12-10",
+      "2025-12-08",
+      "2025-12-08",
+      "2025-11-26",
+      "2025-11-26",
+      "2025-11-24",
+      "2025-11-24",
+      "2025-11-02",
+      "2025-11-02",
+      "2025-10-05",
+      "2025-10-05",
+      "2025-10-04",
+      "2025-10-04",
+      "2025-08-27",
+      "2025-08-27",
+      "2025-08-17",
+      "2025-08-17",
+      "2025-08-14",
+      "2025-08-14",
+      "2025-07-29",
+      "2025-07-29",
+      "2025-07-23",
+      "2025-07-23",
+      "2024-10-20",
+      "2024-10-20",
+      "2024-10-14"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת איכותי לבניה לפי מידה עקב מגנים שנקרעו",
+      "פרו דור - מגן דלת איכותי לבניה לפי מידה מידה רגילה , בניינים 9-10",
+      "פרו דור - מגן דלת איכותי לבנייה 85/210",
+      "פרו דור - מגן דלת איכותי לבנייה",
+      "פרו דור - מגן דלת איכותי לבנייה 88/210",
+      "פרו דור - מגן דלת איכותי לבנייה 88/215",
+      "פרו דור - מגן דלת איכותי לבנייה 87/205",
+      "פרו דור - מגן דלת איכותי לבנייה - 99/205"
+    ],
+    "po_numbers": [
+      "PO26004241",
+      "PO26004246"
+    ],
+    "field_contacts": [
+      {
+        "name": "אילעי מנחם",
+        "phone": "050-3043019"
+      }
+    ],
+    "docs_count": 45,
+    "order_rows_count": 2,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "עמרם אברהם ביצועים ח.פ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "ניב קרני",
+        "phone": "050-7904937"
+      },
+      {
+        "name": "עילאי בן דיין",
+        "phone": "052-6736400"
+      },
+      {
+        "name": "בני לוי",
+        "phone": "053-7751008"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 3
+  },
+  {
+    "customer_name": "עץ השקד",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50277",
+      "50221",
+      "50183",
+      "50149",
+      "50103"
+    ],
+    "document_dates": [
+      "2026-01-19",
+      "2025-11-09",
+      "2025-09-15",
+      "2025-05-15",
+      "2024-12-11"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 5,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "פדלון שפונדר ביצוע בע״מ",
+    "customer_id": "516087269",
+    "customer_emails": [],
+    "document_numbers": [
+      "50317"
+    ],
+    "document_dates": [
+      "2026-04-23"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "פורמה פרויקטים",
+    "customer_id": "513403964",
+    "customer_emails": [],
+    "document_numbers": [
+      "250132"
+    ],
+    "document_dates": [
+      "2024-05-22"
+    ],
+    "latest_item_names": [
+      "מגן דלת כולל התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "פורמה פרויקטים בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "ברוך",
+        "phone": "052-5933944"
+      },
+      {
+        "name": "איתי",
+        "phone": "054-5447446"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 0,
+    "pm_rows_count": 2
+  },
+  {
+    "customer_name": "פורמה פרויקטים בע״מ",
+    "customer_id": "513403964",
+    "customer_emails": [],
+    "document_numbers": [
+      "550497",
+      "550496",
+      "250330",
+      "250329",
+      "550491",
+      "250326",
+      "550468",
+      "250304",
+      "550453",
+      "250292",
+      "550394",
+      "250245",
+      "550353",
+      "250215",
+      "550346",
+      "550345",
+      "250210",
+      "250209",
+      "550233"
+    ],
+    "document_dates": [
+      "2026-02-22",
+      "2026-02-22",
+      "2026-02-22",
+      "2026-02-22",
+      "2026-02-17",
+      "2026-02-17",
+      "2026-01-15",
+      "2026-01-15",
+      "2025-12-21",
+      "2025-12-21",
+      "2025-08-19",
+      "2025-08-19",
+      "2025-04-24",
+      "2025-04-24",
+      "2025-03-31",
+      "2025-03-31",
+      "2025-03-31",
+      "2025-03-31",
+      "2024-05-22"
+    ],
+    "latest_item_names": [
+      "מגן דלת פרו דור",
+      "מגן דלת פרו דור | 103/206",
+      "מגן דלת פרו דור | 91/206",
+      "מגן דלת כולל התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 19,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "פרשקובסקי",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50178"
+    ],
+    "document_dates": [
+      "2025-08-27"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "צבי צרפתי ובניו",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50225"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "צרפתי שמעון בע\"מ",
+    "customer_id": "510927387",
+    "customer_emails": [],
+    "document_numbers": [
+      "50281",
+      "50260",
+      "50259",
+      "50197",
+      "50150",
+      "50135",
+      "50105"
+    ],
+    "document_dates": [
+      "2026-01-20",
+      "2025-12-21",
+      "2025-12-21",
+      "2025-10-15",
+      "2025-05-18",
+      "2025-03-17",
+      "2024-12-23"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה - לפי יח׳ / כנף",
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 7,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קבוצת אביב",
+    "customer_id": "510395593",
+    "customer_emails": [],
+    "document_numbers": [
+      "50230"
+    ],
+    "document_dates": [
+      "2025-11-09"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קבוצת גבאי",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50349"
+    ],
+    "document_dates": [
+      "2026-06-04"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קבוצת ימין ניסים",
+    "customer_id": "513267542",
+    "customer_emails": [],
+    "document_numbers": [
+      "50292"
+    ],
+    "document_dates": [
+      "2026-02-11"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קידר מבנים בע\"מ",
+    "customer_id": "510605520",
+    "customer_emails": [],
+    "document_numbers": [
+      "550568",
+      "250383"
+    ],
+    "document_dates": [
+      "2026-06-10",
+      "2026-06-10"
+    ],
+    "latest_item_names": [
+      "מגן דלת/כנף בכל מידה כולל התקנה | מינימום 03 יחי' לתאם מראש!"
+    ],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "מיכאל",
+        "phone": "050-5780446"
+      },
+      {
+        "name": "ביבי",
+        "phone": "052-6888787"
+      },
+      {
+        "name": "דניאל פיס",
+        "phone": "054-7457888"
+      }
+    ],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 3
+  },
+  {
+    "customer_name": "קידר מבנים בע\"מ",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50352",
+      "50351"
+    ],
+    "document_dates": [
+      "2026-06-09",
+      "2026-06-09"
+    ],
+    "latest_item_names": [
+      "מגן דלת ליח׳ דלת / כנף - בכל מידה - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קידר מבנים בעמ",
+    "customer_id": "510605520",
+    "customer_emails": [],
+    "document_numbers": [],
+    "document_dates": [],
+    "latest_item_names": [],
+    "po_numbers": [
+      "554/111430"
+    ],
+    "field_contacts": [
+      {
+        "name": "דניאל פיס / ביבי / מיכאל",
+        "phone": "054-7457888 / 052-6888787 / 050-5780446"
+      }
+    ],
+    "docs_count": 0,
+    "order_rows_count": 1,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "קן התור",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50219",
+      "50177"
+    ],
+    "document_dates": [
+      "2025-11-04",
+      "2025-08-27"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "רותם הנדסה וניהול פרויקטים בע\"מ",
+    "customer_id": "514228238",
+    "customer_emails": [],
+    "document_numbers": [
+      "50180"
+    ],
+    "document_dates": [
+      "2025-09-11"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "רם אדרת",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50121"
+    ],
+    "document_dates": [
+      "2025-02-16"
+    ],
+    "latest_item_names": [
+      "פרו דור להגנה על דלתות"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "רם אדרת הנדסה אזרחית בע\"מ",
+    "customer_id": "512947185",
+    "customer_emails": [],
+    "document_numbers": [
+      "550397",
+      "250248",
+      "50176",
+      "550375",
+      "250230"
+    ],
+    "document_dates": [
+      "2025-08-28",
+      "2025-08-28",
+      "2025-08-27",
+      "2025-07-08",
+      "2025-07-08"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת",
+      "פרו דור - מגן דלת - ללא התקנה",
+      "פרו דור - מגן דלת 130/220"
+    ],
+    "po_numbers": [],
+    "field_contacts": [
+      {
+        "name": "מאור",
+        "phone": "054-8117711"
+      }
+    ],
+    "docs_count": 5,
+    "order_rows_count": 0,
+    "pm_rows_count": 1
+  },
+  {
+    "customer_name": "שבירו",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50337"
+    ],
+    "document_dates": [
+      "2026-05-13"
+    ],
+    "latest_item_names": [
+      "יחידת מגן דלת / כנף - פרו דור - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "שדאור",
+    "customer_id": "",
+    "customer_emails": [
+      "office@shador.co.il"
+    ],
+    "document_numbers": [
+      "50175"
+    ],
+    "document_dates": [
+      "2025-08-26"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 1,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  },
+  {
+    "customer_name": "תדהר",
+    "customer_id": "",
+    "customer_emails": [],
+    "document_numbers": [
+      "50174",
+      "50101"
+    ],
+    "document_dates": [
+      "2025-08-26",
+      "2024-11-27"
+    ],
+    "latest_item_names": [
+      "פרו דור - מגן דלת - ללא התקנה"
+    ],
+    "po_numbers": [],
+    "field_contacts": [],
+    "docs_count": 2,
+    "order_rows_count": 0,
+    "pm_rows_count": 0
+  }
+]
