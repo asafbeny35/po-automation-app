@@ -67,9 +67,9 @@ async def _launch_context():
             "--no-sandbox",
             "--disable-dev-shm-usage",
             "--disable-gpu",
+            "--disable-software-rasterizer",
             "--disable-session-crashed-bubble",
             "--disable-blink-features=AutomationControlled",
-            "--single-process",
         ],
     )
 
@@ -310,8 +310,12 @@ async def qr_endpoint():
 async def qr_image():
     """Return QR screenshot as PNG image."""
     from fastapi.responses import Response
-    screenshot = await _get_whatsapp_screenshot()
-    return Response(content=screenshot, media_type="image/png")
+    try:
+        screenshot = await _get_whatsapp_screenshot()
+        return Response(content=screenshot, media_type="image/png")
+    except Exception as exc:
+        import traceback
+        return JSONResponse({"error": str(exc), "trace": traceback.format_exc()}, status_code=500)
 
 
 @app.post("/send")
