@@ -217,17 +217,30 @@ async def health():
 
 
 async def _get_whatsapp_screenshot() -> bytes:
+    import base64 as _b64
     _, page = await _get_context_and_page()
     await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
-    # Wait for either QR canvas or the main chat interface
+    # Wait for QR canvas or chat
     for _ in range(20):
         await page.wait_for_timeout(1500)
-        # Check if QR code canvas appeared
-        qr_canvas = page.locator("canvas[aria-label], div[data-ref] canvas, canvas")
-        chat_ready = page.locator("div[data-icon='chat'], div[aria-label='Chat list']")
+        qr_canvas = page.locator("canvas")
+        chat_ready = page.locator("div[aria-label='Chat list'], div[data-icon='chat']")
         if await qr_canvas.count() > 0 or await chat_ready.count() > 0:
             break
     await page.wait_for_timeout(1000)
+
+    # Try to extract canvas pixel data via JS (works even when CSS rendering fails)
+    try:
+        canvas_data_url = await page.evaluate("""() => {
+            const canvas = document.querySelector('canvas');
+            if (!canvas) return null;
+            try { return canvas.toDataURL('image/png'); } catch(e) { return null; }
+        }""")
+        if canvas_data_url and canvas_data_url.startswith("data:image/png;base64,"):
+            return _b64.b64decode(canvas_data_url.split(",", 1)[1])
+    except Exception:
+        pass
+
     return await page.screenshot(full_page=False)
 
 
