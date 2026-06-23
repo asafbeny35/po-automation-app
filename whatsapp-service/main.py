@@ -216,13 +216,25 @@ async def health():
     return {"ok": True}
 
 
+async def _get_whatsapp_screenshot() -> bytes:
+    _, page = await _get_context_and_page()
+    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
+    # Wait for either QR canvas or the main chat interface
+    for _ in range(20):
+        await page.wait_for_timeout(1500)
+        # Check if QR code canvas appeared
+        qr_canvas = page.locator("canvas[aria-label], div[data-ref] canvas, canvas")
+        chat_ready = page.locator("div[data-icon='chat'], div[aria-label='Chat list']")
+        if await qr_canvas.count() > 0 or await chat_ready.count() > 0:
+            break
+    await page.wait_for_timeout(1000)
+    return await page.screenshot(full_page=False)
+
+
 @app.get("/qr")
 async def qr_endpoint():
     """Open WhatsApp Web and return a screenshot so the user can scan the QR code."""
-    _, page = await _get_context_and_page()
-    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(5000)
-    screenshot = await page.screenshot(full_page=False)
+    screenshot = await _get_whatsapp_screenshot()
     import base64 as _b64
     return {"screenshot_b64": _b64.b64encode(screenshot).decode(), "url": "https://web.whatsapp.com"}
 
@@ -231,10 +243,7 @@ async def qr_endpoint():
 async def qr_image():
     """Return QR screenshot as PNG image."""
     from fastapi.responses import Response
-    _, page = await _get_context_and_page()
-    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
-    await page.wait_for_timeout(5000)
-    screenshot = await page.screenshot(full_page=False)
+    screenshot = await _get_whatsapp_screenshot()
     return Response(content=screenshot, media_type="image/png")
 
 
