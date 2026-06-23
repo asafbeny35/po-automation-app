@@ -23,6 +23,7 @@ app = FastAPI()
 
 _PLAYWRIGHT = None
 _CONTEXT = None
+_PAGE = None  # single persistent page — keeps WhatsApp Web in memory
 _CONTEXT_LOCK = asyncio.Lock()
 _BIDI_CHARS = {0x200F, 0x200E, 0x202B, 0x202A, 0x202C, 0x202D, 0x202E}
 
@@ -75,32 +76,41 @@ async def _launch_context():
 
 
 async def _get_fresh_page():
-    """Always return a new page, closing any existing ones. Restart context if crashed."""
-    global _PLAYWRIGHT, _CONTEXT
+    """Return the persistent page, restarting it if crashed."""
+    global _PLAYWRIGHT, _CONTEXT, _PAGE
     async with _CONTEXT_LOCK:
+        # Check if context is alive
         if _CONTEXT is not None:
-            # Close all existing pages to free memory
             try:
-                for p in list(_CONTEXT.pages):
-                    try:
-                        if not p.is_closed():
-                            await p.close()
-                    except Exception:
-                        pass
+                _ = _CONTEXT.pages
             except Exception:
                 _CONTEXT = None
+                _PAGE = None
 
         if _CONTEXT is None:
             await _launch_context()
 
-        try:
-            page = await _CONTEXT.new_page()
-        except Exception:
-            _CONTEXT = None
-            await _launch_context()
-            page = await _CONTEXT.new_page()
+        # Reuse persistent page if still alive, else open a new one
+        if _PAGE is not None:
+            try:
+                if _PAGE.is_closed():
+                    _PAGE = None
+                else:
+                    # Quick check: try to evaluate JS
+                    await _PAGE.evaluate("1+1")
+            except Exception:
+                _PAGE = None
 
-        return _CONTEXT, page
+        if _PAGE is None:
+            try:
+                _PAGE = await _CONTEXT.new_page()
+            except Exception:
+                _CONTEXT = None
+                _PAGE = None
+                await _launch_context()
+                _PAGE = await _CONTEXT.new_page()
+
+        return _CONTEXT, _PAGE
 
 
 async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
@@ -229,12 +239,8 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
 
             await page.wait_for_timeout(_file_post_send_wait_ms(size_bytes))
 
-    await page.wait_for_timeout(10000)
-    try:
-        if not page.is_closed():
-            await page.close()
-    except Exception:
-        pass
+    await page.wait_for_timeout(5000)
+    # Don't close the page — keep it alive so WhatsApp Web stays in memory
     return {"status": "ok", "phone": phone}
 
 
