@@ -640,12 +640,26 @@ def _ensure_marketing_drive_asset(asset_key: str) -> dict:
     spec = MARKETING_DRIVE_ASSETS.get(asset_key)
     if not spec:
         raise FileNotFoundError("מסמך שיווק לא הוגדר.")
-    local_path = Path(spec["local_path"])
-    if not local_path.exists():
-        raise FileNotFoundError(f"מסמך שיווק לא נמצא מקומית: {local_path.name}")
     cached = MARKETING_DRIVE_ASSET_CACHE.get(asset_key)
     if cached and str(cached.get("id") or "").strip():
         return cached
+    local_path = Path(spec["local_path"])
+    if not local_path.exists():
+        # Vercel: no local files — look up existing Drive file by name
+        from services.google_drive_sync import _find_file_in_folder, _find_child_folder
+        service = _google_drive_service()
+        folder_id = _ensure_marketing_drive_root_folder()
+        for folder_name in (spec.get("folders") or []):
+            fid = _find_child_folder(service, folder_id, folder_name)
+            if not fid:
+                raise FileNotFoundError(f"תיקיית Drive לא נמצאה: {folder_name}")
+            folder_id = fid
+        drive_name = str(spec.get("drive_name") or "")
+        record = _find_file_in_folder(service, folder_id, drive_name) if drive_name else None
+        if not record or not record.get("id"):
+            raise FileNotFoundError(f"מסמך שיווק לא נמצא ב-Drive: {drive_name}")
+        MARKETING_DRIVE_ASSET_CACHE[asset_key] = record
+        return record
     parent_id = _ensure_marketing_drive_root_folder()
     for folder_name in spec.get("folders", ()):
         parent_id = ensure_child_folder(parent_id, str(folder_name))
