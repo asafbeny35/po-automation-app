@@ -61,7 +61,17 @@ async def _get_context_and_page():
             _CONTEXT = await _PLAYWRIGHT.chromium.launch_persistent_context(
                 user_data_dir=str(PROFILE_DIR),
                 headless=True,
-                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-session-crashed-bubble"],
+                user_agent=(
+                    "Mozilla/5.0 (X11; Linux x86_64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                args=[
+                    "--no-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-session-crashed-bubble",
+                    "--disable-blink-features=AutomationControlled",
+                ],
             )
 
         pages = [p for p in _CONTEXT.pages if not p.is_closed()]
