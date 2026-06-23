@@ -244,6 +244,41 @@ async def _get_whatsapp_screenshot() -> bytes:
     return await page.screenshot(full_page=False)
 
 
+@app.get("/qr/page", response_class=None)
+async def qr_page():
+    from fastapi.responses import HTMLResponse
+    html = """<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>WhatsApp QR</title>
+  <style>
+    body { background:#111; display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; margin:0; font-family:sans-serif; color:#fff; }
+    img { width:300px; height:300px; border:4px solid #25D366; border-radius:8px; }
+    p { margin-top:16px; color:#aaa; font-size:14px; }
+    #timer { color:#25D366; font-size:20px; font-weight:bold; }
+  </style>
+</head>
+<body>
+  <h2 style="color:#25D366">סרוק את ה-QR עם WhatsApp</h2>
+  <img id="qr" src="/qr/image" alt="QR Code">
+  <p>מתרענן אוטומטית בעוד <span id="timer">20</span> שניות</p>
+  <script>
+    let t = 20;
+    setInterval(() => {
+      t--;
+      document.getElementById('timer').textContent = t;
+      if (t <= 0) {
+        t = 20;
+        document.getElementById('qr').src = '/qr/image?t=' + Date.now();
+      }
+    }, 1000);
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(content=html)
+
+
 @app.get("/qr")
 async def qr_endpoint():
     """Open WhatsApp Web and return a screenshot so the user can scan the QR code."""
