@@ -768,7 +768,8 @@ def _ensure_marketing_preview_image(asset_key: str) -> str:
         return _marketing_drive_thumbnail_url(asset_key) or f"/marketing-doc-preview/{asset_key}"
     local_path = Path(spec["local_path"])
     if not local_path.exists():
-        return _marketing_drive_thumbnail_url(asset_key) or f"/marketing-doc-preview/{asset_key}"
+        # On Vercel: always use proxy endpoint (not direct Drive URL which requires browser auth)
+        return f"/marketing-doc-preview/{asset_key}"
 
     source_mtime = 0.0
     try:
@@ -13050,10 +13051,30 @@ async def marketing_doc_preview(asset_key: str):
             return JSONResponse({"error": "מסמך השיווק לא הוגדר."}, status_code=404)
         local_path = Path(spec["local_path"])
         if not local_path.exists() or not local_path.is_file():
-            # On Vercel (no local files): redirect to Drive thumbnail
-            thumb = _marketing_drive_thumbnail_url(asset_key)
-            if thumb:
-                return RedirectResponse(thumb, status_code=302)
+            # Vercel: proxy Drive thumbnail via service account (browser can't auth directly)
+            try:
+                cached = MARKETING_DRIVE_ASSET_CACHE.get(asset_key) or {}
+                file_id = str(cached.get("id") or "").strip()
+                if not file_id:
+                    # trigger lookup
+                    _marketing_drive_thumbnail_url(asset_key)
+                    cached = MARKETING_DRIVE_ASSET_CACHE.get(asset_key) or {}
+                    file_id = str(cached.get("id") or "").strip()
+                if not file_id:
+                    return JSONResponse({"error": "מסמך לא נמצא ב-Drive"}, status_code=404)
+                service = _google_drive_service()
+                meta = service.files().get(fileId=file_id, fields="thumbnailLink", supportsAllDrives=True).execute()
+                thumb_url = meta.get("thumbnailLink", "").replace("=s220", "=s480")
+                if thumb_url:
+                    import httpx as _httpx
+                    async with _httpx.AsyncClient(follow_redirects=True, timeout=15) as client:
+                        r = await client.get(thumb_url)
+                    if r.status_code == 200:
+                        from fastapi.responses import Response as _Resp
+                        return _Resp(content=r.content, media_type=r.headers.get("content-type", "image/jpeg"),
+                                     headers={"Cache-Control": "public, max-age=3600"})
+            except Exception as thumb_exc:
+                log_handled_error("marketing preview proxy failed", thumb_exc)
             return JSONResponse({"error": f"מסמך שיווק לא נמצא מקומית: {local_path.name}"}, status_code=404)
         suffix = local_path.suffix.lower()
         if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
