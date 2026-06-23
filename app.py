@@ -259,7 +259,7 @@ MARKETING_HISTORY_ACTION_REMINDER = "set_reminder"
 MARKETING_HISTORY_ACTION_REMINDER_DONE = "complete_reminder"
 MARKETING_DRIVE_ASSETS = {
     "brochure-hebrew": {
-        "local_path": MARKETING_DOCS_DIR / "2026 - בן יעקב פתרונות טקסטיל.pdf",
+        "local_path": MARKETING_DOCS_DIR / "קטלוג מוצרים חדש.pdf",
         "drive_name": "ברושור עברית.pdf",
         "folders": ("ברושורים",),
         "label": "ברושור מלא בעברית",
@@ -19970,8 +19970,16 @@ async def marketing_pipeline_delete(request: Request):
 
 
 @app.post("/marketing-docs-refresh")
-async def marketing_docs_refresh():
+async def marketing_docs_refresh(request: Request):
     try:
+        body = {}
+        try:
+            body = await request.json()
+        except Exception:
+            pass
+        force_key = str(body.get("force_key") or "").strip()
+        if force_key:
+            _force_refresh_marketing_drive_asset(force_key)
         await _prime_marketing_drive_assets()
         return JSONResponse(
             {
