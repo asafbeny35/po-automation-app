@@ -206,6 +206,28 @@ async def health():
     return {"ok": True}
 
 
+@app.get("/qr")
+async def qr_endpoint():
+    """Open WhatsApp Web and return a screenshot so the user can scan the QR code."""
+    _, page = await _get_context_and_page()
+    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
+    await page.wait_for_timeout(5000)
+    screenshot = await page.screenshot(full_page=False)
+    import base64 as _b64
+    return {"screenshot_b64": _b64.b64encode(screenshot).decode(), "url": "https://web.whatsapp.com"}
+
+
+@app.get("/qr/image")
+async def qr_image():
+    """Return QR screenshot as PNG image."""
+    from fastapi.responses import Response
+    _, page = await _get_context_and_page()
+    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
+    await page.wait_for_timeout(5000)
+    screenshot = await page.screenshot(full_page=False)
+    return Response(content=screenshot, media_type="image/png")
+
+
 @app.post("/send")
 async def send_endpoint(body: dict):
     if SECRET_TOKEN and body.get("secret") != SECRET_TOKEN:
