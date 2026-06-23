@@ -715,13 +715,22 @@ async def _prime_marketing_drive_assets() -> list[dict]:
     return assets
 
 
+def _marketing_drive_thumbnail_url(asset_key: str) -> str:
+    """Return a Google Drive thumbnail URL if the asset is synced to Drive."""
+    cached = MARKETING_DRIVE_ASSET_CACHE.get(asset_key) or {}
+    file_id = str(cached.get("id") or "").strip()
+    if file_id:
+        return f"https://drive.google.com/thumbnail?id={file_id}&sz=w480"
+    return ""
+
+
 def _ensure_marketing_preview_image(asset_key: str) -> str:
     spec = MARKETING_DRIVE_ASSETS.get(asset_key)
     if not spec:
-        return f"/marketing-doc-preview/{asset_key}"
+        return _marketing_drive_thumbnail_url(asset_key) or f"/marketing-doc-preview/{asset_key}"
     local_path = Path(spec["local_path"])
     if not local_path.exists():
-        return f"/marketing-doc-preview/{asset_key}"
+        return _marketing_drive_thumbnail_url(asset_key) or f"/marketing-doc-preview/{asset_key}"
 
     source_mtime = 0.0
     try:
@@ -746,22 +755,33 @@ def _ensure_marketing_preview_image(asset_key: str) -> str:
         target_path = MARKETING_PREVIEW_CACHE_DIR / target_name
         try:
             if not target_path.exists() or target_path.stat().st_mtime < source_mtime:
-                with tempfile.TemporaryDirectory(prefix="marketing-preview-") as tmpdir:
-                    subprocess.run(
-                        ["qlmanage", "-t", "-s", "420", "-o", tmpdir, str(local_path)],
-                        check=True,
-                        capture_output=True,
-                        text=True,
-                    )
-                    generated = Path(tmpdir) / f"{local_path.name}.png"
-                    if not generated.exists():
-                        raise FileNotFoundError("לא נוצר preview לקובץ ה-PDF.")
-                    shutil.copy2(generated, target_path)
+                generated = False
+                # Try qlmanage (macOS)
+                try:
+                    with tempfile.TemporaryDirectory(prefix="marketing-preview-") as tmpdir:
+                        subprocess.run(
+                            ["qlmanage", "-t", "-s", "420", "-o", tmpdir, str(local_path)],
+                            check=True, capture_output=True, text=True,
+                        )
+                        gen = Path(tmpdir) / f"{local_path.name}.png"
+                        if gen.exists():
+                            shutil.copy2(gen, target_path)
+                            generated = True
+                except Exception:
+                    pass
+                # Fallback: PyMuPDF
+                if not generated:
+                    import fitz
+                    doc = fitz.open(str(local_path))
+                    page = doc.load_page(0)
+                    pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+                    pix.save(str(target_path))
+                    doc.close()
             version = int(target_path.stat().st_mtime)
             return f"/static/cache/marketing_previews/{quote(target_name)}?v={version}"
         except Exception as exc:
             log_handled_error(f"marketing preview build failed for {asset_key}", exc)
-            return f"/marketing-doc-preview/{asset_key}"
+            return _marketing_drive_thumbnail_url(asset_key) or f"/marketing-doc-preview/{asset_key}"
 
     return f"/marketing-doc-preview/{asset_key}"
 
@@ -12992,6 +13012,10 @@ async def marketing_doc_preview(asset_key: str):
             return JSONResponse({"error": "מסמך השיווק לא הוגדר."}, status_code=404)
         local_path = Path(spec["local_path"])
         if not local_path.exists() or not local_path.is_file():
+            # On Vercel (no local files): redirect to Drive thumbnail
+            thumb = _marketing_drive_thumbnail_url(asset_key)
+            if thumb:
+                return RedirectResponse(thumb, status_code=302)
             return JSONResponse({"error": f"מסמך שיווק לא נמצא מקומית: {local_path.name}"}, status_code=404)
         suffix = local_path.suffix.lower()
         if suffix in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
@@ -13001,17 +13025,30 @@ async def marketing_doc_preview(asset_key: str):
         preview_path = MARKETING_PREVIEW_CACHE_DIR / f"{asset_key}.png"
         source_mtime = local_path.stat().st_mtime
         if not preview_path.exists() or preview_path.stat().st_mtime < source_mtime:
-            with tempfile.TemporaryDirectory(prefix="marketing-preview-") as temp_dir:
-                subprocess.run(
-                    ["qlmanage", "-t", "-s", "480", "-o", temp_dir, str(local_path)],
-                    check=True,
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                )
-                generated_preview = Path(temp_dir) / f"{local_path.name}.png"
-                if not generated_preview.exists():
-                    raise FileNotFoundError("לא הצלחתי לייצר תצוגה מקדימה למסמך.")
-                shutil.copyfile(generated_preview, preview_path)
+            generated = False
+            # Try qlmanage (macOS local)
+            try:
+                with tempfile.TemporaryDirectory(prefix="marketing-preview-") as temp_dir:
+                    subprocess.run(
+                        ["qlmanage", "-t", "-s", "480", "-o", temp_dir, str(local_path)],
+                        check=True,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                    )
+                    gen = Path(temp_dir) / f"{local_path.name}.png"
+                    if gen.exists():
+                        shutil.copyfile(gen, preview_path)
+                        generated = True
+            except Exception:
+                pass
+            # Fallback: PyMuPDF (works on Vercel/Linux)
+            if not generated:
+                import fitz
+                doc = fitz.open(str(local_path))
+                page = doc.load_page(0)
+                pix = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
+                pix.save(str(preview_path))
+                doc.close()
         return FileResponse(preview_path, media_type="image/png")
     except Exception as exc:
         log_handled_error("marketing_doc_preview failed", exc)
