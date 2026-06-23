@@ -7,7 +7,7 @@ from services.parsers.amram import parse as parse_amram
 from services.parsers.artec import parse as parse_artec
 from services.parsers.asbit import parse as parse_asbit
 from services.parsers.brosh import parse as parse_brosh
-from services.parsers.common import extract_text_pdfplumber, fix_hebrew_text, normalize_ws, ocr_pdf, to_purchase_order
+from services.parsers.common import extract_text_pdfplumber, fix_hebrew_text, fix_hebrew_rtl_text, normalize_ws, ocr_pdf, to_purchase_order
 from services.parsers.damari import parse as parse_damari
 from services.parsers.generic import parse_generic, parse_prashkovsky
 from services.parsers.hagivaa import parse as parse_hagivaa
@@ -125,8 +125,12 @@ def parse_purchase_order(pdf_path: str | Path):
         or 'מ"עב עוציב רדנופש ןולדפ' in raw_text
     ) and "הזמנת רכש" in fixed_text:
         shponder_text = ocr_pdf(pdf_path)
+        rtl_fixed_text = fix_hebrew_rtl_text(raw_text)
         parsed = _build_purchase_order(
-            parse_shponder_pedlon(shponder_text) or parse_shponder_pedlon(fixed_text) or parse_shponder_pedlon(raw_text),
+            parse_shponder_pedlon(shponder_text)
+            or parse_shponder_pedlon(rtl_fixed_text)
+            or parse_shponder_pedlon(fixed_text)
+            or parse_shponder_pedlon(raw_text),
             raw_text,
             "shponder_pedlon",
         )

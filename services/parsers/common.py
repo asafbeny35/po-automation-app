@@ -340,3 +340,33 @@ def fix_hebrew_text(text: str) -> str:
             fixed.append(line)
 
     return "\n".join(fixed)
+
+
+def _is_mostly_hebrew(token: str) -> bool:
+    return sum(1 for c in token if "א" <= c <= "ת") > len(token) / 2
+
+
+def fix_hebrew_rtl_text(text: str) -> str:
+    """
+    Better RTL fixer for Hebrew PDFs where pdfplumber returns visual order.
+
+    fix_hebrew_text() does line[::-1] which also reverses numbers/dates/amounts.
+    This function reverses TOKEN ORDER and only character-reverses Hebrew tokens,
+    leaving numbers, dates, prices and SKUs intact.
+
+    Use this for SAP / Israeli ERP PDFs (e.g. shponder_pedlon) where numbers are
+    already in correct LTR order inside a RTL visual line.
+    """
+    lines = text.split("\n")
+    fixed = []
+    for line in lines:
+        if sum(1 for c in line if "א" <= c <= "ת") > 3:
+            tokens = line.split()
+            fixed_tokens = [
+                token[::-1] if _is_mostly_hebrew(token) else token
+                for token in reversed(tokens)
+            ]
+            fixed.append(" ".join(fixed_tokens))
+        else:
+            fixed.append(line)
+    return "\n".join(fixed)
