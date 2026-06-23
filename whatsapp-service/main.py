@@ -103,14 +103,18 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
     """file_items: list of {name, content_b64, size_bytes}"""
     phone = _normalize_phone(phone)
     _, page = await _get_context_and_page()
+    await page.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});
+        window.chrome = {runtime: {}};
+    """)
 
     from urllib.parse import quote
     send_url = f"https://web.whatsapp.com/send?phone={phone}"
     if message:
         send_url += f"&text={quote(message)}"
 
-    await page.goto(send_url, wait_until="domcontentloaded", timeout=30000)
-    await page.bring_to_front()
+    await page.goto(send_url, wait_until="domcontentloaded", timeout=60000)
 
     attach_button = page.locator("button[aria-label='Attach']")
     message_box = page.locator(
@@ -238,7 +242,13 @@ async def health():
 async def _get_whatsapp_screenshot() -> bytes:
     import base64 as _b64
     _, page = await _get_context_and_page()
-    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=30000)
+    # Hide automation fingerprints before loading
+    await page.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+        Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});
+        window.chrome = {runtime: {}};
+    """)
+    await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=60000)
     # Wait for QR canvas or chat
     for _ in range(20):
         await page.wait_for_timeout(1500)
