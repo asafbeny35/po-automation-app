@@ -26,6 +26,38 @@ _CONTEXT = None
 _PAGE = None  # single persistent page — keeps WhatsApp Web in memory
 _CONTEXT_LOCK = asyncio.Lock()
 _BIDI_CHARS = {0x200F, 0x200E, 0x202B, 0x202A, 0x202C, 0x202D, 0x202E}
+_WA_READY = False  # True once WhatsApp Web is loaded
+
+
+@app.on_event("startup")
+async def _startup():
+    """Pre-warm the browser and load WhatsApp Web on startup."""
+    asyncio.create_task(_warm_whatsapp())
+
+
+async def _warm_whatsapp():
+    global _WA_READY
+    try:
+        import logging
+        logging.warning("Warming up WhatsApp Web...")
+        _, page = await _get_fresh_page()
+        await page.add_init_script("""
+            Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
+            Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});
+            window.chrome = {runtime: {}};
+        """)
+        await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=60000)
+        # Wait until chat is ready (authenticated)
+        for _ in range(60):
+            await page.wait_for_timeout(2000)
+            chat = page.locator("div[aria-label='Chat list'], div[data-icon='chat'], canvas")
+            if await chat.count() > 0:
+                break
+        _WA_READY = True
+        logging.warning("WhatsApp Web warmed up and ready.")
+    except Exception as exc:
+        import logging
+        logging.error(f"WhatsApp warm-up failed: {exc}")
 
 PROFILE_DIR = Path(os.environ.get("WHATSAPP_PROFILE_DIR", "/app/whatsapp-profile"))
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
@@ -117,11 +149,6 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
     """file_items: list of {name, content_b64, size_bytes}"""
     phone = _normalize_phone(phone)
     _, page = await _get_fresh_page()
-    await page.add_init_script("""
-        Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
-        Object.defineProperty(navigator, 'plugins', {get: () => [1,2,3]});
-        window.chrome = {runtime: {}};
-    """)
 
     from urllib.parse import quote
     send_url = f"https://web.whatsapp.com/send?phone={phone}"
@@ -246,7 +273,7 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
 
 @app.get("/health")
 async def health():
-    return {"ok": True}
+    return {"ok": True, "wa_ready": _WA_READY}
 
 
 async def _get_whatsapp_screenshot() -> bytes:
