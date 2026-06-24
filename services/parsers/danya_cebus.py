@@ -45,6 +45,56 @@ def _rtl_line(s: str) -> str:
     return " ".join(result)
 
 
+def _extract_delivery_address(pdf_path) -> str:
+    """
+    Extract delivery address using x-coordinates to isolate the middle column.
+    The PDF has 3 visual columns:
+      - x < 270:  left (print date, order date)
+      - x 355-465: middle (delivery address content)
+      - x > 470:  right (company name, sender header)
+    pdfplumber reads left→right so all three appear merged per line.
+    """
+    try:
+        import pdfplumber
+        from collections import defaultdict
+
+        with pdfplumber.open(pdf_path) as pdf:
+            words = pdf.pages[0].extract_words(x_tolerance=3, y_tolerance=3)
+
+        lines_by_y: dict[int, list] = defaultdict(list)
+        for w in words:
+            lines_by_y[round(w["top"] / 5) * 5].append(w)
+
+        addr_start_y = addr_end_y = None
+        for y in sorted(lines_by_y):
+            texts = " ".join(w["text"] for w in lines_by_y[y])
+            if ":חולשמל" in texts:
+                addr_start_y = y
+            elif addr_start_y and "ןופלט" in texts:
+                addr_end_y = y
+                break
+
+        if not addr_start_y:
+            return ""
+        addr_end_y = addr_end_y or (addr_start_y + 80)
+
+        result = []
+        for y in sorted(lines_by_y):
+            if not (addr_start_y < y < addr_end_y):
+                continue
+            col_words = [w for w in lines_by_y[y] if 355 <= w["x0"] <= 465]
+            if not col_words:
+                continue
+            # sort right→left (descending x) to restore RTL reading order
+            col_words.sort(key=lambda w: -w["x0"])
+            tokens = [t[::-1] if re.search(r"[א-ת]", t) else t for t in (w["text"] for w in col_words)]
+            result.append(" ".join(tokens))
+
+        return "\n".join(result)
+    except Exception:
+        return ""
+
+
 def _amount(s: str) -> float:
     cleaned = re.sub(r"[^\d.]", "", (s or "").replace(",", ""))
     try:
@@ -116,7 +166,7 @@ def _parse_items(raw_lines: list[str]) -> list[POItem]:
 
 # ── main parse ────────────────────────────────────────────────────────────────
 
-def parse(text: str):
+def parse(text: str, pdf_path=None):
     if not _detect(text):
         return None
 
@@ -158,24 +208,9 @@ def parse(text: str):
     if not subtotal and total and vat:
         subtotal = round(total - vat, 2)
 
-    # Delivery address: lines between ":חולשמל תבותכ" header and supplier/PO number line
-    # Line format after header: "[print_date time] :הספדה ךיראת [company reversed]"
-    # Followed by street line and city/zip line — all need token-level RTL restoration
-    delivery_address = ""
-    addr_lines = []
-    in_addr = False
-    for line in raw_lines:
-        if ":חולשמל תבותכ" in line:
-            in_addr = True
-            continue
-        if in_addr:
-            if ":השרומ קסוע .סמ" in line or "'סמ םירמוח תנמזה" in line or "ןופלט" in line:
-                break
-            # Strip print-date prefix from first address line
-            stripped = re.sub(r"^\d{2}/\d{2}/\d{2,4}\s+\d{2}:\d{2}\s*:הספדה ךיראת\s*", "", line).strip()
-            if stripped:
-                addr_lines.append(_rtl_line(stripped))
-    delivery_address = "\n".join(addr_lines)
+    # Delivery address: extracted from the middle column (x 355-465) of the PDF
+    # using word coordinates to avoid mixing with the company name (far-right column)
+    delivery_address = _extract_delivery_address(pdf_path) if pdf_path else ""
 
     # Office orderer (ניצן גולן) — kept in extra, not the field contact
     orderer_reversed = _first(r"(.+?)\s*:ןימזמה םש", flat)

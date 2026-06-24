@@ -77,7 +77,7 @@ def parse_purchase_order(pdf_path: str | Path):
 
     # Danya Cebus must be detected on RAW text (before fix_hebrew_text reverses numbers/emails/dates)
     if _DANYA_MARKER in raw_text or _DANYA_DOMAIN in raw_text.lower():
-        parsed = _build_purchase_order(parse_danya_cebus(raw_text), raw_text, "danya_cebus")
+        parsed = _build_purchase_order(parse_danya_cebus(raw_text, pdf_path=pdf_path), raw_text, "danya_cebus")
         if parsed:
             return parsed
 
