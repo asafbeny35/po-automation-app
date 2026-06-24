@@ -36,6 +36,15 @@ def _unheb(s: str) -> str:
     return _clean(s)[::-1]
 
 
+def _rtl_line(s: str) -> str:
+    """Restore a mixed Hebrew+numbers RTL line: reverse token order, char-reverse Hebrew tokens."""
+    tokens = _clean(s).split()
+    result = []
+    for t in reversed(tokens):
+        result.append(t[::-1] if re.search(r"[א-ת]", t) else t)
+    return " ".join(result)
+
+
 def _amount(s: str) -> float:
     cleaned = re.sub(r"[^\d.]", "", (s or "").replace(",", ""))
     try:
@@ -149,6 +158,25 @@ def parse(text: str):
     if not subtotal and total and vat:
         subtotal = round(total - vat, 2)
 
+    # Delivery address: lines between ":חולשמל תבותכ" header and supplier/PO number line
+    # Line format after header: "[print_date time] :הספדה ךיראת [company reversed]"
+    # Followed by street line and city/zip line — all need token-level RTL restoration
+    delivery_address = ""
+    addr_lines = []
+    in_addr = False
+    for line in raw_lines:
+        if ":חולשמל תבותכ" in line:
+            in_addr = True
+            continue
+        if in_addr:
+            if ":השרומ קסוע .סמ" in line or "'סמ םירמוח תנמזה" in line or "ןופלט" in line:
+                break
+            # Strip print-date prefix from first address line
+            stripped = re.sub(r"^\d{2}/\d{2}/\d{2,4}\s+\d{2}:\d{2}\s*:הספדה ךיראת\s*", "", line).strip()
+            if stripped:
+                addr_lines.append(_rtl_line(stripped))
+    delivery_address = "\n".join(addr_lines)
+
     # Office orderer (ניצן גולן) — kept in extra, not the field contact
     orderer_reversed = _first(r"(.+?)\s*:ןימזמה םש", flat)
     orderer_name = _unheb(orderer_reversed) if orderer_reversed else ""
@@ -186,7 +214,7 @@ def parse(text: str):
         "customer_id": CUSTOMER_ID,
         "customer_phone": "03-5383838",
         "customer_email": customer_email,
-        "delivery_address": "",
+        "delivery_address": delivery_address,
         "po_number": po_number,
         "po_date": po_date,
         "subtotal": subtotal,
