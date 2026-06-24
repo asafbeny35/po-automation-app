@@ -28,6 +28,8 @@ from services.parsers.yargad import parse as parse_yargad
 from services.parsers.yitzhak_stern import parse as parse_yitzhak_stern
 from services.parsers.ya_alon import parse as parse_ya_alon
 from services.parsers.yuval_alon import parse as parse_yuval_alon
+from services.parsers.danya_cebus import parse as parse_danya_cebus
+from services.parsers.danya_cebus import _REVERSED_MARKER as _DANYA_MARKER, _EMAIL_DOMAIN as _DANYA_DOMAIN
 
 
 def _build_purchase_order(result, raw_text: str, parser_name: str = "") -> PurchaseOrderData | None:
@@ -72,6 +74,12 @@ def parse_purchase_order(pdf_path: str | Path):
     raw_text = extract_text_pdfplumber(pdf_path)
     if len(normalize_ws(raw_text)) < 40:
         raw_text = ocr_pdf(pdf_path)
+
+    # Danya Cebus must be detected on RAW text (before fix_hebrew_text reverses numbers/emails/dates)
+    if _DANYA_MARKER in raw_text or _DANYA_DOMAIN in raw_text.lower():
+        parsed = _build_purchase_order(parse_danya_cebus(raw_text), raw_text, "danya_cebus")
+        if parsed:
+            return parsed
 
     fixed_text = fix_hebrew_text(raw_text)
 
