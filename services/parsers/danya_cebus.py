@@ -165,6 +165,14 @@ def parse(text: str):
         phones = re.findall(r"0\d{1,2}-\d{6,7}", flat)
         logistics_phone = phones[0] if phones else ""
 
+    # Logistics helper: "054-544-7208 :ןופלטב ןינקעו ףסוי :יטסיגול רזוע"
+    logistics_note = ""
+    lm = re.search(r"(0\d{2}-\d{3}-\d{4})\s*:ןופלטב\s+(.+?)\s*:יטסיגול רזוע", flat)
+    if lm:
+        helper_phone = lm.group(1)
+        helper_name = _unheb(lm.group(2))
+        logistics_note = f"עוזר לוגיסטי: {helper_name} | {helper_phone}"
+
     # Email
     customer_email = _extract_email(flat)
 
@@ -193,6 +201,7 @@ def parse(text: str):
             "vat_rate": vat_rate,
             "supplier_number": supplier_no,
             "orderer_name": orderer_name,
+            "order_notes": logistics_note,
             "parser_name": "danya_cebus",
         },
     }
