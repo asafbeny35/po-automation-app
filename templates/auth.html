@@ -173,9 +173,16 @@
     }
     .auth-card {
       padding: 22px;
-      display: grid;
+      display: flex;
+      flex-direction: column;
       gap: 14px;
       box-shadow: var(--shadow-md);
+    }
+    .auth-card .button-row:last-of-type {
+      margin-top: auto;
+    }
+    .auth-card .button {
+      width: 100%;
     }
     .auth-card h3 {
       margin: 0;
