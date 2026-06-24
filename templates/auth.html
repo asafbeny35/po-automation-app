@@ -3,406 +3,419 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>כניסה ל-PO Automation</title>
+  <title>כניסה — PO Automation</title>
   <style>
     :root {
-      --brand: #ff7d12;
-      --brand-dark: #c2410c;
-      --brand-soft: #fff2e8;
-      --ink: #18212f;
-      --muted: #667085;
-      --line: #e6eaf0;
-      --panel: rgba(255,255,255,0.92);
-      --page: linear-gradient(180deg, #fff8f2 0%, #f4f7fb 100%);
-      --shadow-lg: 0 24px 70px rgba(15, 23, 42, 0.10);
-      --shadow-md: 0 14px 34px rgba(15, 23, 42, 0.08);
-      --shadow-sm: 0 10px 22px rgba(15, 23, 42, 0.06);
+      --brand: #e8500a;
+      --brand-hover: #c73f06;
+      --brand-soft: #fdf0ea;
+      --ink: #111827;
+      --ink2: #374151;
+      --muted: #6b7280;
+      --subtle: #9ca3af;
+      --line: #e5e7eb;
+      --line-soft: #f9fafb;
+      --white: #ffffff;
+      --page-bg: #f3f4f6;
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.07), 0 8px 24px rgba(0,0,0,0.06);
+      --radius: 20px;
+      --radius-sm: 12px;
+      --radius-xs: 8px;
     }
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--page-bg);
+      color: var(--ink);
       min-height: 100vh;
       min-height: 100dvh;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--page);
-      color: var(--ink);
-      padding: max(18px, env(safe-area-inset-top)) 18px max(22px, env(safe-area-inset-bottom));
-    }
-    .auth-shell {
-      max-width: 1180px;
-      margin: 0 auto;
-      display: grid;
-      gap: 22px;
-    }
-    .hero, .auth-panel, .auth-card {
-      background: var(--panel);
-      border: 1px solid rgba(255,255,255,0.9);
-      border-radius: 28px;
-      box-shadow: var(--shadow-lg);
-    }
-    .hero {
-      padding: 26px 28px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 22px;
-    }
-    .hero-copy { max-width: 700px; }
-    .logo {
-      width: 170px;
-      max-width: 35vw;
-      height: auto;
-      object-fit: contain;
-      filter: drop-shadow(0 10px 22px rgba(2, 12, 83, 0.12));
-    }
-    .kicker {
-      display: inline-flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: var(--brand-soft);
-      color: var(--brand-dark);
-      font-size: 12px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
+      padding: max(20px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
     }
-    h1 {
-      margin: 12px 0 10px;
-      font-size: 42px;
-      line-height: 1.04;
-      letter-spacing: -0.03em;
-    }
-    .hero p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 16px;
-      line-height: 1.7;
-    }
-    .auth-panel {
-      padding: 24px;
-      display: grid;
-      gap: 18px;
-    }
-    .panel-head {
+
+    .brand-header {
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
     }
-    .panel-head h2 {
-      margin: 0;
-      font-size: 30px;
+    .brand-header img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--white);
+      padding: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.07);
     }
-    .panel-head p {
-      margin: 8px 0 0;
+    .brand-name {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+    .brand-sub {
+      font-size: 13px;
       color: var(--muted);
-      line-height: 1.7;
+      margin-top: 1px;
     }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--white);
+      border-radius: var(--radius);
+      box-shadow: var(--card-shadow);
+      border: 1px solid var(--line);
+      overflow: hidden;
+    }
+
+    .user-switcher {
+      display: flex;
+      gap: 8px;
+      padding: 16px 16px 0;
+    }
+    .user-tab {
+      flex: 1;
+      text-align: center;
+      padding: 9px 12px;
+      border-radius: var(--radius-xs);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: var(--line-soft);
+      text-decoration: none;
+      border: 1px solid var(--line);
+      transition: all 0.15s ease;
+      display: block;
+    }
+    .user-tab .user-meta {
+      display: block;
+      font-size: 10px;
+      font-weight: 500;
+      opacity: 0.7;
+      margin-top: 2px;
+    }
+    .user-tab.active {
+      background: var(--brand-soft);
+      color: var(--brand);
+      border-color: rgba(232,80,10,0.2);
+      font-weight: 700;
+    }
+
     .methods-row {
       display: flex;
+      gap: 6px;
+      padding: 12px 16px 0;
       flex-wrap: wrap;
-      gap: 10px;
     }
-    .users-row {
+    .mpill {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 999px;
+      background: var(--line-soft);
+      color: var(--subtle);
+      border: 1px solid var(--line);
+    }
+    .mpill.on {
+      background: #dcfce7;
+      color: #166534;
+      border-color: #bbf7d0;
+    }
+
+    .card-body {
+      padding: 16px;
       display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
       gap: 10px;
-      margin-top: 14px;
     }
-    .user-pill {
-      display: inline-flex;
+
+    .auth-block {
+      border: 1px solid var(--line);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .auth-block.disabled { opacity: 0.45; pointer-events: none; }
+
+    .auth-block-header {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      border-radius: 999px;
+      gap: 10px;
+      padding: 12px 14px;
+      background: var(--line-soft);
+      border-bottom: 1px solid var(--line);
+    }
+    .auth-block-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+      background: var(--white);
       border: 1px solid var(--line);
-      background: white;
-      color: var(--muted);
+    }
+    .auth-block-title {
       font-size: 13px;
-      font-weight: 800;
-      text-decoration: none;
-      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+      color: var(--ink);
     }
-    .user-pill.active {
-      border-color: #ffd4b0;
-      background: var(--brand-soft);
-      color: var(--brand-dark);
-    }
-    .user-pill-meta {
+    .auth-block-desc {
       font-size: 11px;
-      opacity: 0.9;
+      color: var(--muted);
+      margin-top: 1px;
+      line-height: 1.4;
     }
-    .method-pill {
-      padding: 10px 14px;
+    .auth-block-badge {
+      margin-right: auto;
+      font-size: 9px;
+      font-weight: 700;
+      padding: 2px 7px;
       border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      white-space: nowrap;
+    }
+
+    .auth-block-body {
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+
+    .field-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      margin-bottom: 4px;
+      display: block;
+    }
+    input[type="text"], input[type="email"] {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius-xs);
+      background: var(--white);
+      padding: 9px 11px;
+      font: inherit;
+      font-size: 14px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s ease;
+    }
+    input:focus { border-color: var(--brand); box-shadow: 0 0 0 3px rgba(232,80,10,0.09); }
+
+    .btn {
+      display: block;
+      width: 100%;
+      border: none;
+      border-radius: var(--radius-xs);
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.15s ease;
+    }
+    .btn-primary { background: var(--brand); color: white; }
+    .btn-primary:hover { background: var(--brand-hover); }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-ghost {
+      background: var(--white);
+      color: var(--ink2);
+      border: 1px solid var(--line);
+    }
+    .btn-ghost:hover { background: var(--line-soft); }
+
+    .qr-wrap {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      padding: 10px;
+      background: var(--line-soft);
+      border-radius: var(--radius-xs);
+      border: 1px solid var(--line);
+    }
+    .qr-wrap img {
+      width: 80px;
+      height: 80px;
+      border-radius: 6px;
       border: 1px solid var(--line);
       background: white;
+      flex-shrink: 0;
+    }
+    .qr-info { flex: 1; min-width: 0; }
+
+    .auth-status {
+      font-size: 12px;
+      font-weight: 600;
       color: var(--muted);
-      font-size: 13px;
-      font-weight: 800;
+      min-height: 16px;
     }
-    .method-pill.active {
-      border-color: #ffd4b0;
-      background: var(--brand-soft);
-      color: var(--brand-dark);
-    }
+    .auth-status.success { color: #166534; }
+    .auth-status.error { color: #b91c1c; }
+
     .remember-row {
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 14px 16px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: white;
-      box-shadow: var(--shadow-sm);
+      gap: 9px;
+      padding: 12px 16px;
+      background: var(--line-soft);
+      border-top: 1px solid var(--line);
     }
-    .auth-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 18px;
-      align-items: start;
-    }
-    .auth-card {
-      padding: 20px;
-      display: grid;
-      gap: 14px;
-      box-shadow: var(--shadow-md);
-    }
-    .auth-card h3 {
-      margin: 0;
-      font-size: 22px;
-    }
-    .auth-card p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 14px;
-    }
-    .auth-card.disabled {
-      opacity: 0.62;
-    }
-    .field {
-      display: grid;
-      gap: 8px;
-    }
-    .field label {
+    .remember-row label {
       font-size: 13px;
-      font-weight: 800;
-      color: var(--muted);
-    }
-    input[type="text"], input[type="email"], input[type="number"] {
-      width: 100%;
-      border-radius: 16px;
-      border: 1px solid var(--line);
-      background: #fff;
-      padding: 14px 16px;
-      font: inherit;
-      color: var(--ink);
-      box-shadow: inset 0 1px 0 rgba(255,255,255,0.85);
-    }
-    .button, .ghost-button {
-      appearance: none;
-      border: none;
-      border-radius: 18px;
-      padding: 14px 18px;
-      font: inherit;
-      font-weight: 800;
+      color: var(--ink2);
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
     }
-    .button:hover, .ghost-button:hover { transform: translateY(-1px); }
-    .button {
-      background: linear-gradient(135deg, var(--brand) 0%, #ff9d4c 100%);
-      color: white;
-      box-shadow: 0 16px 28px rgba(255,125,18,0.18);
+    input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: var(--brand);
+      cursor: pointer;
+      flex-shrink: 0;
     }
-    .ghost-button {
-      background: white;
-      color: var(--brand-dark);
-      border: 1px solid #ffd4b0;
-      box-shadow: var(--shadow-sm);
+
+    .auth-footer {
+      margin-top: 18px;
+      font-size: 11px;
+      color: var(--subtle);
+      text-align: center;
     }
-    .button-row {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .qr-wrap {
-      display: grid;
-      grid-template-columns: 140px minmax(0, 1fr);
-      gap: 16px;
-      align-items: center;
-      padding: 12px;
-      border-radius: 18px;
-      border: 1px solid var(--line);
-      background: #fff;
-    }
-    .qr-wrap img {
-      width: 140px;
-      height: 140px;
-      border-radius: 14px;
-      border: 1px solid var(--line);
-      background: white;
-      padding: 8px;
-    }
-    .auth-status {
-      min-height: 24px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--muted);
-    }
-    .auth-status.success { color: #137d39; }
-    .auth-status.error { color: #b42318; }
-    .notes {
-      padding: 16px 18px;
-      border-radius: 18px;
-      border: 1px solid #ffd4b0;
-      background: #fffaf6;
-      color: var(--muted);
-      line-height: 1.8;
-      font-size: 14px;
-    }
-    @media (max-width: 900px) {
-      body {
-        padding-left: 14px;
-        padding-right: 14px;
-      }
-      .auth-shell {
-        gap: 16px;
-      }
-      .hero { padding: 22px; }
-      .auth-grid { grid-template-columns: 1fr; }
-      .qr-wrap { grid-template-columns: 1fr; justify-items: center; text-align: center; }
-      h1 { font-size: 34px; }
-      .hero { display: grid; justify-items: center; text-align: center; }
-      .auth-panel {
-        padding: 18px;
-      }
-      .auth-card {
-        padding: 16px;
-      }
-      .button,
-      .ghost-button {
-        width: 100%;
-      }
+
+    @media (max-width: 440px) {
+      .brand-header img { width: 48px; height: 48px; }
+      .brand-name { font-size: 18px; }
     }
   </style>
 </head>
 <body>
-  <div class="auth-shell">
-    <section class="hero">
-      <div class="hero-copy">
-        <div class="kicker">PO Automation</div>
-        <h1>{% if setup_required %}הגדרה ראשונית של שכבת האבטחה{% else %}כניסה מאובטחת לאפליקציה{% endif %}</h1>
-        <p>
-          {% if setup_required %}
-          לפני הכניסה ניצור עבורך שכבת אבטחה אמיתית. אפשר להפעיל Passkey עם Touch ID, אפליקציית Authenticator, וקוד במייל. מומלץ להפעיל לפחות שתי שיטות.
-          {% else %}
-          בחר איך להיכנס לאפליקציה: Passkey עם Touch ID, קוד מאפליקציית Authenticator, או קוד במייל. אפשר גם לבקש שיזכור את המחשב הזה ל־30 יום.
-          {% endif %}
-        </p>
-        <div class="users-row">
-          {% for user in auth_users %}
-          <a class="user-pill {% if user.id == selected_user_id %}active{% endif %}" href="/auth/login?user={{ user.id }}">
-            <span>{{ user.display_name }}</span>
-            <span class="user-pill-meta">
-              {% if user.setup_required %}
-              דורש הגדרה
-              {% else %}
-              מוכן לכניסה
-              {% endif %}
-            </span>
-          </a>
-          {% endfor %}
-        </div>
-      </div>
-      <img class="logo" src="/static/logo.png" alt="לוגו בן יעקב פתרונות טקסטיל">
-    </section>
 
-    <section class="auth-panel">
-      <div class="panel-head">
-        <div>
-          <h2>{% if setup_required %}הפעלת זיהוי{% else %}בחר דרך כניסה{% endif %}</h2>
-          <p>המערכת תישאר נעולה עד להזדהות מלאה. כרגע אתה מגדיר או מחבר את המשתמש <strong>{{ selected_user_name }}</strong>. אחרי כניסה אפשר להתנתק ידנית, או לסמן “זכור אותי” כדי לדלג על ההזדהות במחשב הזה ל־30 יום.</p>
-        </div>
-        <div class="methods-row">
-          <div class="method-pill {% if methods.passkey %}active{% endif %}">Passkey / Touch ID</div>
-          <div class="method-pill {% if methods.totp %}active{% endif %}">Authenticator</div>
-          <div class="method-pill {% if methods.email %}active{% endif %}">קוד במייל</div>
-        </div>
-      </div>
+  <div class="brand-header">
+    <img src="/static/logo.png" alt="לוגו">
+    <div style="text-align:center;">
+      <div class="brand-name">בן יעקב פתרונות טקסטיל</div>
+      <div class="brand-sub">{{ "הגדרה ראשונית" if setup_required else "כניסה מאובטחת" }}</div>
+    </div>
+  </div>
 
-      <div class="remember-row">
-        <input id="rememberMe" type="checkbox">
-        <label for="rememberMe">זכור אותי במחשב הזה ל־30 יום</label>
-      </div>
+  <div class="card">
 
-      <div class="auth-grid">
-        <section class="auth-card {% if not setup_required and not methods.passkey %}disabled{% endif %}">
-          <h3>Passkey עם Touch ID</h3>
-          <p>{% if setup_required %}הדרך הכי נוחה על המק שלך. תלחץ, תאשר עם Touch ID, והמערכת תרשום Passkey מקומי מאובטח.{% else %}התחברות מהירה עם Touch ID דרך Passkey. אין צורך להקליד שום קוד.{% endif %}</p>
-          <div class="button-row">
-            <button id="passkeyActionBtn" class="button" type="button">{% if methods.passkey %}התחבר עם Passkey{% else %}הגדר Passkey{% endif %}</button>
+    <div class="user-switcher">
+      {% for user in auth_users %}
+      <a class="user-tab {% if user.id == selected_user_id %}active{% endif %}" href="/auth/login?user={{ user.id }}">
+        {{ user.display_name }}
+        <span class="user-meta">{% if user.setup_required %}דורש הגדרה{% else %}מוכן לכניסה{% endif %}</span>
+      </a>
+      {% endfor %}
+    </div>
+
+    <div class="methods-row">
+      <div class="mpill {% if methods.passkey %}on{% endif %}">Passkey</div>
+      <div class="mpill {% if methods.totp %}on{% endif %}">Authenticator</div>
+      <div class="mpill {% if methods.email %}on{% endif %}">מייל</div>
+    </div>
+
+    <div class="card-body">
+
+      <!-- Passkey -->
+      <div class="auth-block {% if not setup_required and not methods.passkey %}disabled{% endif %}">
+        <div class="auth-block-header">
+          <div class="auth-block-icon">🔑</div>
+          <div>
+            <div class="auth-block-title">Passkey עם Touch ID</div>
+            <div class="auth-block-desc">{% if methods.passkey and not setup_required %}כניסה מהירה עם טביעת אצבע{% else %}הגדר Passkey מאובטח{% endif %}</div>
           </div>
+          {% if methods.passkey %}<div class="auth-block-badge">✓ מופעל</div>{% endif %}
+        </div>
+        <div class="auth-block-body">
+          <button id="passkeyActionBtn" class="btn btn-primary" type="button">
+            {% if methods.passkey and not setup_required %}התחבר עם Passkey{% else %}הגדר Passkey{% endif %}
+          </button>
           <div id="passkeyStatus" class="auth-status"></div>
-        </section>
+        </div>
+      </div>
 
-        <section class="auth-card {% if not setup_required and not methods.totp %}disabled{% endif %}">
-          <h3>Google Authenticator</h3>
-          <p>{% if setup_required or not methods.totp %}סרוק את ה־QR לאפליקציית Authenticator ואז הכנס קוד בן 6 ספרות כדי להפעיל את השיטה.{% else %}הכנס את הקוד בן 6 הספרות מהאפליקציה כדי להיכנס.{% endif %}</p>
+      <!-- TOTP -->
+      <div class="auth-block {% if not setup_required and not methods.totp %}disabled{% endif %}">
+        <div class="auth-block-header">
+          <div class="auth-block-icon">📱</div>
+          <div>
+            <div class="auth-block-title">Google Authenticator</div>
+            <div class="auth-block-desc">{% if methods.totp and not setup_required %}קוד 6 ספרות מהאפליקציה{% else %}סרוק QR ואמת קוד ראשון{% endif %}</div>
+          </div>
+          {% if methods.totp %}<div class="auth-block-badge">✓ מופעל</div>{% endif %}
+        </div>
+        <div class="auth-block-body">
           {% if setup_required or not methods.totp %}
           <div class="qr-wrap">
-            <img src="{{ totp_qr_data_uri }}" alt="QR לאפליקציית Authenticator">
-            <div>
-              <div class="field">
-                <label>מפתח ידני</label>
-                <input type="text" value="{{ totp_secret }}" readonly>
-              </div>
-              <p style="margin-top:12px;">אם נוח לך, אפשר גם להזין ידנית את המפתח הזה באפליקציה.</p>
+            <img src="{{ totp_qr_data_uri }}" alt="QR Code">
+            <div class="qr-info">
+              <label class="field-label">מפתח ידני</label>
+              <input type="text" value="{{ totp_secret }}" readonly style="font-family: monospace; font-size: 12px;">
             </div>
           </div>
           {% endif %}
-          <div class="field">
-            <label for="totpCode">{% if setup_required or not methods.totp %}קוד לאימות והפעלה{% else %}קוד התחברות{% endif %}</label>
+          <div>
+            <label class="field-label" for="totpCode">{% if setup_required or not methods.totp %}קוד לאימות והפעלה{% else %}קוד כניסה{% endif %}</label>
             <input id="totpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
           </div>
-          <div class="button-row">
-            <button id="totpActionBtn" class="button" type="button">{% if methods.totp and not setup_required %}התחבר עם Authenticator{% else %}אמת והפעל{% endif %}</button>
-          </div>
+          <button id="totpActionBtn" class="btn btn-primary" type="button">
+            {% if methods.totp and not setup_required %}התחבר עם Authenticator{% else %}אמת והפעל{% endif %}
+          </button>
           <div id="totpStatus" class="auth-status"></div>
-        </section>
+        </div>
+      </div>
 
-        <section class="auth-card {% if not setup_required and not methods.email %}disabled{% endif %}">
-          <h3>קוד במייל</h3>
-          <p>{% if setup_required or not methods.email %}בחר כתובת מייל שאליה תרצה לקבל קודי כניסה. השליחה מתבצעת דרך Mail במק, בלי עלות חודשית.{% else %}נשלח קוד חד־פעמי לכתובת המייל שהוגדרה למערכת ואז תוכל להיכנס.{% endif %}</p>
+      <!-- Email -->
+      <div class="auth-block {% if not setup_required and not methods.email %}disabled{% endif %}">
+        <div class="auth-block-header">
+          <div class="auth-block-icon">✉️</div>
+          <div>
+            <div class="auth-block-title">קוד במייל</div>
+            <div class="auth-block-desc">{% if methods.email and not setup_required %}קוד חד-פעמי לכתובת שהוגדרה{% else %}הגדר כתובת מייל לקבלת קודים{% endif %}</div>
+          </div>
+          {% if methods.email %}<div class="auth-block-badge">✓ מופעל</div>{% endif %}
+        </div>
+        <div class="auth-block-body">
           {% if setup_required or not methods.email %}
-          <div class="field">
-            <label for="emailAddress">כתובת מייל</label>
+          <div>
+            <label class="field-label" for="emailAddress">כתובת מייל</label>
             <input id="emailAddress" type="email" value="{{ email_address }}" placeholder="name@example.com">
           </div>
           {% endif %}
-          <div class="button-row">
-            <button id="emailSendBtn" class="ghost-button" type="button">שלח קוד</button>
-          </div>
-          <div class="field">
-            <label for="emailCode">קוד שקיבלת במייל</label>
+          <button id="emailSendBtn" class="btn btn-ghost" type="button">שלח קוד למייל</button>
+          <div>
+            <label class="field-label" for="emailCode">קוד שקיבלת</label>
             <input id="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
           </div>
-          <div class="button-row">
-            <button id="emailVerifyBtn" class="button" type="button">{% if methods.email and not setup_required %}התחבר עם מייל{% else %}אמת והפעל{% endif %}</button>
-          </div>
+          <button id="emailVerifyBtn" class="btn btn-primary" type="button">
+            {% if methods.email and not setup_required %}התחבר עם מייל{% else %}אמת והפעל{% endif %}
+          </button>
           <div id="emailStatus" class="auth-status"></div>
-        </section>
+        </div>
       </div>
 
-      <div class="notes">
-        אם תרצה, בהמשך אפשר להחזיק כמה שיטות במקביל. כרגע מספיק שתפעיל לפחות אחת, אבל מבחינת resilience עדיף להחזיק גם Passkey וגם Authenticator.
-      </div>
-    </section>
+    </div>
+
+    <div class="remember-row">
+      <input id="rememberMe" type="checkbox">
+      <label for="rememberMe">זכור אותי במחשב הזה ל־30 יום</label>
+    </div>
+
   </div>
+
+  <div class="auth-footer">מומלץ להפעיל לפחות שתי שיטות לגיבוי</div>
 
   <script>
     const setupRequired = {{ 'true' if setup_required else 'false' }};
@@ -426,40 +439,32 @@
       const base64 = (base64url + padding).replace(/-/g, "+").replace(/_/g, "/");
       const raw = atob(base64);
       const bytes = new Uint8Array(raw.length);
-      for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
+      for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
       return bytes.buffer;
     }
 
     function bufferToB64(buffer) {
       const bytes = new Uint8Array(buffer);
       let binary = "";
-      bytes.forEach((b) => { binary += String.fromCharCode(b); });
+      bytes.forEach(b => { binary += String.fromCharCode(b); });
       return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
     }
 
     function normalizeCreationOptions(options) {
-      const normalized = structuredClone(options);
-      normalized.challenge = b64ToBuffer(normalized.challenge);
-      normalized.user.id = b64ToBuffer(normalized.user.id);
-      if (Array.isArray(normalized.excludeCredentials)) {
-        normalized.excludeCredentials = normalized.excludeCredentials.map((item) => ({
-          ...item,
-          id: b64ToBuffer(item.id),
-        }));
-      }
-      return normalized;
+      const n = structuredClone(options);
+      n.challenge = b64ToBuffer(n.challenge);
+      n.user.id = b64ToBuffer(n.user.id);
+      if (Array.isArray(n.excludeCredentials))
+        n.excludeCredentials = n.excludeCredentials.map(i => ({ ...i, id: b64ToBuffer(i.id) }));
+      return n;
     }
 
     function normalizeRequestOptions(options) {
-      const normalized = structuredClone(options);
-      normalized.challenge = b64ToBuffer(normalized.challenge);
-      if (Array.isArray(normalized.allowCredentials)) {
-        normalized.allowCredentials = normalized.allowCredentials.map((item) => ({
-          ...item,
-          id: b64ToBuffer(item.id),
-        }));
-      }
-      return normalized;
+      const n = structuredClone(options);
+      n.challenge = b64ToBuffer(n.challenge);
+      if (Array.isArray(n.allowCredentials))
+        n.allowCredentials = n.allowCredentials.map(i => ({ ...i, id: b64ToBuffer(i.id) }));
+      return n;
     }
 
     function credentialToJSON(credential) {
@@ -487,24 +492,16 @@
       });
       const rawText = await response.text();
       let data = {};
-      try {
-        data = rawText ? JSON.parse(rawText) : {};
-      } catch (error) {
-        data = {};
-      }
-      if (!response.ok) {
-        throw new Error(data.error || rawText || "הפעולה נכשלה.");
-      }
+      try { data = rawText ? JSON.parse(rawText) : {}; } catch {}
+      if (!response.ok) throw new Error(data.error || rawText || "הפעולה נכשלה.");
       return data;
     }
 
     async function runPasskeyFlow(mode) {
       const statusId = "passkeyStatus";
-      setStatus(statusId, mode === "login" ? "ממתין ל-Touch ID..." : "רושם Passkey חדש...");
+      setStatus(statusId, mode === "login" ? "ממתין ל-Touch ID..." : "רושם Passkey...");
       try {
-        if (!window.PublicKeyCredential) {
-          throw new Error("הדפדפן הנוכחי לא תומך ב-Passkey.");
-        }
+        if (!window.PublicKeyCredential) throw new Error("הדפדפן לא תומך ב-Passkey.");
         if (mode === "login") {
           const { options } = await postJSON("/auth/passkey/login/options", { remember_me: getRememberMe(), user_id: selectedUserId });
           const credential = await navigator.credentials.get({ publicKey: normalizeRequestOptions(options) });
@@ -514,29 +511,25 @@
           const credential = await navigator.credentials.create({ publicKey: normalizeCreationOptions(options) });
           await postJSON("/auth/passkey/register/verify", { credential: credentialToJSON(credential), remember_me: getRememberMe(), user_id: selectedUserId });
         }
-        setStatus(statusId, "ההזדהות הושלמה. מעביר לאפליקציה...", "success");
+        setStatus(statusId, "הזדהות הושלמה, מעביר...", "success");
         window.location.href = "/";
       } catch (error) {
         setStatus(statusId, error.message || "לא הצלחנו להשלים Passkey.", "error");
       }
     }
 
-    document.getElementById("passkeyActionBtn")?.addEventListener("click", () => runPasskeyFlow(methods.passkey && !setupRequired ? "login" : "setup"));
+    document.getElementById("passkeyActionBtn")?.addEventListener("click", () =>
+      runPasskeyFlow(methods.passkey && !setupRequired ? "login" : "setup"));
 
     document.getElementById("totpActionBtn")?.addEventListener("click", async () => {
       const code = document.getElementById("totpCode")?.value?.trim();
-      setStatus("totpStatus", "בודק את הקוד...");
+      setStatus("totpStatus", "בודק קוד...");
       try {
-        await postJSON("/auth/totp/verify", {
-          code,
-          remember_me: getRememberMe(),
-          setup: setupRequired || !methods.totp,
-          user_id: selectedUserId,
-        });
-        setStatus("totpStatus", "הקוד אומת. מעביר לאפליקציה...", "success");
+        await postJSON("/auth/totp/verify", { code, remember_me: getRememberMe(), setup: setupRequired || !methods.totp, user_id: selectedUserId });
+        setStatus("totpStatus", "הקוד אומת, מעביר...", "success");
         window.location.href = "/";
       } catch (error) {
-        setStatus("totpStatus", error.message || "לא הצלחנו לאמת את הקוד.", "error");
+        setStatus("totpStatus", error.message || "קוד לא תקין.", "error");
       }
     });
 
@@ -549,20 +542,20 @@
           setup: setupRequired || !methods.email,
           user_id: selectedUserId,
         });
-        setStatus("emailStatus", "הקוד נשלח למייל. אפשר להזין אותו עכשיו.", "success");
+        setStatus("emailStatus", "קוד נשלח, אפשר להזין.", "success");
       } catch (error) {
-        setStatus("emailStatus", error.message || "לא הצלחנו לשלוח קוד במייל.", "error");
+        setStatus("emailStatus", error.message || "לא הצלחנו לשלוח קוד.", "error");
       }
     });
 
     document.getElementById("emailVerifyBtn")?.addEventListener("click", async () => {
-      setStatus("emailStatus", "מאמת את הקוד...");
+      setStatus("emailStatus", "מאמת...");
       try {
         await postJSON("/auth/email/verify", { code: document.getElementById("emailCode")?.value?.trim() });
-        setStatus("emailStatus", "הקוד אומת. מעביר לאפליקציה...", "success");
+        setStatus("emailStatus", "הקוד אומת, מעביר...", "success");
         window.location.href = "/";
       } catch (error) {
-        setStatus("emailStatus", error.message || "הקוד לא תקין.", "error");
+        setStatus("emailStatus", error.message || "קוד לא תקין.", "error");
       }
     });
   </script>
