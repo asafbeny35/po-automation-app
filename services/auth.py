@@ -38,6 +38,7 @@ AUTH_COOKIE_NAME = "po_auth"
 DEFAULT_PRIMARY_USER_ID = "asaf"
 DEFAULT_SECONDARY_USER_ID = "mom"
 DEFAULT_PRIMARY_EMAIL_ADDRESS = "asafbeny@gmail.com"
+DEFAULT_SECONDARY_EMAIL_ADDRESS = "malibeny1@gmail.com"
 DEFAULT_PRIMARY_TOTP_SECRET = "Y5KORRGYX7SOFWEHGGD5D2RZJ66W5AOZ"
 DEFAULT_PRIMARY_PASSKEYS = [
     {
@@ -114,6 +115,7 @@ def _default_state() -> dict[str, Any]:
                 DEFAULT_SECONDARY_USER_ID,
                 display_name="אמא",
                 username="mom",
+                email_address=DEFAULT_SECONDARY_EMAIL_ADDRESS,
             ),
         },
         "updated_at": int(time.time()),
@@ -127,11 +129,18 @@ def _default_state() -> dict[str, Any]:
     return state
 
 
+_DEFAULT_USER_EMAILS: dict[str, str] = {
+    DEFAULT_PRIMARY_USER_ID: DEFAULT_PRIMARY_EMAIL_ADDRESS,
+    DEFAULT_SECONDARY_USER_ID: DEFAULT_SECONDARY_EMAIL_ADDRESS,
+}
+
+
 def _normalize_user_entry(user_id: str, raw: Any) -> dict[str, Any]:
     defaults = _default_user(
         user_id,
         display_name="אסף" if user_id == DEFAULT_PRIMARY_USER_ID else ("אמא" if user_id == DEFAULT_SECONDARY_USER_ID else user_id),
         username="asafbeny" if user_id == DEFAULT_PRIMARY_USER_ID else ("mom" if user_id == DEFAULT_SECONDARY_USER_ID else user_id),
+        email_address=_DEFAULT_USER_EMAILS.get(user_id, ""),
     )
     entry = dict(defaults)
     if isinstance(raw, dict):
@@ -145,6 +154,12 @@ def _normalize_user_entry(user_id: str, raw: Any) -> dict[str, Any]:
         entry["webauthn_user_id"] = defaults["webauthn_user_id"]
     if not isinstance(entry.get("passkeys"), list):
         entry["passkeys"] = []
+    # Backfill email if empty but a known default exists
+    if not str(entry.get("email_address") or "").strip():
+        default_email = _DEFAULT_USER_EMAILS.get(user_id, "")
+        if default_email:
+            entry["email_address"] = default_email
+            entry["email_enabled"] = True
     return entry
 
 
