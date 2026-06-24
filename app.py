@@ -11416,12 +11416,12 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "אישור חשבון נוסף.pdf",
     },
     "business-id-copy": {
-        "local_path": Path("/Users/asafbeny/Downloads/asaf_id_card.pdf"),
+        "local_path": ADMIN_DOCS_DIR / "asaf_id_card.pdf",
         "folders": ("מסמכים עסקיים",),
         "drive_name": "צילום תעודת זהות - אסף בן יעקב.pdf",
     },
     "business-driver-license": {
-        "local_path": Path("/Users/asafbeny/Downloads/asaf l_card.pdf"),
+        "local_path": ADMIN_DOCS_DIR / "asaf_l_card.pdf",
         "folders": ("מסמכים עסקיים",),
         "drive_name": "צילום רישיון נהיגה - אסף בן יעקב.pdf",
     },
