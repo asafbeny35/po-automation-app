@@ -149,13 +149,21 @@ def parse(text: str):
     if not subtotal and total and vat:
         subtotal = round(total - vat, 2)
 
-    # Contact name: "ןלוג ןצינ :ןימזמה םש" → extract reversed Hebrew, then unheb
-    contact_reversed = _first(r"(.+?)\s*:ןימזמה םש", flat)
-    contact_name = _unheb(contact_reversed) if contact_reversed else ""
+    # Office orderer (ניצן גולן) — kept in extra, not the field contact
+    orderer_reversed = _first(r"(.+?)\s*:ןימזמה םש", flat)
+    orderer_name = _unheb(orderer_reversed) if orderer_reversed else ""
+    contact_name = ""
 
-    # Phone: pick first Israeli mobile in the whole text
-    phones = re.findall(r"0\d{1,2}-\d{6,7}", flat)
-    logistics_phone = phones[0] if phones else ""
+    # Field contact: ויקטור — phone is glued to the reversed name "רוטקיו"
+    # Raw pattern: "050-2898973רוטקיו"
+    victor_match = re.search(r"(0\d{2}-\d{6,7})רוטקיו", flat)
+    if victor_match:
+        contact_name = "ויקטור"
+        logistics_phone = victor_match.group(1)
+    else:
+        # fallback: first mobile in document
+        phones = re.findall(r"0\d{1,2}-\d{6,7}", flat)
+        logistics_phone = phones[0] if phones else ""
 
     # Email
     customer_email = _extract_email(flat)
@@ -184,6 +192,7 @@ def parse(text: str):
         "extra": {
             "vat_rate": vat_rate,
             "supplier_number": supplier_no,
+            "orderer_name": orderer_name,
             "parser_name": "danya_cebus",
         },
     }
