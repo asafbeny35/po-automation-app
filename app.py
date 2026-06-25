@@ -23541,12 +23541,11 @@ async def finalize(request: Request):
             merged_name = f"{safe_merged_po_name}_כל המסמכים.pdf" if safe_merged_po_name else "כל המסמכים.pdf"
             merge_inputs = [
                 delivery_pdf_path,
-                invoice_pdf_path,
+                delivery_pdf_path,  # two copies of the delivery note
                 *[path for path in label_pdf_paths if path and Path(path).exists()],
                 transport_label_output_path if transport_label_output_path and Path(transport_label_output_path).exists() else None,
             ]
-            # Include the original purchase order in the merged "all documents"
-            # bundle for every customer when the source PDF is available.
+            # invoice_pdf_path is intentionally excluded from the merged bundle
             if source_po_copy_path and Path(source_po_copy_path).exists():
                 merge_inputs.append(source_po_copy_path)
             merged_pdf_path = merge_pdfs(merge_inputs, target_dir / merged_name)
