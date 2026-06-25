@@ -35655,6 +35655,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     try {
       const response = await nativeFetch(input, init);
+      if (response.status === 401) {
+        window.location.href = "/auth/login";
+        return response;
+      }
       if (progressBoundToRequest) {
         globalActionProgressActiveCount = Math.max(0, globalActionProgressActiveCount - 1);
         if (globalActionProgressActiveCount === 0) {
