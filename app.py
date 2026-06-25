@@ -23607,8 +23607,6 @@ async def finalize(request: Request):
                 "deliveries": provider_results,
             }
 
-    whatsapp_send_task = None if skip_whatsapp else (asyncio.create_task(_run_finalize_whatsapp_send()) if file_paths else None)
-
     def _perform_finalize_drive_sync():
         try:
             order_date_obj = _parse_order_display_date(po.po_date)
@@ -23708,7 +23706,18 @@ async def finalize(request: Request):
             print("DRIVE SYNC ERROR:", repr(e))
             return {"status": "error", "error": str(e)}
 
-    drive_sync_result = await asyncio.to_thread(_perform_finalize_drive_sync)
+    # Send WhatsApp FIRST — before any Drive/Sheets/Inventory work.
+    # Previous order (Drive → Sheets → Inventory → History → WhatsApp) caused
+    # FUNCTION_INVOCATION_TIMEOUT because Drive uploads alone consumed most of
+    # the allowed window, leaving no time for WhatsApp.
+    whatsapp_send_result = (
+        {"status": "skipped", "reason": "ui_test_skip_whatsapp"}
+        if skip_whatsapp
+        else (await _run_finalize_whatsapp_send() if file_paths else {"status": "skipped", "reason": "no_files"})
+    )
+
+    # Drive sync, Sheets, and Inventory are independent — run in parallel after WhatsApp.
+    _drive_task = asyncio.to_thread(_perform_finalize_drive_sync)
 
     def _perform_finalize_sheets_append():
         print("SHEETS: append starting")
@@ -23731,8 +23740,6 @@ async def finalize(request: Request):
         except Exception as e:
             print("SHEETS: append failed", repr(e))
             return {"error": str(e)}
-
-    sheets_result = await asyncio.to_thread(_perform_finalize_sheets_append)
 
     def _perform_finalize_inventory_deduction():
         inventory_result = {"status": "skipped", "reason": "not_attempted"}
@@ -23781,7 +23788,16 @@ async def finalize(request: Request):
             inventory_result = {"status": "error", "error": str(e)}
         return inventory_result
 
-    inventory_deduction_result = await asyncio.to_thread(_perform_finalize_inventory_deduction)
+    # Run Drive sync, Sheets, and Inventory in parallel
+    _gather_results = await asyncio.gather(
+        _drive_task,
+        asyncio.to_thread(_perform_finalize_sheets_append),
+        asyncio.to_thread(_perform_finalize_inventory_deduction),
+        return_exceptions=True,
+    )
+    drive_sync_result = _gather_results[0] if not isinstance(_gather_results[0], BaseException) else {"status": "error", "error": str(_gather_results[0])}
+    sheets_result = _gather_results[1] if not isinstance(_gather_results[1], BaseException) else {"error": str(_gather_results[1])}
+    inventory_deduction_result = _gather_results[2] if not isinstance(_gather_results[2], BaseException) else {"status": "error", "error": str(_gather_results[2])}
 
     def _perform_finalize_history_upsert():
         try:
@@ -23876,12 +23892,6 @@ async def finalize(request: Request):
             return {"status": "error", "error": str(e)}
 
     history_result = await asyncio.to_thread(_perform_finalize_history_upsert)
-
-    whatsapp_send_result = (
-        {"status": "skipped", "reason": "ui_test_skip_whatsapp"}
-        if skip_whatsapp
-        else (await whatsapp_send_task if whatsapp_send_task else {"status": "skipped", "reason": "no_files"})
-    )
 
     try:
         if source_mode_label == "PROD" and str(getattr(invoice_doc, "number", "") or "").strip():
