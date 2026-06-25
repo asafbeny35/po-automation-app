@@ -6143,18 +6143,10 @@ def _finance_parse_hashavshevet_invoice(raw_text: str, fixed_text: str, original
     raw = raw_text or ""
     _AMT = r"(?<!\d)(\d[\d,]*\.\d{2})(?!\d)"
 
-    # Supplier name: prefer filename (e.g. "037017779-114967-נאמן למקור.pdf" → "נאמן למקור")
-    # because pdfplumber has font-mapping issues on these RTL PDFs (e.g. ק→ן).
+    # Supplier name: leave blank — Hashavshevet PDFs have severe RTL/font-mapping issues
+    # on the company header line; the "חשבונית מס" line gives only the trade name (not the
+    # legal entity). User must fill in the correct supplier name manually.
     supplier_name = ""
-    fn_supplier = re.sub(r"^\d{5,}-\d{3,}-", "", Path(original_name).stem).strip()
-    if fn_supplier and re.search(r"[א-ת]", fn_supplier):
-        supplier_name = fn_supplier
-    if not supplier_name:
-        m = re.search(r"^(.+?)\s+חשבונית\s*מס", raw, re.MULTILINE)
-        if m:
-            supplier_name = m.group(1).strip()
-    if not supplier_name:
-        supplier_name = "ספק"
 
     # Invoice number: from filename (format xxxxxxx-nnnnnn-...) or raw text
     inv_num = ""
