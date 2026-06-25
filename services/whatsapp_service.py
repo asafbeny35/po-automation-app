@@ -255,7 +255,7 @@ async def _send_via_railway(phone: str, message: str, file_paths: list[str]) -> 
     payload: dict[str, Any] = {"phone": phone, "message": message, "files": files}
     if secret:
         payload["secret"] = secret
-    async with httpx.AsyncClient(timeout=300) as client:
+    async with httpx.AsyncClient(timeout=60) as client:
         response = await client.post(f"{base_url}/send", json=payload)
         response.raise_for_status()
         return {"status": "ok", "provider": "railway", **response.json()}

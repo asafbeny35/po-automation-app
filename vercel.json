@@ -26,5 +26,10 @@
   ],
   "env": {
     "DATA_BACKEND": "supabase"
+  },
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 300
+    }
   }
 }
