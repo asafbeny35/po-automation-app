@@ -8,6 +8,7 @@ from urllib.parse import urlsplit, urlunsplit
 import httpx
 
 from .config import settings
+from .runtime_paths import runtime_root
 from .models import PurchaseOrderData
 from .parsers.common import fix_hebrew_text
 
@@ -723,7 +724,7 @@ class GreenInvoiceClient:
                 "idNumber": po.customer_id or "",
             }
 
-        base_dir = Path("output")
+        base_dir = runtime_root() / "output"
         customer_val = (po.customer_name or "לקוח").split(" - ח.פ")[0]
         po_val = po.po_number or "document"
         safe_customer = _safe_folder_name(customer_val)
@@ -744,7 +745,7 @@ class GreenInvoiceClient:
             base_dir = Path(output_dir)
         else:
             sandbox_mode = "sandbox" in str(self.base_url or "").lower()
-            base_dir = Path("output") / ("Sandbox Docs" if sandbox_mode else "Production Docs")
+            base_dir = runtime_root() / "output" / ("Sandbox Docs" if sandbox_mode else "Production Docs")
         customer_val = (po.customer_name or "לקוח").split(" - ח.פ")[0]
         po_val = po.po_number or "document"
         safe_customer = _safe_folder_name(customer_val)
