@@ -6,7 +6,8 @@
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb",
-        "requirementsFile": "requirements-vercel.txt"
+        "requirementsFile": "requirements-vercel.txt",
+        "maxDuration": 300
       }
     },
     {
@@ -26,10 +27,5 @@
   ],
   "env": {
     "DATA_BACKEND": "supabase"
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 300
-    }
   }
 }
