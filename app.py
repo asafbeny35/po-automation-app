@@ -23403,7 +23403,10 @@ async def finalize(request: Request):
     label_pdf_paths = []
     label_count_for_coc = 1
     try:
-        from services.label_generator_v4 import generate_label_pdf
+        if IS_VERCEL:
+            from services.label_generator_v2 import generate_label_pdf
+        else:
+            from services.label_generator_v4 import generate_label_pdf
 
         if document_mode == "invoice_only":
             raise RuntimeError("skip_label_generation")
