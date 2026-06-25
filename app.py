@@ -1138,7 +1138,7 @@ async def _ensure_marketing_pipeline_quote_drive_asset(client: GreenInvoiceClien
     customer_name = str(quote.get("customer_name") or "ללא שם").strip() or "ללא שם"
     customer_folder_name = re.sub(r'[\\/:*?"<>|]+', "-", customer_name).strip()[:120] or "ללא שם"
     quote_number = str(quote.get("number") or quote.get("id") or "quote").strip() or "quote"
-    local_dir = BASE_DIR / "output" / "marketing-pipeline" / customer_folder_name
+    local_dir = OUTPUT_DIR / "marketing-pipeline" / customer_folder_name
     local_dir.mkdir(parents=True, exist_ok=True)
     local_path = local_dir / f"הצעת מחיר {quote_number}.pdf"
     if not local_path.exists():
@@ -1157,7 +1157,7 @@ def _marketing_pipeline_quote_local_path(customer_name: str, quote_number: str) 
     safe_customer_name = str(customer_name or "ללא שם").strip() or "ללא שם"
     customer_folder_name = re.sub(r'[\\/:*?"<>|]+', "-", safe_customer_name).strip()[:120] or "ללא שם"
     safe_quote_number = str(quote_number or "quote").strip() or "quote"
-    local_dir = BASE_DIR / "output" / "marketing-pipeline" / customer_folder_name
+    local_dir = OUTPUT_DIR / "marketing-pipeline" / customer_folder_name
     return local_dir / f"הצעת מחיר {safe_quote_number}.pdf"
 
 
@@ -15990,7 +15990,7 @@ async def inventory_purchase_orders_send_email(
         return JSONResponse({"error": "חסר נושא למייל."}, status_code=400)
 
     stored_files: list[Path] = []
-    upload_dir = BASE_DIR / "output" / "purchase-order-mails"
+    upload_dir = OUTPUT_DIR / "purchase-order-mails"
     try:
         po_relative = str(po_file or "").strip().lstrip("/")
         if po_relative:
@@ -17951,7 +17951,7 @@ async def customers_send_email(
     if not str(subject or "").strip():
         return JSONResponse({"error": "חסר נושא למייל."}, status_code=400)
 
-    upload_dir = (BASE_DIR / "output" / "customer-mails")
+    upload_dir = (OUTPUT_DIR / "customer-mails")
     stored_files: list[Path] = []
     try:
         for file in attachments or []:
@@ -17991,7 +17991,7 @@ async def admin_supplier_package_email(
     if not str(subject or "").strip():
         return JSONResponse({"error": "חסר נושא למייל."}, status_code=400)
 
-    upload_dir = BASE_DIR / "output" / "admin-mails"
+    upload_dir = OUTPUT_DIR / "admin-mails"
     stored_files: list[Path] = []
     try:
         _ensure_supplier_onboarding_package_pdf()
@@ -18050,7 +18050,7 @@ async def admin_business_doc_send_email(
     if not str(subject or "").strip():
         return JSONResponse({"error": "חסר נושא למייל."}, status_code=400)
 
-    upload_dir = BASE_DIR / "output" / "admin-mails"
+    upload_dir = OUTPUT_DIR / "admin-mails"
     stored_files: list[Path] = []
     try:
         document_path = _materialize_admin_business_doc_attachment(target_asset_key, upload_dir)
@@ -18098,7 +18098,7 @@ async def admin_business_doc_send_whatsapp(
     if not target_phone:
         return JSONResponse({"error": "חסר מספר טלפון לשליחה."}, status_code=400)
 
-    upload_dir = BASE_DIR / "output" / "admin-mails"
+    upload_dir = OUTPUT_DIR / "admin-mails"
     stored_files: list[Path] = []
     try:
         document_path = _materialize_admin_business_doc_attachment(target_asset_key, upload_dir)
@@ -18140,7 +18140,7 @@ async def quote_send_email(
         return JSONResponse({"error": "חסר נושא למייל."}, status_code=400)
 
     stored_files: list[Path] = []
-    upload_dir = BASE_DIR / "output" / "quote-mails"
+    upload_dir = OUTPUT_DIR / "quote-mails"
     try:
         quote_relative = str(quote_file or "").strip().lstrip("/")
         if quote_relative:
@@ -20288,7 +20288,7 @@ async def marketing_send_email(
     doc_asset_keys: str = Form(""),
     attachments: list[UploadFile] | None = File(None),
 ):
-    upload_dir = BASE_DIR / "output" / "marketing-mails"
+    upload_dir = OUTPUT_DIR / "marketing-mails"
     is_test_send = str(test_send or "").strip().lower() == "true"
     stored_files: list[Path] = []
     try:
