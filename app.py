@@ -6143,18 +6143,18 @@ def _finance_parse_hashavshevet_invoice(raw_text: str, fixed_text: str, original
     raw = raw_text or ""
     _AMT = r"(?<!\d)(\d[\d,]*\.\d{2})(?!\d)"
 
-    # Supplier name: appears on the same line as "חשבונית מס" before it
+    # Supplier name: prefer filename (e.g. "037017779-114967-נאמן למקור.pdf" → "נאמן למקור")
+    # because pdfplumber has font-mapping issues on these RTL PDFs (e.g. ק→ן).
     supplier_name = ""
-    m = re.search(r"^(.+?)\s+חשבונית\s*מס", raw, re.MULTILINE)
-    if m:
-        supplier_name = m.group(1).strip()
-        # If it still looks reversed (more reversed-Hebrew than not), try to restore
-        if re.search(r"[א-ת]", supplier_name) and not re.search(r"\s", supplier_name[::-1][:3]):
-            pass  # already readable
+    fn_supplier = re.sub(r"^\d{5,}-\d{3,}-", "", Path(original_name).stem).strip()
+    if fn_supplier and re.search(r"[א-ת]", fn_supplier):
+        supplier_name = fn_supplier
     if not supplier_name:
-        # Fallback: use filename without digits (e.g. "037017779-114967-נאמן למקור.pdf")
-        fn_parts = re.sub(r"^\d[\d\-]+", "", Path(original_name).stem).strip("- ")
-        supplier_name = fn_parts or "ספק"
+        m = re.search(r"^(.+?)\s+חשבונית\s*מס", raw, re.MULTILINE)
+        if m:
+            supplier_name = m.group(1).strip()
+    if not supplier_name:
+        supplier_name = "ספק"
 
     # Invoice number: from filename (format xxxxxxx-nnnnnn-...) or raw text
     inv_num = ""
