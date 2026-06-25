@@ -38442,28 +38442,32 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
+    const driveSync = result.drive_sync_result || {};
+    const driveUrl = (fileId) => fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
+    const localUrl = (file) => file ? `/files/${encodeURIComponent(file).replace(/%2F/g, "/")}` : null;
+
     const links = [
       {
         label: "תעודת משלוח",
         sublabel: result.delivery_document_number ? `מספר ${result.delivery_document_number}` : "מסמך מוכן להורדה",
-        file: result.files && result.files[0]
+        href: driveUrl(driveSync.delivery_drive_file_id) || localUrl(result.files && result.files[0])
       },
       {
         label: "חשבונית מס",
         sublabel: result.invoice_document_number ? `מספר ${result.invoice_document_number}` : "מסמך מוכן להורדה",
-        file: result.files && result.files[1]
+        href: driveUrl(driveSync.invoice_drive_file_id) || localUrl(result.files && result.files[1])
       },
       {
         label: "קובץ WhatsApp מאוחד",
         sublabel: "כולל את כל הדפים שנשלחים בוואטסאפ",
-        file: result.merged_file
+        href: driveUrl(driveSync.merged_drive_file_id) || localUrl(result.merged_file)
       },
       {
         label: "PDF משלוח",
         sublabel: "העותק שנשמר לתיקיית ההזמנה",
-        file: result.transport_label_file
+        href: localUrl(result.transport_label_file)
       }
-    ].filter(item => item.file);
+    ].filter(item => item.href);
 
     if (!links.length) {
       resetDownloadLinks();
@@ -38471,7 +38475,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const cards = links.map(item => `
-      <a class="download-card" href="/files/${encodeURIComponent(item.file).replace(/%2F/g, "/")}" target="_blank" rel="noopener noreferrer">
+      <a class="download-card" href="${item.href}" target="_blank" rel="noopener noreferrer">
         <strong>${item.label}</strong>
         <span>${item.sublabel}</span>
       </a>
