@@ -21716,12 +21716,13 @@ def _delivery_confirmation_related_indexes(rows: list[dict], target_row: dict) -
     return indexes
 
 
-def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file_name: str, source_file_path: Path | str) -> dict:
+def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file_name: str, source_file_path: Path | str, source_drive_file_id: str = "") -> dict:
     first_item = _primary_merchandise_po_item(po) or ((po.items or [None])[0])
     return {
         "mode": mode,
         "source_file": str(source_file_name or "").strip(),
         "source_file_path": str(source_file_path or "").strip(),
+        "source_drive_file_id": str(source_drive_file_id or "").strip(),
         "po_number": po.po_number or "",
         "po_date": po.po_date or "",
         "customer_name": po.customer_name or "",
@@ -22854,8 +22855,6 @@ async def working_orders_upload(
     cfg = get_mode_config("prod")
     po = parse_purchase_order(file_path)
     po = await _enrich_po_for_process(po, cfg | {"mode": "prod"})
-    payload = _build_process_payload_from_po(po, "prod", file.filename or file_path.name, file_path)
-
     drive_file_id = ""
     drive_url = ""
     drive_folder_id = ""
@@ -22871,6 +22870,8 @@ async def working_orders_upload(
         drive_folder_url = _drive_folder_view_link(order_folder_id)
     except Exception as exc:
         log_handled_error("working order drive sync failed", exc)
+
+    payload = _build_process_payload_from_po(po, "prod", file.filename or file_path.name, file_path, drive_file_id)
 
     row = {
         "row_id": uuid.uuid4().hex,
@@ -23613,13 +23614,24 @@ async def finalize(request: Request):
         )
         target_dir.mkdir(parents=True, exist_ok=True)
 
-        if source_file_path:
-            src_path = Path(source_file_path)
-            if src_path.exists() and src_path.is_file():
+        source_drive_file_id = str(data.get("source_drive_file_id") or "").strip()
+        if source_file_path or source_drive_file_id:
+            src_path = Path(source_file_path) if source_file_path else None
+            if src_path and src_path.exists() and src_path.is_file():
                 source_name = source_file_name or src_path.name
                 source_po_copy_path = target_dir / source_name
                 shutil.copy2(src_path, source_po_copy_path)
                 print("SOURCE PO COPIED:", source_po_copy_path)
+            elif source_drive_file_id:
+                from services.google_drive_sync import download_file as _drive_download
+                source_name = source_file_name or f"source_po_{source_drive_file_id[:8]}.pdf"
+                source_po_copy_path = target_dir / source_name
+                try:
+                    _drive_download(source_drive_file_id, source_po_copy_path)
+                    print("SOURCE PO DOWNLOADED FROM DRIVE:", source_po_copy_path)
+                except Exception as _dl_exc:
+                    print("SOURCE PO DRIVE DOWNLOAD FAILED:", repr(_dl_exc))
+                    source_po_copy_path = None
             else:
                 print("SOURCE PO COPY SKIPPED: source file missing", source_file_path)
 
