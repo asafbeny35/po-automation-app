@@ -6125,6 +6125,106 @@ def _finance_parse_paz_aviation_invoice(raw_text: str, fixed_text: str, original
     )
 
 
+def _finance_detect_hashavshevet_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
+    """Detect invoices produced by חשבשבת (Hashavshevet) Israeli accounting software.
+    RTL visual order: Hebrew reversed, numbers correct.
+    Signature: 'חשבונית מס' + reversed total labels like 'כ"סמ'.
+    """
+    raw = raw_text or ""
+    return bool(
+        re.search(r'כ["״]?סמ', raw)
+        and re.search(r"חשבונית\s*מס", raw)
+        and re.search(r"(?<!\d)\d{3,}\.\d{2}", raw)
+    )
+
+
+def _finance_parse_hashavshevet_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
+    """Parse חשבשבת-format invoices (RTL visual order, Hebrew reversed, numbers correct)."""
+    raw = raw_text or ""
+    _AMT = r"(?<!\d)(\d[\d,]*\.\d{2})(?!\d)"
+
+    # Supplier name: appears on the same line as "חשבונית מס" before it
+    supplier_name = ""
+    m = re.search(r"^(.+?)\s+חשבונית\s*מס", raw, re.MULTILINE)
+    if m:
+        supplier_name = m.group(1).strip()
+        # If it still looks reversed (more reversed-Hebrew than not), try to restore
+        if re.search(r"[א-ת]", supplier_name) and not re.search(r"\s", supplier_name[::-1][:3]):
+            pass  # already readable
+    if not supplier_name:
+        # Fallback: use filename without digits (e.g. "037017779-114967-נאמן למקור.pdf")
+        fn_parts = re.sub(r"^\d[\d\-]+", "", Path(original_name).stem).strip("- ")
+        supplier_name = fn_parts or "ספק"
+
+    # Invoice number: from filename (format xxxxxxx-nnnnnn-...) or raw text
+    inv_num = ""
+    fn_match = re.search(r"^\d{9}-(\d{4,})-", Path(original_name).name)
+    if fn_match:
+        inv_num = fn_match.group(1)
+    if not inv_num:
+        inv_match = re.search(r"(?<!\d)(\d{5,7})(?!\d)", raw)
+        if inv_match:
+            inv_num = inv_match.group(1)
+
+    # Date: LTR in raw
+    date_match = re.search(r"(\d{2}/\d{2}/\d{4})", raw)
+    invoice_date = normalize_date(date_match.group(1)) if date_match else date.today().strftime("%d/%m/%Y")
+
+    subtotal_val = vat_val = total_val = None
+
+    # Grand total: amount immediately before "כ קתטקוכ\"סמ" (= "מסכ\"כולל כ" = total incl VAT)
+    gtotal_m = re.search(_AMT + r"\s+כ\s+קתטקוכ[\"'״]?סמ", raw)
+    if gtotal_m:
+        total_val = float(gtotal_m.group(1).replace(",", ""))
+
+    # VAT: amount immediately before "\"ע ... לתשלום עם" (= "עם לתשלום ... ע\"מ")
+    vat_m = re.search(_AMT + r"\s+[\"'״]?ע\s+\d{2}/\d{2}/\d{4}\s+לתשלום\s+עם", raw)
+    if vat_m:
+        vat_val = float(vat_m.group(1).replace(",", ""))
+
+    # Subtotal: amount before "כ\"סמ" that is NOT the grand total line
+    # Find ALL matches of amount + "כ\"סמ" and pick the one ≠ total_val
+    for m in re.finditer(_AMT + r'\s+כ["\'״]?סמ', raw):
+        v = float(m.group(1).replace(",", ""))
+        if total_val is not None and abs(v - total_val) < 0.01:
+            continue
+        subtotal_val = v
+        break
+
+    # Derive missing values
+    if total_val is None and subtotal_val is not None and vat_val is not None:
+        total_val = round(subtotal_val + vat_val, 2)
+    if vat_val is None and subtotal_val is not None and total_val is not None:
+        vat_val = round(max(0.0, total_val - subtotal_val), 2)
+    if subtotal_val is None and total_val is not None and vat_val is not None:
+        subtotal_val = round(max(0.0, total_val - vat_val), 2)
+    if total_val is None:
+        amounts = [float(a.replace(",", "")) for a in re.findall(r"(?<!\d)\d{1,3}(?:,\d{3})*\.\d{2}(?!\d)", raw)]
+        if amounts:
+            total_val = max(amounts)
+    if subtotal_val is None and total_val is not None:
+        subtotal_val = total_val
+
+    report_due_date = _finance_due_date_display(invoice_date)
+    reference_number = inv_num or _finance_extract_reference_number(raw + "\n" + (fixed_text or ""), original_name)
+
+    return _normalize_finance_invoice_row_app({
+        "row_id": f"finance-upload-{uuid.uuid4().hex}",
+        "invoice_date": invoice_date,
+        "supplier_name": supplier_name,
+        "reference_number": reference_number,
+        "allocation_number": "",
+        "service_or_product": supplier_name or "הוצאה מוכרת",
+        "subtotal": f"{subtotal_val:.2f}" if subtotal_val is not None else "",
+        "vat": f"{vat_val:.2f}" if vat_val is not None else "",
+        "total": f"{total_val:.2f}" if total_val is not None else "",
+        "source_file_name": Path(original_name).name,
+        "source_file_path": str(file_path),
+        "report_due_date": report_due_date,
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    })
+
+
 def _finance_detect_gabriel_transport_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
     raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
     return (
@@ -6774,6 +6874,8 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_pazomat_invoice_summary(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_tranzila_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_tranzila_invoice(raw_text, fixed_text, original_name, file_path)
+    if _finance_detect_hashavshevet_invoice(raw_text, fixed_text, original_name):
+        return _finance_parse_hashavshevet_invoice(raw_text, fixed_text, original_name, file_path)
     text = "\n".join([fixed_text or "", raw_text or ""]).strip()
     invoice_date = _finance_guess_invoice_date_from_raw(raw_text) or _finance_guess_invoice_date(text)
     supplier_name = _finance_guess_supplier_name(text, original_name)
