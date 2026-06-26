@@ -11599,8 +11599,8 @@ def _payments_state_payload(state: dict | None, request: Request | None = None, 
     return payload
 
 
-def _payments_find_current_row(sheet_title: str, row_number: int) -> tuple[dict | None, dict]:
-    state = load_payment_transfer_rows(force_refresh=True, repair_schema=False)
+def _payments_find_current_row(sheet_title: str, row_number: int, force_refresh: bool = True) -> tuple[dict | None, dict]:
+    state = load_payment_transfer_rows(force_refresh=force_refresh, repair_schema=False)
     current_row = next(
         (
             row for row in ((state or {}).get("all_rows") or [])
@@ -11612,8 +11612,8 @@ def _payments_find_current_row(sheet_title: str, row_number: int) -> tuple[dict 
     return current_row, state
 
 
-def _payments_assert_snapshot_matches(sheet_title: str, row_number: int, expected_snapshot_hash: str = "") -> tuple[dict | None, dict]:
-    current_row, state = _payments_find_current_row(sheet_title, row_number)
+def _payments_assert_snapshot_matches(sheet_title: str, row_number: int, expected_snapshot_hash: str = "", force_refresh: bool = True) -> tuple[dict | None, dict]:
+    current_row, state = _payments_find_current_row(sheet_title, row_number, force_refresh=force_refresh)
     if not current_row:
         raise FileNotFoundError("לא הצלחתי למצוא את השורה שביקשת לעדכן.")
     expected_hash = str(expected_snapshot_hash or "").strip()
@@ -20966,6 +20966,7 @@ async def delete_payments_transfer_row_endpoint(request: Request):
         return JSONResponse({"error": "חסר מספר שורה תקין."}, status_code=400)
 
     try:
+        _payments_assert_snapshot_matches(sheet_title, row_number, expected_snapshot_hash, force_refresh=False)
         matched_history_rows = _matching_order_history_rows_for_payment_row(row)
         result = delete_payment_transfer_row(sheet_title, row_number, row, exact_only=True)
         order_history_cleanup: list[dict] = []
