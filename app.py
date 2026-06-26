@@ -7020,17 +7020,18 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
 
         b64_image = base64.standard_b64encode(img_bytes).decode("utf-8")
         prompt = (
-            "זוהי תמונה של חשבונית או קבלה בעברית. חלץ את הפרטים הבאים ב-JSON בלבד (ללא הסבר):\n"
+            "This is an image of an Israeli Hebrew invoice/receipt. Hebrew text reads right-to-left.\n"
+            "Extract the following fields and return ONLY a JSON object, no explanation:\n"
             "{\n"
-            '  "supplier_name": "שם הספק/העסק (מה שמופיע בראש הדף)",\n'
-            '  "invoice_date": "תאריך החשבונית בפורמט DD/MM/YYYY",\n'
-            '  "reference_number": "מספר חשבונית/קבלה/מסמך",\n'
-            '  "subtotal": "סכום לפני מע\\\"מ כמספר עשרוני, ריק אם לא קיים",\n'
-            '  "vat": "סכום מע\\\"מ כמספר עשרוני, ריק אם לא קיים",\n'
-            '  "total": "סכום כולל לתשלום כמספר עשרוני",\n'
-            '  "service_or_product": "תיאור קצר של המוצר/שירות"\n'
+            '  "supplier_name": "Business/supplier name — the PRINTED name at the top of the document (NOT handwritten). Read Hebrew right-to-left.",\n'
+            '  "invoice_date": "Invoice date in DD/MM/YYYY format. If year is 2 digits (e.g. 26) add 2000.",\n'
+            '  "reference_number": "Invoice/receipt number",\n'
+            '  "subtotal": "Amount before VAT (לפני מע\"מ) as decimal number, empty if not present",\n'
+            '  "vat": "VAT amount (מע\"מ) as decimal number, empty if not present",\n'
+            '  "total": "Total amount to pay (סה\"כ / סכום כולל) as decimal number",\n'
+            '  "service_or_product": "Short description of the product or service. Read Hebrew right-to-left."\n'
             "}\n"
-            "אם שדה לא קיים, החזר ריק. החזר JSON בלבד."
+            "Important: Hebrew is RTL — read each word from right to left. Return JSON only."
         )
         response = httpx.post(
             "https://api.anthropic.com/v1/messages",
