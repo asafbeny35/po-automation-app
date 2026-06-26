@@ -7034,6 +7034,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             '  "subtotal": "Amount before VAT (לפני מע\"מ) as decimal number, empty if not present",\n'
             '  "vat": "VAT amount (מע\"מ) as decimal number, empty if not present",\n'
             '  "total": "Total amount to pay (סה\"כ / סכום כללי / סכום כולל) as decimal number. May be handwritten — look in boxes or bottom-left corner.",\n'
+            '  "currency": "Currency code: ILS for ₪/שקל, USD for $, EUR for €, GBP for £. Default ILS.",\n'
             '  "service_or_product": "Short description of the product or service. Read Hebrew right-to-left."\n'
             "}\n"
             "Important: Hebrew is RTL — read each word from right to left. Return JSON only."
@@ -7084,6 +7085,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         supplier_name = _clean(parsed.get("supplier_name"))
         reference_number = _clean(parsed.get("reference_number"))
         service_or_product = _clean(parsed.get("service_or_product"))
+        currency_code = _clean(parsed.get("currency") or "ILS").upper() or "ILS"
         subtotal = _clean_amount(parsed.get("subtotal"))
         vat = _clean_amount(parsed.get("vat"))
         total = _clean_amount(parsed.get("total"))
@@ -7101,6 +7103,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "reference_number": reference_number,
             "allocation_number": "",
             "service_or_product": service_or_product,
+            "currency_code": currency_code,
             "subtotal": subtotal,
             "vat": vat,
             "total": total,
@@ -7189,6 +7192,14 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
     report_due_date = _finance_due_date_display(invoice_date)
     reference_number = _finance_extract_reference_number(text, original_name)
     allocation_number = _finance_extract_allocation_number(text) if _finance_parse_number(total) >= 10000 else ""
+    if re.search(r"\$|USD|\bUSD\b|US Dollar", text, re.IGNORECASE):
+        currency_code = "USD"
+    elif re.search(r"€|EUR|\bEUR\b", text, re.IGNORECASE):
+        currency_code = "EUR"
+    elif re.search(r"£|GBP|\bGBP\b", text, re.IGNORECASE):
+        currency_code = "GBP"
+    else:
+        currency_code = "ILS"
     return _normalize_finance_invoice_row_app(
         {
             "row_id": f"finance-upload-{uuid.uuid4().hex}",
@@ -7197,6 +7208,7 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
             "reference_number": reference_number,
             "allocation_number": allocation_number,
             "service_or_product": service_or_product,
+            "currency_code": currency_code,
             "subtotal": subtotal,
             "vat": vat,
             "total": total,
