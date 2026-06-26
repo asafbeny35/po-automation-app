@@ -121,6 +121,7 @@ class Settings(BaseSettings):
     whatsapp_railway_secret: str = _env_or_fallback("WHATSAPP_RAILWAY_SECRET", "")
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     openai_model: str = os.getenv("OPENAI_MODEL", "gpt-5-mini")
+    anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
     greeninvoice_assistant_months_back: int = int(os.getenv("GREENINVOICE_ASSISTANT_MONTHS_BACK", "36"))
     greeninvoice_assistant_page_size: int = int(os.getenv("GREENINVOICE_ASSISTANT_PAGE_SIZE", "100"))
     greeninvoice_assistant_max_pages: int = int(os.getenv("GREENINVOICE_ASSISTANT_MAX_PAGES", "12"))

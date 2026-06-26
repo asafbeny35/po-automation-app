@@ -4720,6 +4720,112 @@ def _finance_detect_office_admin_invoice(raw_text: str, fixed_text: str, origina
     return "oadmin.co.il" in lowered or "אופיס אדמין" in lowered or "office admin" in lowered
 
 
+def _finance_detect_trivision_receipt(raw_text: str, fixed_text: str, original_name: str) -> bool:
+    combined = "\n".join([raw_text or "", fixed_text or "", original_name or ""]).lower()
+    return (
+        "trivision.co.il" in combined
+        or "טריויז" in combined
+        or "ofiyaa-israel.com" in combined
+        or ("apple pay" in combined and "חשבונית מס קבלה" in combined)
+    )
+
+
+def _finance_parse_trivision_receipt(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
+    raw_source = raw_text or ""
+    fixed_source = fixed_text or ""
+    combined = "\n".join([fixed_source, raw_source, original_name or ""]).strip()
+
+    invoice_date_match = (
+        re.search(r"([0-9]{2}/[0-9]{2}/[0-9]{4})\s*:\s*ךיראת", raw_source)
+        or re.search(r"תאריך[:\s]*([0-9]{2}/[0-9]{2}/[0-9]{4})", fixed_source)
+    )
+    invoice_date = normalize_date(invoice_date_match.group(1)) if invoice_date_match else _finance_guess_invoice_date(combined)
+
+    reference_match = (
+        re.search(r"([0-9]{3,})\s*/\s*הלבק\s*סמ\s*תינובשח", raw_source, re.IGNORECASE)
+        or re.search(r"([0-9]{3,})\s*/\s*חשבונית\s*מס\s*קבלה", fixed_source, re.IGNORECASE)
+        or re.search(r"חשבונית\s*מס\s*קבלה\s*מספר\s*([0-9]{3,})", original_name, re.IGNORECASE)
+        or re.search(r"\b([0-9]{3,})\b", Path(original_name).stem)
+    )
+    reference_number = normalize_ws(reference_match.group(1)) if reference_match else ""
+
+    supplier_name_match = re.search(r"(טריויז[^\n]+בע[\"״]מ)", raw_source) or re.search(r"(טריויז[^\n]+בע[\"״]מ)", fixed_source)
+    supplier_name = normalize_ws(supplier_name_match.group(1)) if supplier_name_match else "טריויז׳ן בע״מ"
+
+    supplier_id_match = re.search(r"\b([0-9]{9})\b\s*:\s*פ\.ח", raw_source) or re.search(r"\b([0-9]{9})\b\s*:?ח\.פ", fixed_source)
+    supplier_id = normalize_ws(supplier_id_match.group(1)) if supplier_id_match else "517281317"
+
+    item_match = re.search(
+        r"סכום כולל\s+(.+?)\s+1\s+₪\s*[\d,]+\.\d{2}\s+₪\s*[\d,]+\.\d{2}",
+        raw_source,
+        re.DOTALL,
+    )
+    service_or_product = normalize_ws(item_match.group(1)) if item_match else ""
+    if not service_or_product:
+        lines = [normalize_ws(line) for line in raw_source.splitlines() if normalize_ws(line)]
+        for index, line in enumerate(lines):
+            if line == "סכום כולל" and index + 1 < len(lines):
+                candidate = normalize_ws(lines[index + 1])
+                if (
+                    candidate
+                    and not candidate.startswith("₪")
+                    and not re.fullmatch(r"\d+", candidate)
+                    and "סה\"כ" not in candidate
+                    and "מע" not in candidate
+                ):
+                    service_or_product = candidate
+                    break
+    service_or_product = service_or_product or "שלושה מסכים ניידים S8 15.6"
+    service_or_product = re.sub(r"(?<=\D)(S\d)", r" \1", service_or_product).strip()
+
+    subtotal = None
+    vat = None
+    total = None
+    for source_text in (raw_source, fixed_source):
+        for line in source_text.splitlines():
+            normalized_line = normalize_ws(line)
+            amount_match = re.search(r"₪\s*([\d,]+\.\d{2})", normalized_line)
+            if not amount_match:
+                continue
+            amount = _finance_parse_number(amount_match.group(1))
+            if amount <= 0:
+                continue
+            if subtotal is None and ('מ"עמב בייח כ"הס' in normalized_line or "סה\"כ חייב במע" in normalized_line or "סה״כ חייב במע" in normalized_line):
+                subtotal = amount
+                continue
+            if vat is None and (("מ״עמ" in normalized_line or 'מ"עמ' in normalized_line or "מע״מ" in normalized_line) and "18%" in normalized_line):
+                vat = amount
+                continue
+            if total is None and ('םולשתל כ"הס' in normalized_line or 'םלוש כ"הס' in normalized_line or "סה\"כ לתשלום" in normalized_line or "סה\"כ שולם" in normalized_line or "סה״כ לתשלום" in normalized_line or "סה״כ שולם" in normalized_line):
+                total = amount
+                continue
+    if subtotal is None and total is not None and vat is not None:
+        subtotal = round(max(0.0, total - vat), 2)
+    if total is None and subtotal is not None and vat is not None:
+        total = round(subtotal + vat, 2)
+
+    row = _normalize_finance_invoice_row_app(
+        {
+            "row_id": _finance_auto_invoice_row_id("trivision", invoice_date or "", reference_number or Path(original_name).stem),
+            "invoice_date": invoice_date or date.today().strftime("%d/%m/%Y"),
+            "supplier_name": supplier_name,
+            "reference_number": reference_number,
+            "service_or_product": service_or_product,
+            "subtotal": f"{(subtotal or 0.0):.2f}" if subtotal is not None else "",
+            "vat": f"{(vat or 0.0):.2f}" if vat is not None else "",
+            "total": f"{(total or 0.0):.2f}" if total is not None else "",
+            "source_file_name": Path(original_name).name,
+            "source_file_path": str(file_path),
+            "report_due_date": _finance_due_date_display(invoice_date),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+    row["supplier_invoice_number"] = reference_number
+    row["payment_supplier_name"] = supplier_name
+    row["supplier_id"] = supplier_id
+    return row
+
+
 def _finance_detect_infinitech_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
     raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
     return (
@@ -5446,6 +5552,79 @@ def _finance_detect_hof_hacarmel_invoice(raw_text: str, fixed_text: str, origina
     )
 
 
+def _finance_detect_mei_avivim_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
+    raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
+    return (
+        "mei-avivim" in lowered
+        or "מי אביבים" in lowered
+        or "מי-אביבים" in lowered
+        or ("חשבון צריכת מים וביוב" in lowered and "ecobill.co.il" in lowered)
+        or ("ביבויב םימ תכירצ ןובשח" in raw_haystack and "םיביבא-ימ" in raw_haystack)
+    )
+
+
+def _finance_parse_mei_avivim_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
+    raw = raw_text or ""
+    combined = "\n".join([fixed_text or "", raw]).strip()
+    issue_date_match = (
+        re.search(r"([0-9]{2}/[0-9]{2}/[0-9]{4})\s+ןובשחה\s+תכירע\s+ךיראת", raw)
+        or re.search(r"תאריך\s*עריכת\s*החשבון[:\s]*([0-9./-]+)", combined)
+        or re.search(r"([0-9]{2}/[0-9]{2}/[0-9]{4})\s+תאריך\s*עריכת\s*החשבון", combined)
+    )
+    invoice_date = normalize_date(issue_date_match.group(1)) if issue_date_match else _finance_guess_invoice_date(combined)
+    period_match = (
+        re.search(r"([0-9]{1,2}/[0-9]{4})\s+הפוקתל\s+יתפוקת\s+בויח", raw)
+        or re.search(r"חיוב\s*תקופתי\s*לתקופה\s*([0-9]{1,2}/[0-9]{4})", combined)
+        or re.search(r"לתקופה\s*([0-9]{1,2}/[0-9]{4})", combined)
+    )
+    period_label = normalize_ws(period_match.group(1)) if period_match else ""
+    total_match = (
+        re.search(r"₪\s*([\d,]+\.\d{2})\s+מ[\"״']?עמ\s+ללוכ\s+םולשתל\s+כ[\"״']?הס", raw)
+        or re.search(r"סה[\"״']?כ\s+לתשלום\s+כולל\s+מע[\"״']?מ\s*₪?\s*([\d,]+\.\d{2})", combined)
+    )
+    vat_match = (
+        re.search(r"₪\s*([\d,]+\.\d{2})\s+18\.00%?\s+רועישב\s+מ[\"״']?עמ", raw)
+        or re.search(r"מע[\"״']?מ\s+בשיעור.*?₪\s*([\d,]+\.\d{2})", combined)
+    )
+    subtotal_match = (
+        re.search(r"₪\s*([\d,]+\.\d{2})\s+[0-9]{1,2}/[0-9]{4}\s+הפוקתל\s+יתפוקת\s+בויח", raw)
+        or re.search(r"סה[\"״']?כ\s+לתשלום\s+לפני\s+מע[\"״']?מ\s*₪?\s*([\d,]+\.\d{2})", combined)
+    )
+    total = normalize_amount(total_match.group(1)) if total_match else None
+    vat = normalize_amount(vat_match.group(1)) if vat_match else None
+    subtotal = normalize_amount(subtotal_match.group(1)) if subtotal_match else None
+    if total is None:
+        total = _finance_find_labeled_amount(combined, [r"הסכום\s+לתשלום.*?([\d,]+\.\d{2})"])
+    if subtotal is None and total is not None and vat is not None:
+        subtotal = round(max(0.0, total - vat), 2)
+    if vat is None:
+        vat = 0.0
+    reference_match = (
+        re.search(r"([0-9]{6,})\s+הקסע\s+תינובשח", raw)
+        or re.search(r"([0-9]{6,})\s+הקסע\s+תינובשח\s+'?סמ", raw)
+        or re.search(r"מס[\"׳']?\s*חשבונית\s*עסקה\s*([0-9]{6,})", combined)
+        or re.search(r"מס[\"׳']?\s*שובר\s*([0-9]{6,})", combined)
+    )
+    service_or_product = f"חשבון צריכת מים וביוב לתקופה {period_label}" if period_label else "חשבון צריכת מים וביוב"
+    return _normalize_finance_invoice_row_app(
+        {
+            "row_id": f"finance-upload-{uuid.uuid4().hex}",
+            "invoice_date": invoice_date or date.today().strftime("%d/%m/%Y"),
+            "supplier_name": "מי אביבים",
+            "reference_number": reference_match.group(1) if reference_match else "",
+            "allocation_number": "",
+            "service_or_product": service_or_product,
+            "subtotal": f"{(subtotal or 0.0):.2f}" if subtotal is not None else "",
+            "vat": f"{(vat or 0.0):.2f}",
+            "total": f"{(total or 0.0):.2f}" if total is not None else "",
+            "source_file_name": Path(original_name).name,
+            "source_file_path": str(file_path),
+            "report_due_date": _finance_due_date_display(invoice_date),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+
+
 def _finance_parse_hof_hacarmel_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
     combined = "\n".join([fixed_text or "", raw_text or ""]).strip()
     print_date_match = (
@@ -6141,12 +6320,20 @@ def _finance_detect_hashavshevet_invoice(raw_text: str, fixed_text: str, origina
 def _finance_parse_hashavshevet_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
     """Parse חשבשבת-format invoices (RTL visual order, Hebrew reversed, numbers correct)."""
     raw = raw_text or ""
+    fixed = fixed_text or ""
     _AMT = r"(?<!\d)(\d[\d,]*\.\d{2})(?!\d)"
 
-    # Supplier name: leave blank — Hashavshevet PDFs have severe RTL/font-mapping issues
-    # on the company header line; the "חשבונית מס" line gives only the trade name (not the
-    # legal entity). User must fill in the correct supplier name manually.
     supplier_name = ""
+    supplier_vat = ""
+    service_or_product = ""
+
+    vat_match = re.search(r"(?<!\d)(5\d{8})(?!\d)", raw)
+    if vat_match:
+        supplier_vat = vat_match.group(1)
+
+    if supplier_vat == "513475814" or "vizelvizel@gmail.com" in (raw + "\n" + fixed).lower():
+        supplier_name = 'שמוליק ו. צרכי ריפוד בע"מ'
+        service_or_product = "גומי 1 סמי סיל 100 מטר"
 
     # Invoice number: from filename (format xxxxxxx-nnnnnn-...) or raw text
     inv_num = ""
@@ -6206,7 +6393,7 @@ def _finance_parse_hashavshevet_invoice(raw_text: str, fixed_text: str, original
         "supplier_name": supplier_name,
         "reference_number": reference_number,
         "allocation_number": "",
-        "service_or_product": supplier_name or "הוצאה מוכרת",
+        "service_or_product": service_or_product or supplier_name or "הוצאה מוכרת",
         "subtotal": f"{subtotal_val:.2f}" if subtotal_val is not None else "",
         "vat": f"{vat_val:.2f}" if vat_val is not None else "",
         "total": f"{total_val:.2f}" if total_val is not None else "",
@@ -6810,6 +6997,117 @@ def _finance_parse_tranzila_invoice(raw_text: str, fixed_text: str, original_nam
     )
 
 
+def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
+    api_key = str(settings.anthropic_api_key or "").strip()
+    if not api_key:
+        return None
+    try:
+        import fitz
+        import base64
+        import httpx
+
+        suffix = file_path.suffix.lower()
+        if suffix == ".pdf":
+            pdf = fitz.open(str(file_path))
+            page = pdf.load_page(0)
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0), alpha=False)
+            img_bytes = pixmap.tobytes("png")
+            pdf.close()
+        elif suffix in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}:
+            img_bytes = file_path.read_bytes()
+        else:
+            return None
+
+        b64_image = base64.standard_b64encode(img_bytes).decode("utf-8")
+        prompt = (
+            "זוהי תמונה של חשבונית או קבלה בעברית. חלץ את הפרטים הבאים ב-JSON בלבד (ללא הסבר):\n"
+            "{\n"
+            '  "supplier_name": "שם הספק/העסק (מה שמופיע בראש הדף)",\n'
+            '  "invoice_date": "תאריך החשבונית בפורמט DD/MM/YYYY",\n'
+            '  "reference_number": "מספר חשבונית/קבלה/מסמך",\n'
+            '  "subtotal": "סכום לפני מע\\\"מ כמספר עשרוני, ריק אם לא קיים",\n'
+            '  "vat": "סכום מע\\\"מ כמספר עשרוני, ריק אם לא קיים",\n'
+            '  "total": "סכום כולל לתשלום כמספר עשרוני",\n'
+            '  "service_or_product": "תיאור קצר של המוצר/שירות"\n'
+            "}\n"
+            "אם שדה לא קיים, החזר ריק. החזר JSON בלבד."
+        )
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-haiku-4-5-20251001",
+                "max_tokens": 512,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_image}},
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
+            },
+            timeout=30.0,
+        )
+        response.raise_for_status()
+        content = response.json().get("content") or []
+        raw_json = next((block.get("text", "") for block in content if block.get("type") == "text"), "")
+        json_match = re.search(r"\{[\s\S]*\}", raw_json)
+        if not json_match:
+            return None
+        parsed = json.loads(json_match.group(0))
+
+        def _clean(val):
+            return str(val or "").strip()
+
+        def _clean_amount(val):
+            v = _clean(val).replace(",", "").replace("₪", "").strip()
+            try:
+                return f"{float(v):.2f}" if v else ""
+            except Exception:
+                return ""
+
+        invoice_date = _clean(parsed.get("invoice_date"))
+        if not invoice_date:
+            invoice_date = date.today().strftime("%d/%m/%Y")
+        supplier_name = _clean(parsed.get("supplier_name"))
+        reference_number = _clean(parsed.get("reference_number"))
+        service_or_product = _clean(parsed.get("service_or_product"))
+        subtotal = _clean_amount(parsed.get("subtotal"))
+        vat = _clean_amount(parsed.get("vat"))
+        total = _clean_amount(parsed.get("total"))
+        if not total and not subtotal:
+            return None
+        if not total and subtotal:
+            total = subtotal
+        if not subtotal and total:
+            subtotal = total
+        report_due_date = _finance_due_date_display(invoice_date)
+        return _normalize_finance_invoice_row_app({
+            "row_id": f"finance-upload-{uuid.uuid4().hex}",
+            "invoice_date": invoice_date,
+            "supplier_name": supplier_name,
+            "reference_number": reference_number,
+            "allocation_number": "",
+            "service_or_product": service_or_product,
+            "subtotal": subtotal,
+            "vat": vat,
+            "total": total,
+            "source_file_name": Path(original_name).name,
+            "source_file_path": str(file_path),
+            "report_due_date": report_due_date,
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+        })
+    except Exception as exc:
+        log_handled_error("claude vision invoice parse failed", exc)
+        return None
+
+
 def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -> dict:
     raw_text, fixed_text = _finance_extract_uploaded_invoice_texts(file_path)
     if _finance_detect_google_ads_invoice(raw_text, fixed_text, original_name):
@@ -6824,6 +7122,8 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_namecheap_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_zap_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_zap_invoice(raw_text, fixed_text, original_name, file_path)
+    if _finance_detect_trivision_receipt(raw_text, fixed_text, original_name):
+        return _finance_parse_trivision_receipt(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_infinitech_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_infinitech_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_office_admin_invoice(raw_text, fixed_text, original_name):
@@ -6842,6 +7142,8 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_road6_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_carmel_tunnels_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_carmel_tunnels_invoice(raw_text, fixed_text, original_name, file_path)
+    if _finance_detect_mei_avivim_invoice(raw_text, fixed_text, original_name):
+        return _finance_parse_mei_avivim_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_iec_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_iec_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_hof_hacarmel_invoice(raw_text, fixed_text, original_name):
@@ -6868,6 +7170,9 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_tranzila_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_hashavshevet_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_hashavshevet_invoice(raw_text, fixed_text, original_name, file_path)
+    claude_result = _finance_parse_via_claude_vision(file_path, original_name)
+    if claude_result:
+        return claude_result
     text = "\n".join([fixed_text or "", raw_text or ""]).strip()
     invoice_date = _finance_guess_invoice_date_from_raw(raw_text) or _finance_guess_invoice_date(text)
     supplier_name = _finance_guess_supplier_name(text, original_name)
@@ -21767,6 +22072,45 @@ def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file
     }
 
 
+def _try_sync_source_po_to_drive_for_process(po: PurchaseOrderData, file_path: Path) -> dict:
+    result = {
+        "status": "skipped",
+        "source_drive_file_id": "",
+        "source_drive_url": "",
+        "order_drive_folder_id": "",
+        "order_drive_folder_url": "",
+    }
+    try:
+        root_id = managed_storage_root_folder_id()
+        customer_folder_id = ensure_child_folder(root_id, _guess_customer_folder_name(po.customer_name or "לקוח"))
+        order_folder_id = ensure_child_folder(
+            customer_folder_id,
+            _guess_order_folder_name(po.po_number or "PO", po.po_date or ""),
+        )
+        uploaded = ensure_file_in_folder(order_folder_id, file_path, drive_name=file_path.name)
+        source_drive_file_id = str(uploaded.get("id") or "").strip()
+        source_drive_url = str(
+            uploaded.get("web_view_link")
+            or uploaded.get("webViewLink")
+            or uploaded.get("webContentLink")
+            or ""
+        ).strip()
+        result.update(
+            {
+                "status": "ok",
+                "source_drive_file_id": source_drive_file_id,
+                "source_drive_url": source_drive_url,
+                "order_drive_folder_id": order_folder_id,
+                "order_drive_folder_url": _drive_folder_view_link(order_folder_id),
+            }
+        )
+    except Exception as exc:
+        log_handled_error("process source po drive sync failed", exc)
+        result["status"] = "error"
+        result["error"] = str(exc)
+    return result
+
+
 def _hr_employee_lookup(rows: list[dict]) -> dict[str, dict]:
     return {
         str(row.get("employee_id") or "").strip(): dict(row)
@@ -23081,10 +23425,19 @@ async def process(
     po = parse_purchase_order(file_path)
     po = await _enrich_po_for_process(po, cfg)
     asyncio.create_task(_sync_project_managers_from_pdf_background(file_path, po))
-
-    first_item = _primary_merchandise_po_item(po)
-
-    return JSONResponse(_build_process_payload_from_po(po, mode, file.filename or "", file_path))
+    source_drive_sync = _try_sync_source_po_to_drive_for_process(po, file_path)
+    payload = _build_process_payload_from_po(
+        po,
+        mode,
+        file.filename or "",
+        file_path,
+        str(source_drive_sync.get("source_drive_file_id") or "").strip(),
+    )
+    payload["source_drive_url"] = str(source_drive_sync.get("source_drive_url") or "").strip()
+    payload["order_drive_folder_id"] = str(source_drive_sync.get("order_drive_folder_id") or "").strip()
+    payload["order_drive_folder_url"] = str(source_drive_sync.get("order_drive_folder_url") or "").strip()
+    payload["source_drive_sync_status"] = str(source_drive_sync.get("status") or "").strip()
+    return JSONResponse(payload)
 
 
 @app.post("/finalize-quote")
@@ -23753,7 +24106,10 @@ async def finalize(request: Request):
                     candidate = Path(candidate_path)
                     if not candidate.exists() or not candidate.is_file():
                         continue
-                    uploaded = upload_file_to_folder(order_folder_id, candidate)
+                    if source_po_copy_path and candidate == Path(source_po_copy_path):
+                        uploaded = ensure_file_in_folder(order_folder_id, candidate, drive_name=candidate.name)
+                    else:
+                        uploaded = upload_file_to_folder(order_folder_id, candidate)
                     uploaded_files.append(uploaded)
                     if candidate == Path(invoice_pdf_path):
                         invoice_drive_file_id = uploaded.get("id", "")
