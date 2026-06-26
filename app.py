@@ -7041,7 +7041,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
                 "content-type": "application/json",
             },
             json={
-                "model": "claude-haiku-4-5-20251001",
+                "model": "claude-sonnet-4-6",
                 "max_tokens": 512,
                 "messages": [
                     {
