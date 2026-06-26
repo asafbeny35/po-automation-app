@@ -6998,8 +6998,7 @@ def _finance_parse_tranzila_invoice(raw_text: str, fixed_text: str, original_nam
 
 
 def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
-    api_key = str(settings.openai_api_key or "").strip()
-    print(f"VISION_PARSE key_present={bool(api_key)} key_len={len(api_key)}")
+    api_key = str(settings.anthropic_api_key or "").strip()
     if not api_key:
         return None
     try:
@@ -7011,7 +7010,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         if suffix == ".pdf":
             pdf = fitz.open(str(file_path))
             page = pdf.load_page(0)
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(2.0, 2.0), alpha=False)
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
             img_bytes = pixmap.tobytes("png")
             pdf.close()
         elif suffix in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}:
@@ -7034,19 +7033,20 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "אם שדה לא קיים, החזר ריק. החזר JSON בלבד."
         )
         response = httpx.post(
-            "https://api.openai.com/v1/chat/completions",
+            "https://api.anthropic.com/v1/messages",
             headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
             },
             json={
-                "model": "gpt-4o-mini",
+                "model": "claude-haiku-4-5-20251001",
                 "max_tokens": 512,
                 "messages": [
                     {
                         "role": "user",
                         "content": [
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64_image}", "detail": "high"}},
+                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_image}},
                             {"type": "text", "text": prompt},
                         ],
                     }
@@ -7055,8 +7055,8 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             timeout=30.0,
         )
         response.raise_for_status()
-        choices = response.json().get("choices") or []
-        raw_json = (choices[0].get("message", {}).get("content") or "") if choices else ""
+        content = response.json().get("content") or []
+        raw_json = next((block.get("text", "") for block in content if block.get("type") == "text"), "")
         json_match = re.search(r"\{[\s\S]*\}", raw_json)
         if not json_match:
             return None
@@ -7104,7 +7104,6 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "updated_at": datetime.now().isoformat(timespec="seconds"),
         })
     except Exception as exc:
-        print(f"VISION_PARSE_ERROR type={type(exc).__name__} msg={exc}")
         log_handled_error("claude vision invoice parse failed", exc)
         return None
 
