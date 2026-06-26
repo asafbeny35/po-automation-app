@@ -20968,7 +20968,7 @@ async def delete_payments_transfer_row_endpoint(request: Request):
     try:
         _payments_assert_snapshot_matches(sheet_title, row_number, expected_snapshot_hash)
         matched_history_rows = _matching_order_history_rows_for_payment_row(row)
-        result = delete_payment_transfer_row(sheet_title, row_number, row)
+        result = delete_payment_transfer_row(sheet_title, row_number, row, exact_only=True)
         order_history_cleanup: list[dict] = []
         delivery_confirmation_cleanup: list[dict] = []
         output_cleanup: list[dict] = []
@@ -21022,8 +21022,6 @@ async def delete_payments_transfer_row_endpoint(request: Request):
             status_code=409,
         )
     except Exception as exc:
-        import traceback
-        print(f"DELETE_ROW_ERROR: {type(exc).__name__}: {exc}\n{traceback.format_exc()}")
         log_handled_error("delete_payments_transfer_row failed", exc)
         return JSONResponse({"error": f"לא הצלחתי למחוק את השורה: {exc}"}, status_code=500)
 

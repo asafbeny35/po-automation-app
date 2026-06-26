@@ -2854,7 +2854,7 @@ def _payment_rows_match_exact(row_a: dict, row_b: dict) -> bool:
     return True
 
 
-def delete_payment_transfer_row(sheet_title: str, row_number: int, row: dict | None = None) -> dict:
+def delete_payment_transfer_row(sheet_title: str, row_number: int, row: dict | None = None, exact_only: bool = False) -> dict:
     service = _service()
     _ensure_payment_sheet_schema(service, sheet_title)
 
@@ -2880,18 +2880,19 @@ def delete_payment_transfer_row(sheet_title: str, row_number: int, row: dict | N
         raise ValueError("לא הצלחתי לאתר את השורה למחיקה.")
 
     deletions: dict[str, list[int]] = {}
-    for title in _payment_sheet_names(service):
-        _ensure_payment_sheet_schema(service, title)
-        values = service.spreadsheets().values().get(
-            spreadsheetId=settings.google_sheets_spreadsheet_id,
-            range=f"'{title}'!A:N",
-        ).execute().get("values", [])
-        for candidate_row_number, raw in enumerate(values, start=1):
-            if not _is_payment_data_row(raw):
-                continue
-            candidate = _payment_row_from_raw(raw, title, candidate_row_number)
-            if _payment_rows_match_exact(candidate, target_row):
-                deletions.setdefault(title, []).append(candidate_row_number)
+    if not exact_only:
+        for title in _payment_sheet_names(service):
+            _ensure_payment_sheet_schema(service, title)
+            values = service.spreadsheets().values().get(
+                spreadsheetId=settings.google_sheets_spreadsheet_id,
+                range=f"'{title}'!A:N",
+            ).execute().get("values", [])
+            for candidate_row_number, raw in enumerate(values, start=1):
+                if not _is_payment_data_row(raw):
+                    continue
+                candidate = _payment_row_from_raw(raw, title, candidate_row_number)
+                if _payment_rows_match_exact(candidate, target_row):
+                    deletions.setdefault(title, []).append(candidate_row_number)
 
     if not deletions:
         deletions = {sheet_title: [int(row_number)]}
