@@ -7007,14 +7007,19 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         import httpx
 
         suffix = file_path.suffix.lower()
+        media_type = "image/png"
         if suffix == ".pdf":
             pdf = fitz.open(str(file_path))
             page = pdf.load_page(0)
             pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
             img_bytes = pixmap.tobytes("png")
             pdf.close()
-        elif suffix in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}:
+        elif suffix in {".jpg", ".jpeg"}:
             img_bytes = file_path.read_bytes()
+            media_type = "image/jpeg"
+        elif suffix in {".png", ".bmp", ".tif", ".tiff", ".webp"}:
+            img_bytes = file_path.read_bytes()
+            media_type = "image/png" if suffix == ".png" else "image/webp" if suffix == ".webp" else "image/png"
         else:
             return None
 
@@ -7047,7 +7052,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
                     {
                         "role": "user",
                         "content": [
-                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_image}},
+                            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64_image}},
                             {"type": "text", "text": prompt},
                         ],
                     }
