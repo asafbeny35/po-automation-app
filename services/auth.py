@@ -100,9 +100,16 @@ def _default_user(
     }
 
 
+def _stable_cookie_secret() -> str:
+    env_secret = os.getenv("COOKIE_SECRET", "").strip()
+    if env_secret:
+        return env_secret
+    return _b64url_encode(secrets.token_bytes(32))
+
+
 def _default_state() -> dict[str, Any]:
     state = {
-        "cookie_secret": _b64url_encode(secrets.token_bytes(32)),
+        "cookie_secret": _stable_cookie_secret(),
         "default_user_id": DEFAULT_PRIMARY_USER_ID,
         "users": {
             DEFAULT_PRIMARY_USER_ID: _default_user(
@@ -283,7 +290,7 @@ def load_auth_state() -> dict[str, Any]:
             save_auth_state(state)
             return copy.deepcopy(state)
         if not state.get("cookie_secret"):
-            state["cookie_secret"] = _default_state()["cookie_secret"]
+            state["cookie_secret"] = _stable_cookie_secret()
         if not raw:
             save_auth_state(state)
             return copy.deepcopy(state)
@@ -308,7 +315,7 @@ def load_auth_state() -> dict[str, Any]:
     raw_dict = _read_local_auth_state_raw()
     state = _migrate_legacy_state(raw_dict)
     if not state.get("cookie_secret"):
-        state["cookie_secret"] = _default_state()["cookie_secret"]
+        state["cookie_secret"] = _stable_cookie_secret()
     if state != raw_dict:
         save_auth_state(state)
         return copy.deepcopy(state)
