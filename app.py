@@ -21022,6 +21022,8 @@ async def delete_payments_transfer_row_endpoint(request: Request):
             status_code=409,
         )
     except Exception as exc:
+        import traceback
+        print(f"DELETE_ROW_ERROR: {type(exc).__name__}: {exc}\n{traceback.format_exc()}")
         log_handled_error("delete_payments_transfer_row failed", exc)
         return JSONResponse({"error": f"לא הצלחתי למחוק את השורה: {exc}"}, status_code=500)
 
