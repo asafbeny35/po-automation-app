@@ -7181,6 +7181,13 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_hashavshevet_invoice(raw_text, fixed_text, original_name, file_path)
     claude_result = _finance_parse_via_claude_vision(file_path, original_name)
     if claude_result:
+        combined_text = "\n".join([raw_text or "", fixed_text or ""])
+        if re.search(r"\$|USD|\bUS Dollar\b", combined_text, re.IGNORECASE):
+            claude_result["currency_code"] = "USD"
+        elif re.search(r"€|EUR|\bEuro\b", combined_text, re.IGNORECASE):
+            claude_result["currency_code"] = "EUR"
+        elif re.search(r"£|GBP", combined_text, re.IGNORECASE):
+            claude_result["currency_code"] = "GBP"
         return claude_result
     text = "\n".join([fixed_text or "", raw_text or ""]).strip()
     invoice_date = _finance_guess_invoice_date_from_raw(raw_text) or _finance_guess_invoice_date(text)
