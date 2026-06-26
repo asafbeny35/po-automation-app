@@ -6998,7 +6998,7 @@ def _finance_parse_tranzila_invoice(raw_text: str, fixed_text: str, original_nam
 
 
 def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
-    api_key = str(settings.anthropic_api_key or "").strip()
+    api_key = str(settings.openai_api_key or "").strip()
     if not api_key:
         return None
     try:
@@ -7033,20 +7033,19 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "אם שדה לא קיים, החזר ריק. החזר JSON בלבד."
         )
         response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
+            "https://api.openai.com/v1/chat/completions",
             headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
             },
             json={
-                "model": "claude-haiku-4-5-20251001",
+                "model": "gpt-4o-mini",
                 "max_tokens": 512,
                 "messages": [
                     {
                         "role": "user",
                         "content": [
-                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_image}},
+                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{b64_image}", "detail": "high"}},
                             {"type": "text", "text": prompt},
                         ],
                     }
@@ -7055,8 +7054,8 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             timeout=30.0,
         )
         response.raise_for_status()
-        content = response.json().get("content") or []
-        raw_json = next((block.get("text", "") for block in content if block.get("type") == "text"), "")
+        choices = response.json().get("choices") or []
+        raw_json = (choices[0].get("message", {}).get("content") or "") if choices else ""
         json_match = re.search(r"\{[\s\S]*\}", raw_json)
         if not json_match:
             return None
