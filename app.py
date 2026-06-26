@@ -6999,6 +6999,7 @@ def _finance_parse_tranzila_invoice(raw_text: str, fixed_text: str, original_nam
 
 def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
     api_key = str(settings.openai_api_key or "").strip()
+    print(f"VISION_PARSE key_present={bool(api_key)} key_len={len(api_key)}")
     if not api_key:
         return None
     try:
@@ -7103,6 +7104,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "updated_at": datetime.now().isoformat(timespec="seconds"),
         })
     except Exception as exc:
+        print(f"VISION_PARSE_ERROR type={type(exc).__name__} msg={exc}")
         log_handled_error("claude vision invoice parse failed", exc)
         return None
 
