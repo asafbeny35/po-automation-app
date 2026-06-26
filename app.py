@@ -7028,7 +7028,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             '  "reference_number": "Invoice/receipt number",\n'
             '  "subtotal": "Amount before VAT (לפני מע\"מ) as decimal number, empty if not present",\n'
             '  "vat": "VAT amount (מע\"מ) as decimal number, empty if not present",\n'
-            '  "total": "Total amount to pay (סה\"כ / סכום כולל) as decimal number",\n'
+            '  "total": "Total amount to pay (סה\"כ / סכום כללי / סכום כולל) as decimal number. May be handwritten — look in boxes or bottom-left corner.",\n'
             '  "service_or_product": "Short description of the product or service. Read Hebrew right-to-left."\n'
             "}\n"
             "Important: Hebrew is RTL — read each word from right to left. Return JSON only."
@@ -7082,7 +7082,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         subtotal = _clean_amount(parsed.get("subtotal"))
         vat = _clean_amount(parsed.get("vat"))
         total = _clean_amount(parsed.get("total"))
-        if not total and not subtotal:
+        if not supplier_name and not total and not subtotal:
             return None
         if not total and subtotal:
             total = subtotal
