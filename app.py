@@ -5221,6 +5221,7 @@ def _finance_parse_anthropic_receipt(raw_text: str, fixed_text: str, original_na
             "invoice_date": invoice_date or date.today().strftime("%d/%m/%Y"),
             "supplier_name": "Anthropic",
             "service_or_product": service,
+            "currency_code": "USD",
             "subtotal": f"{total_value:.2f}" if total_value else "",
             "vat": "0.00" if total_value else "",
             "total": f"{total_value:.2f}" if total_value else "",
