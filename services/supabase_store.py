@@ -447,6 +447,41 @@ TABLE_CONFIGS: dict[str, JsonDict] = {
     "hr_payslip_prep_history": {"table": "hr_payslip_prep_history", "id_getter": _id_hr_prep_history, "mapper": lambda row: _map_raw(row, _id_hr_prep_history(row))},
 }
 
+ACTIVITY_LOG_TABLE = "activity_log"
+
+
+def insert_activity_log(row: JsonDict) -> None:
+    if not is_enabled():
+        return
+    try:
+        _request_json(
+            "POST",
+            f"/rest/v1/{ACTIVITY_LOG_TABLE}",
+            payload=[{k: v for k, v in row.items() if v is not None}],
+            headers={**_base_headers(write=True), "Prefer": "return=minimal"},
+        )
+    except Exception:
+        pass
+
+
+def fetch_activity_log(limit: int = 300) -> list[JsonDict]:
+    if not is_enabled():
+        return []
+    try:
+        params = {
+            "select": "id,created_at,user_id,user_name,action,tab,description,entity_id",
+            "order": "created_at.desc",
+            "limit": str(limit),
+        }
+        payload = _request_json(
+            "GET",
+            f"/rest/v1/{ACTIVITY_LOG_TABLE}?{_query_string(params)}",
+            headers=_base_headers(write=False),
+        )
+        return payload if isinstance(payload, list) else []
+    except Exception:
+        return []
+
 
 def is_enabled() -> bool:
     return (

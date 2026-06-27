@@ -838,6 +838,36 @@ def _app_state_enabled(domain: str) -> bool:
     return supabase_store.is_enabled() and supabase_store.supports_domain(domain)
 
 
+async def _log_activity(
+    request: Request,
+    *,
+    action: str,
+    tab: str,
+    description: str,
+    entity_id: str | None = None,
+) -> None:
+    from services.auth import DEFAULT_PRIMARY_USER_ID, DEFAULT_SECONDARY_USER_ID
+    user_id = authenticated_user_id(request) or ""
+    if user_id == DEFAULT_PRIMARY_USER_ID:
+        user_name = "אסף"
+    elif user_id == DEFAULT_SECONDARY_USER_ID:
+        user_name = "אמא"
+    else:
+        user_name = user_id or "אורח"
+    row = {
+        "user_id": user_id or None,
+        "user_name": user_name,
+        "action": action,
+        "tab": tab,
+        "description": description,
+        "entity_id": entity_id or None,
+    }
+    try:
+        await asyncio.to_thread(supabase_store.insert_activity_log, row)
+    except Exception:
+        pass
+
+
 def _load_supabase_app_state(domain: str) -> dict | None:
     if not _app_state_enabled(domain):
         return None
@@ -16059,6 +16089,7 @@ async def inventory_purchase_orders_create(request: Request):
         vat = float((body or {}).get("vat") or 0)
         total = float((body or {}).get("total") or 0)
         raw_items = (body or {}).get("items") or []
+        await _log_activity(request, action="יצירה", tab="מלאי", description=f"יצירת הזמנת רכש{(' — ' + supplier_name) if supplier_name else ''}", entity_id=supplier_name or None)
         normalized_items: list[dict] = []
         if isinstance(raw_items, list):
             for raw_item in raw_items:
@@ -16262,6 +16293,8 @@ async def inventory_purchase_orders_delete(request: Request):
         target_row = next((row for row in rows if str(row.get("history_id") or "").strip() == history_id), None)
         if not target_row:
             return JSONResponse({"error": "לא נמצאה שורת הזמנת רכש מתאימה."}, status_code=404)
+        _ipd_supplier = str(target_row.get("supplier_name") or history_id).strip()
+        await _log_activity(request, action="מחיקה", tab="מלאי", description=f"מחיקת הזמנת רכש — {_ipd_supplier}", entity_id=history_id)
         local_file = str(target_row.get("po_local_file") or "").strip().lstrip("/")
         if local_file:
             try:
@@ -17979,6 +18012,8 @@ async def customers_set_active(request: Request):
     selected_rows = [row for row in selected if isinstance(row, dict)]
     if not selected_rows:
         return JSONResponse({"error": "לא נבחרו לקוחות לעדכון."}, status_code=400)
+    _csa_names = ", ".join(str(r.get("customer_name") or r.get("name") or "").strip() for r in selected_rows if str(r.get("customer_name") or r.get("name") or "").strip())
+    await _log_activity(request, action="עריכה", tab="לקוחות", description=f"{'הצגת' if activate else 'הסתרת'} לקוח{('ות' if len(selected_rows) > 1 else '')}{(' — ' + _csa_names) if _csa_names else ''}")
     try:
         active_rows = load_customer_rows()
         inactive_rows = load_inactive_customer_rows()
@@ -18028,6 +18063,8 @@ async def customers_create(request: Request):
     customer_domain = _normalize_customer_domain_value(body.get("customer_domain") or "")
     mode = _normalize_customer_mode(body.get("mode") or "prod")
     cfg = get_mode_config(mode)
+    _cc_name = str((payload or {}).get("name") or (payload or {}).get("customer_name") or "").strip()
+    await _log_activity(request, action="יצירה", tab="לקוחות", description=f"יצירת לקוח חדש{(' — ' + _cc_name) if _cc_name else ''}", entity_id=_cc_name or None)
     try:
         client = GreenInvoiceClient(
             base_url=cfg["base_url"],
@@ -18132,6 +18169,8 @@ async def customers_update(request: Request):
     payload = body.get("customer") if isinstance(body.get("customer"), dict) else body
     mode = _normalize_customer_mode(body.get("mode") or "prod")
     cfg = get_mode_config(mode)
+    _cu_name = str((payload or {}).get("name") or (payload or {}).get("customer_name") or "").strip()
+    await _log_activity(request, action="עריכה", tab="לקוחות", description=f"עדכון פרטי לקוח{(' — ' + _cu_name) if _cu_name else ''}", entity_id=str((payload or {}).get("customer_guid") or _cu_name or "") or None)
     try:
         client_guid = str((payload or {}).get("customer_guid") or "").strip()
         if not client_guid:
@@ -18203,6 +18242,8 @@ async def customers_delete(request: Request):
         return JSONResponse({"error": "לא נשלח לקוח למחיקה."}, status_code=400)
 
     source_mode = _customer_mode_label(row.get("source_mode") or "")
+    _cd_name = str(row.get("customer_name") or row.get("name") or "").strip()
+    await _log_activity(request, action="מחיקה", tab="לקוחות", description=f"מחיקת לקוח{(' — ' + _cd_name) if _cd_name else ''}", entity_id=str(row.get("customer_guid") or _cd_name or "") or None)
     hidden_keys = _load_hidden_customer_keys()
     hidden_key = _customer_hidden_key(row)
     warning = ""
@@ -19194,6 +19235,10 @@ async def finance_invoices_save(request: Request):
         normalized = _finance_sync_invoice_row_drive_targets(normalized)
     except Exception as drive_exc:
         log_handled_error("finance_invoices_save drive sync failed", drive_exc)
+    _fi_supplier = str(normalized.get("supplier_name") or "").strip()
+    _fi_inv = str(normalized.get("supplier_invoice_number") or "").strip()
+    _fi_new = not str(incoming.get("row_id") or "").strip()
+    await _log_activity(request, action="יצירה" if _fi_new else "עריכה", tab="כספים", description=f"{'הוספת' if _fi_new else 'עדכון'} חשבונית{(' — ' + _fi_supplier) if _fi_supplier else ''}{(' · מס׳ ' + _fi_inv) if _fi_inv else ''}", entity_id=str(incoming.get("row_id") or "") or None)
     if not normalized["supplier_name"]:
         return JSONResponse({"error": "חסר שם ספק."}, status_code=400)
     if not normalized["service_or_product"]:
@@ -19270,6 +19315,7 @@ async def finance_invoices_delete(request: Request):
     row_id = str(body.get("row_id") or "").strip()
     if not row_id:
         return JSONResponse({"error": "חסר מזהה רשומה למחיקה."}, status_code=400)
+    await _log_activity(request, action="מחיקה", tab="כספים", description=f"מחיקת חשבונית — {row_id}", entity_id=row_id)
     try:
         rows = _dedupe_finance_invoice_rows(load_marketing_rows("finance_invoices"))
         remaining = [row for row in rows if str(row.get("row_id") or "").strip() != row_id]
@@ -20309,6 +20355,8 @@ async def marketing_pipeline_save(request: Request):
     if not target_key:
         return JSONResponse({"error": "חסר מפתח לקוח לעדכון שורת השיווק."}, status_code=400)
     incoming["customer_key"] = target_key
+    _mps_cust = str(incoming.get("customer_name") or target_key or "").strip()
+    await _log_activity(request, action="עריכה", tab="שיווק", description=f"עדכון שורת פייפליין{(' — ' + _mps_cust) if _mps_cust else ''}", entity_id=target_key or None)
     try:
         rows = load_marketing_rows("pipeline")
         updated_row = None
@@ -20359,6 +20407,7 @@ async def marketing_pipeline_delete(request: Request):
     target_key = str(body.get("customer_key") or "").strip()
     if not target_key:
         return JSONResponse({"error": "חסר מפתח לקוח למחיקה."}, status_code=400)
+    await _log_activity(request, action="מחיקה", tab="שיווק", description=f"מחיקה מפייפליין שיווק — {target_key}", entity_id=target_key)
     try:
         rows = load_marketing_rows("pipeline")
         removed_row = next((dict(row) for row in rows if str(row.get("customer_key") or "").strip() == target_key), None)
@@ -20597,6 +20646,7 @@ async def marketing_complete_reminder(request: Request):
 
 @app.post("/marketing-send-email")
 async def marketing_send_email(
+    request: Request,
     recipients: str = Form(""),
     subject: str = Form(""),
     plain_body: str = Form(""),
@@ -20613,6 +20663,12 @@ async def marketing_send_email(
     upload_dir = OUTPUT_DIR / "marketing-mails"
     is_test_send = str(test_send or "").strip().lower() == "true"
     stored_files: list[Path] = []
+    if not is_test_send:
+        await _log_activity(
+            request, action="שליחה", tab="שיווק",
+            description=f"שליחת מייל שיווקי{(' ל-' + customer_name.strip()) if customer_name.strip() else ''}{(' ל-' + recipients.strip()) if recipients.strip() and not customer_name.strip() else ''}",
+            entity_id=customer_key.strip() or customer_guid.strip() or None,
+        )
     try:
         for file in attachments or []:
             stored_path, _ = await _store_uploaded_attachment(file, upload_dir, fallback_name="marketing-attachment.pdf")
@@ -20657,6 +20713,7 @@ async def marketing_send_whatsapp(request: Request):
         return JSONResponse({"error": "חסר מספר טלפון לשליחת וואטסאפ."}, status_code=400)
     if not message:
         return JSONResponse({"error": "חסר תוכן להודעת הוואטסאפ."}, status_code=400)
+    await _log_activity(request, action="שליחה", tab="שיווק", description=f"שליחת WhatsApp שיווקי{(' ל-' + customer_name) if customer_name else ''}{(' · ' + phone) if phone else ''}", entity_id=customer_key or customer_guid or None)
     try:
         file_paths: list[str] = []
         for asset_key in doc_asset_keys:
@@ -22344,6 +22401,9 @@ async def hr_state(request: Request):
 async def hr_employee_save(request: Request):
     body = await request.json()
     row = body.get("row") or {}
+    _hes_name = str((row or {}).get("full_name") or "").strip()
+    _hes_new = not str((row or {}).get("employee_id") or "").strip()
+    await _log_activity(request, action="יצירה" if _hes_new else "עריכה", tab="עובדים ושכר", description=f"{'הוספת עובד' if _hes_new else 'עדכון עובד'}{(' — ' + _hes_name) if _hes_name else ''}", entity_id=str((row or {}).get("employee_id") or _hes_name or "") or None)
     if not isinstance(row, dict):
         return JSONResponse({"error": "מבנה העובד לא תקין."}, status_code=400)
     if not str(row.get("full_name") or "").strip():
@@ -22582,6 +22642,8 @@ async def hr_employee_delete(request: Request):
         employee = next((row for row in employees if str(row.get("employee_id") or "").strip() == employee_id), None)
         if not employee:
             return JSONResponse({"error": "העובד לא נמצא."}, status_code=404)
+        _hed_name = str(employee.get("full_name") or employee_id).strip()
+        await _log_activity(request, action="מחיקה", tab="עובדים ושכר", description=f"מחיקת עובד — {_hed_name}", entity_id=employee_id)
         payroll_rows = load_hr_rows("payroll")
         contribution_rows = load_hr_rows("contributions")
         hours_rows = load_hr_rows("hours")
@@ -22756,6 +22818,7 @@ async def hr_payslip_prep_preview(request: Request):
 
 @app.post("/hr-payslip-prep-send")
 async def hr_payslip_prep_send(
+    request: Request,
     month_key: str = Form(...),
     send_mode: str = Form("live"),
     files: list[UploadFile] = File(default=[]),
@@ -22764,6 +22827,8 @@ async def hr_payslip_prep_send(
     if not re.match(r"^\d{4}-\d{2}$", safe_month_key):
         return JSONResponse({"error": "חסר חודש תקין לשליחה."}, status_code=400)
     normalized_send_mode = str(send_mode or "live").strip().lower()
+    if normalized_send_mode == "live":
+        await _log_activity(request, action="שליחה", tab="עובדים ושכר", description=f"שליחת תלושי שכר לחודש {safe_month_key}", entity_id=safe_month_key)
     if normalized_send_mode not in {"live", "test"}:
         normalized_send_mode = "live"
     recipients = "asafbeny@gmail.com" if normalized_send_mode == "test" else "shayalon222@gmail.com"
@@ -23302,6 +23367,9 @@ async def working_orders_delete(request: Request):
     target_row = next((row for row in rows if str(row.get("row_id") or "").strip() == row_id), None)
     if not target_row:
         return JSONResponse({"error": "ההזמנה בעבודה לא נמצאה."}, status_code=404)
+    _wo_cust = str(target_row.get("customer_name") or target_row.get("customer_id") or "").strip()
+    _wo_po = str(target_row.get("po_number") or row_id).strip()
+    await _log_activity(request, action="מחיקה", tab="הזמנות", description=f"מחיקת הוראת עבודה{(' — ' + _wo_cust) if _wo_cust else ''}{(' · ' + _wo_po) if _wo_po else ''}", entity_id=_wo_po or None)
 
     drive_delete_results: list[dict] = []
     for label, drive_id in (
@@ -23491,6 +23559,18 @@ async def debug_whatsapp():
     return JSONResponse(info)
 
 
+@app.get("/activity-log")
+async def activity_log_endpoint(request: Request):
+    if not is_request_authenticated(request):
+        return JSONResponse({"error": "auth required"}, status_code=401)
+    try:
+        rows = await asyncio.to_thread(supabase_store.fetch_activity_log, 500)
+        return JSONResponse({"rows": rows})
+    except Exception as exc:
+        log_handled_error("activity_log_endpoint", exc)
+        return JSONResponse({"rows": [], "error": str(exc)})
+
+
 @app.post("/labels-only")
 async def labels_only(request: Request):
     """Generate label PDFs and send via WhatsApp — standalone, no order creation."""
@@ -23576,6 +23656,10 @@ async def finalize_quote(request: Request):
         source_file_name = (data.get("source_file") or "").strip()
         manual_entry = bool(data.get("manual_entry"))
         cfg = get_mode_config(mode)
+
+        _fq_cust = str(data.get("customer_name") or data.get("customer_id") or "").strip()
+        _fq_mode = "ייצור" if mode == "prod" else "סנדבוקס"
+        await _log_activity(request, action="יצירה", tab="הזמנות", description=f"יצירת הצעת מחיר ({_fq_mode}){(' — ' + _fq_cust) if _fq_cust else ''}", entity_id=_fq_cust or None)
 
         po = _build_purchase_order_from_request_data(data)
 
@@ -23764,6 +23848,10 @@ async def finalize(request: Request):
         "fulfillment_id": str(data.get("fulfillment_id") or "").strip(),
     }
     logger.info("FINALIZE START | %s", json.dumps(finalize_log_context, ensure_ascii=False))
+    _cust_name = finalize_log_context.get("customer_name") or finalize_log_context.get("customer_id") or ""
+    _po_num = finalize_log_context.get("po_number") or ""
+    _mode_label = "ייצור" if finalize_log_context.get("raw_mode", "").startswith("prod") else "סנדבוקס"
+    await _log_activity(request, action="שליחה", tab="הזמנות", description=f"סיום הזמנה ({_mode_label}) — {_cust_name}{(' · הזמנה ' + _po_num) if _po_num else ''}", entity_id=_po_num or _cust_name or None)
 
     if mode == "prod_with_transport":
         mode = "prod"

@@ -12647,6 +12647,7 @@ input:focus {
         <button type="button" class="top-tab" data-tab="admin">מנהלה</button>
         <button type="button" class="top-tab" data-tab="finance">כספים</button>
         <button type="button" class="top-tab" data-tab="office">משרד</button>
+        <button type="button" class="top-tab" data-tab="activity-log">פעילות</button>
       </div>
     </section>
     <section class="tabs-group-card">
@@ -17055,6 +17056,58 @@ input:focus {
     </section>
   </section>
 
+  <section class="tab-panel" data-tab-panel="activity-log">
+    <section class="admin-panel">
+      <div class="panel-kicker-strip">
+        <div class="section-kicker">מערכת</div>
+      </div>
+      <h2 style="margin: 0;">יומן פעילות</h2>
+      <p class="section-copy">כל הפעולות שבוצעו במערכת — עריכה, שמירה, מחיקה, שליחה ויצירה — לפי תאריך ומשתמש.</p>
+
+      <section class="admin-section">
+        <div class="admin-section-head" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+          <div class="admin-inline-headline" style="flex:1;min-width:0;">
+            <div class="section-kicker">מעקב</div>
+            <h2>פעולות אחרונות</h2>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <select id="activityLogUserFilter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border-color,#ddd);font-size:14px;background:var(--bg-card,#fff);">
+              <option value="">כל המשתמשים</option>
+            </select>
+            <select id="activityLogTabFilter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border-color,#ddd);font-size:14px;background:var(--bg-card,#fff);">
+              <option value="">כל הטאבים</option>
+            </select>
+            <select id="activityLogActionFilter" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border-color,#ddd);font-size:14px;background:var(--bg-card,#fff);">
+              <option value="">כל הפעולות</option>
+              <option value="יצירה">יצירה</option>
+              <option value="עריכה">עריכה</option>
+              <option value="מחיקה">מחיקה</option>
+              <option value="שליחה">שליחה</option>
+              <option value="שמירה">שמירה</option>
+            </select>
+            <button type="button" class="ghost-btn" onclick="loadActivityLog()" style="padding:6px 14px;">רענן</button>
+          </div>
+        </div>
+        <div id="activityLogTableWrap" style="overflow-x:auto;margin-top:16px;">
+          <div id="activityLogLoading" style="text-align:center;padding:32px;color:var(--text-muted,#888);display:none;">טוען...</div>
+          <table id="activityLogTable" style="width:100%;border-collapse:collapse;font-size:14px;display:none;">
+            <thead>
+              <tr style="background:var(--bg-section,#f5f5f5);text-align:right;">
+                <th style="padding:10px 12px;border-bottom:2px solid var(--border-color,#ddd);font-weight:600;">תאריך ושעה</th>
+                <th style="padding:10px 12px;border-bottom:2px solid var(--border-color,#ddd);font-weight:600;">משתמש</th>
+                <th style="padding:10px 12px;border-bottom:2px solid var(--border-color,#ddd);font-weight:600;">פעולה</th>
+                <th style="padding:10px 12px;border-bottom:2px solid var(--border-color,#ddd);font-weight:600;">טאב</th>
+                <th style="padding:10px 12px;border-bottom:2px solid var(--border-color,#ddd);font-weight:600;">תיאור</th>
+              </tr>
+            </thead>
+            <tbody id="activityLogBody"></tbody>
+          </table>
+          <div id="activityLogEmpty" style="text-align:center;padding:32px;color:var(--text-muted,#888);display:none;">אין פעולות רשומות עדיין.</div>
+        </div>
+      </section>
+    </section>
+  </section>
+
   <section class="tab-panel" data-tab-panel="inventory-po-history">
     <section class="history-panel">
       <div class="panel-kicker-strip">
@@ -21089,6 +21142,9 @@ document.addEventListener("DOMContentLoaded", () => {
       loadProjectManagersFromServer().catch(error => {
         console.warn("project managers tab load failed", error);
       });
+    }
+    if (safeTabName === "activity-log") {
+      loadActivityLog();
     }
     try {
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, safeTabName);
@@ -46678,6 +46734,115 @@ document.addEventListener("DOMContentLoaded", () => {
   } else {
     initHrPanel();
   }
+})();
+</script>
+
+<script>
+(function () {
+  let _activityAllRows = [];
+
+  const ACTION_COLORS = {
+    "יצירה": "#22863a",
+    "עריכה": "#0366d6",
+    "מחיקה": "#cb2431",
+    "שליחה": "#6f42c1",
+    "שמירה": "#e36209",
+  };
+
+  function _fmtDate(iso) {
+    if (!iso) return "—";
+    try {
+      const d = new Date(iso);
+      const date = d.toLocaleDateString("he-IL", { day: "2-digit", month: "2-digit", year: "numeric" });
+      const time = d.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" });
+      return `${date} ${time}`;
+    } catch { return iso; }
+  }
+
+  function _renderActivityLog(rows) {
+    const tbody = document.getElementById("activityLogBody");
+    const table = document.getElementById("activityLogTable");
+    const empty = document.getElementById("activityLogEmpty");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+    if (!rows.length) {
+      table.style.display = "none";
+      empty.style.display = "";
+      return;
+    }
+    table.style.display = "";
+    empty.style.display = "none";
+    rows.forEach((row, idx) => {
+      const tr = document.createElement("tr");
+      tr.style.background = idx % 2 === 0 ? "var(--bg-card,#fff)" : "var(--bg-section,#f9f9f9)";
+      const actionColor = ACTION_COLORS[row.action] || "#555";
+      tr.innerHTML = `
+        <td style="padding:9px 12px;border-bottom:1px solid var(--border-color,#eee);white-space:nowrap;direction:ltr;text-align:right;">${_fmtDate(row.created_at)}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--border-color,#eee);font-weight:600;">${row.user_name || row.user_id || "—"}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--border-color,#eee);">
+          <span style="display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;font-weight:600;color:#fff;background:${actionColor};">${row.action || "—"}</span>
+        </td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--border-color,#eee);color:var(--text-muted,#666);">${row.tab || "—"}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid var(--border-color,#eee);">${row.description || "—"}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function _applyActivityFilters() {
+    const userFilter = document.getElementById("activityLogUserFilter")?.value || "";
+    const tabFilter = document.getElementById("activityLogTabFilter")?.value || "";
+    const actionFilter = document.getElementById("activityLogActionFilter")?.value || "";
+    let rows = _activityAllRows;
+    if (userFilter) rows = rows.filter(r => (r.user_name || r.user_id || "") === userFilter);
+    if (tabFilter) rows = rows.filter(r => (r.tab || "") === tabFilter);
+    if (actionFilter) rows = rows.filter(r => (r.action || "") === actionFilter);
+    _renderActivityLog(rows);
+  }
+
+  function _populateActivityFilters(rows) {
+    const users = [...new Set(rows.map(r => r.user_name || r.user_id || "").filter(Boolean))];
+    const tabs = [...new Set(rows.map(r => r.tab || "").filter(Boolean))];
+    const userSel = document.getElementById("activityLogUserFilter");
+    const tabSel = document.getElementById("activityLogTabFilter");
+    if (userSel) {
+      const prev = userSel.value;
+      userSel.innerHTML = '<option value="">כל המשתמשים</option>' + users.map(u => `<option value="${u}">${u}</option>`).join("");
+      if (prev) userSel.value = prev;
+    }
+    if (tabSel) {
+      const prev = tabSel.value;
+      tabSel.innerHTML = '<option value="">כל הטאבים</option>' + tabs.map(t => `<option value="${t}">${t}</option>`).join("");
+      if (prev) tabSel.value = prev;
+    }
+  }
+
+  window.loadActivityLog = async function () {
+    const loading = document.getElementById("activityLogLoading");
+    const table = document.getElementById("activityLogTable");
+    const empty = document.getElementById("activityLogEmpty");
+    if (loading) loading.style.display = "";
+    if (table) table.style.display = "none";
+    if (empty) empty.style.display = "none";
+    try {
+      const resp = await fetch("/activity-log");
+      const data = await resp.json();
+      _activityAllRows = Array.isArray(data.rows) ? data.rows : [];
+      _populateActivityFilters(_activityAllRows);
+      _applyActivityFilters();
+    } catch (err) {
+      console.error("loadActivityLog failed", err);
+      if (empty) { empty.textContent = "שגיאה בטעינת יומן הפעילות."; empty.style.display = ""; }
+    } finally {
+      if (loading) loading.style.display = "none";
+    }
+  };
+
+  document.addEventListener("DOMContentLoaded", () => {
+    document.getElementById("activityLogUserFilter")?.addEventListener("change", _applyActivityFilters);
+    document.getElementById("activityLogTabFilter")?.addEventListener("change", _applyActivityFilters);
+    document.getElementById("activityLogActionFilter")?.addEventListener("change", _applyActivityFilters);
+  });
 })();
 </script>
 </body>
