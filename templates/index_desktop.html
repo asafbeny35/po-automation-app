@@ -23330,13 +23330,6 @@ document.addEventListener("DOMContentLoaded", () => {
       const addressee = String(context.contact_name || "").trim() || String(context.customer_name || "").trim() || "שלום";
       return `היי ${addressee}, פנייה מחודשת מבן יעקב פתרונות טקסטיל${quoteNumber ? ` · הצעת מחיר ${quoteNumber}` : ""}`;
     }
-    if (context.docAssetKey) {
-      const doc = marketingDocByKey(context.docAssetKey);
-      return `מסמך שיווקי - ${doc?.label || "בן יעקב פתרונות טקסטיל"}`;
-    }
-    if (context.customer_name) {
-      return `חומרים מקצועיים מבן יעקב פתרונות טקסטיל עבור ${context.customer_name}`;
-    }
     return "קטלוג סדרת ההגנה והאקוסטיקה - כחול לבן | בן יעקב פתרונות טקסטיל";
   }
 
