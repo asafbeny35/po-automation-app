@@ -14131,13 +14131,15 @@ async def _ensure_finalize_customer(po: PurchaseOrderData, mode: str, client: Gr
         payload["name"] = str(missing_tax_match.get("name") or po.customer_name or "").strip()
         await client.update_client(str(missing_tax_match.get("id") or "").strip(), payload)
         updated_customer = await client.get_existing_customer_details(tax_id)
-        if not updated_customer:
+        # GreenInvoice sometimes doesn't index taxId immediately after update — fall back to the name match
+        resolved = updated_customer or missing_tax_match
+        if not resolved or not str(resolved.get("id") or "").strip():
             raise RuntimeError("הלקוח נמצא לפי שם, אבל עדכון הח.פ שלו בחשבונית ירוקה לא אומת בהצלחה.")
         return {
             "status": "existing",
             "missing_before": False,
-            "customer_guid": str(updated_customer.get("id") or "").strip(),
-            "customer_name": str(updated_customer.get("name") or po.customer_name or "").strip(),
+            "customer_guid": str(resolved.get("id") or "").strip(),
+            "customer_name": str(resolved.get("name") or po.customer_name or "").strip(),
         }
 
     payload = _build_manual_customer_payload(po)
