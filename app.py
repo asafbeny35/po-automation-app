@@ -24275,20 +24275,18 @@ async def finalize(request: Request):
             return {"status": "error", "error": str(e)}
 
     # Send WhatsApp FIRST — before any Drive/Sheets/Inventory work.
-    # Previous order (Drive → Sheets → Inventory → History → WhatsApp) caused
-    # FUNCTION_INVOCATION_TIMEOUT because Drive uploads alone consumed most of
-    # the allowed window, leaving no time for WhatsApp.
-    whatsapp_send_result = (
-        {"status": "skipped", "reason": "ui_test_skip_whatsapp"}
-        if skip_whatsapp
-        else (await _run_finalize_whatsapp_send() if file_paths else {"status": "skipped", "reason": "no_files"})
-    )
-
-    # Drive sync, Sheets, and Inventory are independent — run in parallel after WhatsApp.
-    # On Vercel, Drive uploads can be very slow (5-7 PDFs × network latency) and cause
-    # FUNCTION_INVOCATION_TIMEOUT. For sandbox orders on Vercel we skip Drive entirely;
-    # for prod on Vercel we cap Drive at 60 s so the function always completes in time.
+    # Run WhatsApp, Drive, Sheets, and Inventory ALL in parallel so their durations
+    # overlap instead of stack. Railway holds the connection ~30-120s waiting for
+    # WhatsApp Web confirmation; Drive uploads can take similar time — running them
+    # together keeps total wall-clock well under the 300s Vercel limit.
     _is_sandbox_mode = str(mode or "").strip().lower() == "sandbox"
+
+    async def _whatsapp_task_with_guard():
+        if skip_whatsapp:
+            return {"status": "skipped", "reason": "ui_test_skip_whatsapp"}
+        if not file_paths:
+            return {"status": "skipped", "reason": "no_files"}
+        return await _run_finalize_whatsapp_send()
 
     async def _drive_task_with_vercel_guard():
         if IS_VERCEL and _is_sandbox_mode:
@@ -24301,8 +24299,6 @@ async def finalize(request: Request):
             except asyncio.TimeoutError:
                 return {"status": "timeout", "reason": "vercel_drive_60s_cap"}
         return await asyncio.to_thread(_perform_finalize_drive_sync)
-
-    _drive_task = _drive_task_with_vercel_guard()
 
     def _perform_finalize_sheets_append():
         print("SHEETS: append starting")
@@ -24373,16 +24369,18 @@ async def finalize(request: Request):
             inventory_result = {"status": "error", "error": str(e)}
         return inventory_result
 
-    # Run Drive sync, Sheets, and Inventory in parallel
+    # Run WhatsApp + Drive + Sheets + Inventory all in parallel
     _gather_results = await asyncio.gather(
-        _drive_task,
+        _whatsapp_task_with_guard(),
+        _drive_task_with_vercel_guard(),
         asyncio.to_thread(_perform_finalize_sheets_append),
         asyncio.to_thread(_perform_finalize_inventory_deduction),
         return_exceptions=True,
     )
-    drive_sync_result = _gather_results[0] if not isinstance(_gather_results[0], BaseException) else {"status": "error", "error": str(_gather_results[0])}
-    sheets_result = _gather_results[1] if not isinstance(_gather_results[1], BaseException) else {"error": str(_gather_results[1])}
-    inventory_deduction_result = _gather_results[2] if not isinstance(_gather_results[2], BaseException) else {"status": "error", "error": str(_gather_results[2])}
+    whatsapp_send_result = _gather_results[0] if not isinstance(_gather_results[0], BaseException) else {"status": "error", "error": str(_gather_results[0])}
+    drive_sync_result = _gather_results[1] if not isinstance(_gather_results[1], BaseException) else {"status": "error", "error": str(_gather_results[1])}
+    sheets_result = _gather_results[2] if not isinstance(_gather_results[2], BaseException) else {"error": str(_gather_results[2])}
+    inventory_deduction_result = _gather_results[3] if not isinstance(_gather_results[3], BaseException) else {"status": "error", "error": str(_gather_results[3])}
 
     def _perform_finalize_history_upsert():
         try:
