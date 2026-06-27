@@ -14935,17 +14935,25 @@ async def debug_fonts(request: Request):
     if not is_request_authenticated(request):
         return JSONResponse({"error": "auth required"}, status_code=401)
     from pathlib import Path as _P
+    from reportlab.pdfbase import pdfmetrics
+    from reportlab.pdfbase.ttfonts import TTFont
     import services.label_generator as _lg
     bundled = _P(_lg.__file__).resolve().parent / "fonts"
-    static = _P(_lg.__file__).resolve().parents[1] / "static" / "fonts"
+    regular_path = bundled / "Heebo-Regular.ttf"
+    bold_path = bundled / "Heebo-Bold.ttf"
+    try_register = None
+    try:
+        pdfmetrics.registerFont(TTFont("HeeboTest", str(regular_path)))
+        try_register = "ok"
+    except Exception as e:
+        try_register = str(e)
     return JSONResponse({
         "FONT_NAME": _lg.FONT_NAME,
         "FONT_BOLD": _lg.FONT_BOLD,
-        "bundled_dir": str(bundled),
-        "bundled_regular_exists": (bundled / "Heebo-Regular.ttf").exists(),
-        "bundled_bold_exists": (bundled / "Heebo-Bold.ttf").exists(),
-        "static_dir": str(static),
-        "static_regular_exists": (static / "Heebo-Regular.ttf").exists(),
+        "bundled_regular_exists": regular_path.exists(),
+        "bundled_bold_exists": bold_path.exists(),
+        "regular_size": regular_path.stat().st_size if regular_path.exists() else 0,
+        "try_register_result": try_register,
     })
 
 
