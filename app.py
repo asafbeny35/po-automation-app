@@ -24285,7 +24285,24 @@ async def finalize(request: Request):
     )
 
     # Drive sync, Sheets, and Inventory are independent — run in parallel after WhatsApp.
-    _drive_task = asyncio.to_thread(_perform_finalize_drive_sync)
+    # On Vercel, Drive uploads can be very slow (5-7 PDFs × network latency) and cause
+    # FUNCTION_INVOCATION_TIMEOUT. For sandbox orders on Vercel we skip Drive entirely;
+    # for prod on Vercel we cap Drive at 60 s so the function always completes in time.
+    _is_sandbox_mode = str(mode or "").strip().lower() == "sandbox"
+
+    async def _drive_task_with_vercel_guard():
+        if IS_VERCEL and _is_sandbox_mode:
+            return {"status": "skipped", "reason": "vercel_sandbox_no_drive"}
+        if IS_VERCEL:
+            try:
+                return await asyncio.wait_for(
+                    asyncio.to_thread(_perform_finalize_drive_sync), timeout=60.0
+                )
+            except asyncio.TimeoutError:
+                return {"status": "timeout", "reason": "vercel_drive_60s_cap"}
+        return await asyncio.to_thread(_perform_finalize_drive_sync)
+
+    _drive_task = _drive_task_with_vercel_guard()
 
     def _perform_finalize_sheets_append():
         print("SHEETS: append starting")
