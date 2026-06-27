@@ -30,18 +30,13 @@ def _register_fonts():
             try:
                 pdfmetrics.registerFont(TTFont(name, path))
                 found[name] = True
-                print(f"FONT_LOADED: {name} from {path}")
-            except Exception as e:
-                print(f"FONT_FAIL: {name} from {path}: {e}")
-        else:
-            if not Path(path).exists():
-                print(f"FONT_MISSING: {path}")
+            except Exception:
+                pass
 
     regular = "HebFont" if "HebFont" in found else None
     bold = "HebBold" if "HebBold" in found else regular
 
     if not regular:
-        print("FONT_FALLBACK: using Helvetica")
         return "Helvetica", "Helvetica-Bold"
 
     return regular, bold
