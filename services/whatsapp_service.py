@@ -64,6 +64,14 @@ def resolve_whatsapp_provider() -> str:
         if _twilio_is_configured():
             return "twilio"
         return "web"
+    # No explicit provider set — auto-detect: prefer Railway/Meta/Twilio over web
+    # (Playwright cannot run on serverless environments like Vercel)
+    if _railway_is_configured():
+        return "railway"
+    if _meta_is_configured():
+        return "meta_cloud"
+    if _twilio_is_configured():
+        return "twilio"
     return "web"
 
 
@@ -255,7 +263,7 @@ async def _send_via_railway(phone: str, message: str, file_paths: list[str]) -> 
     payload: dict[str, Any] = {"phone": phone, "message": message, "files": files}
     if secret:
         payload["secret"] = secret
-    async with httpx.AsyncClient(timeout=60) as client:
+    async with httpx.AsyncClient(timeout=300) as client:
         response = await client.post(f"{base_url}/send", json=payload)
         response.raise_for_status()
         return {"status": "ok", "provider": "railway", **response.json()}
