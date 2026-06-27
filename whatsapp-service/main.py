@@ -210,50 +210,59 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
                 "div[role='button'][aria-label='Send'], button[aria-label='Send']"
             ).last
 
-            await attach_button.first.wait_for(timeout=30000)
-            await attach_button.first.click()
-            await page.wait_for_timeout(400)
+            # Strategy 1: inject file directly into a hidden <input type="file"> in the DOM.
+            # This is the most robust approach — doesn't depend on menu UI selectors.
+            injected = False
+            try:
+                injected = await page.evaluate(f"""() => {{
+                    const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
+                    return inputs.length > 0;
+                }}""")
+            except Exception:
+                pass
 
-            # Try to set file via file chooser triggered by attach menu.
-            # WhatsApp Web UI changes frequently — try multiple strategies.
-            fc = None
-            for doc_selector in [
-                # English labels
-                lambda: page.get_by_role("menuitem", name="Document"),
-                lambda: page.get_by_role("menuitem", name="Documents"),
-                # Hebrew labels
-                lambda: page.get_by_role("menuitem", name="מסמך"),
-                lambda: page.get_by_role("menuitem", name="מסמכים"),
-                # Generic fallbacks
-                lambda: page.locator("li[data-testid='mi-attach-document']"),
-                lambda: page.locator("li[data-testid='attach-document']"),
-                lambda: page.locator("input[type='file'][accept*='pdf'], input[type='file'][accept*='application']"),
-            ]:
+            if injected:
                 try:
-                    loc = doc_selector()
-                    if await loc.count() == 0:
+                    # Set file on the first available file input (bypasses the attach menu entirely)
+                    file_input = page.locator("input[type='file']").first
+                    await file_input.set_input_files(str(file_path), timeout=10000)
+                    await page.wait_for_timeout(2000)
+                except Exception:
+                    injected = False
+
+            if not injected:
+                # Strategy 2: click attach button, then try menu item selectors
+                await attach_button.first.wait_for(timeout=30000)
+                await attach_button.first.click()
+                await page.wait_for_timeout(600)
+
+                fc = None
+                for selector in [
+                    "li[data-testid='mi-attach-document']",
+                    "li[data-testid='attach-document']",
+                    "[role='menuitem'][aria-label*='ocument']",
+                    "[role='menuitem'][aria-label*='מסמך']",
+                ]:
+                    try:
+                        loc = page.locator(selector)
+                        if await loc.count() > 0:
+                            async with page.expect_file_chooser(timeout=8000) as fc_info:
+                                await loc.first.click(timeout=5000)
+                            fc = await fc_info.value
+                            break
+                    except Exception:
                         continue
-                    async with page.expect_file_chooser(timeout=8000) as fc_info:
-                        await loc.first.click(timeout=5000)
-                    fc = await fc_info.value
-                    break
-                except Exception:
-                    continue
 
-            if fc is None:
-                # Last resort: find any visible file input in the attach menu
-                try:
-                    async with page.expect_file_chooser(timeout=8000) as fc_info:
-                        await page.locator("input[type='file']").first.click(timeout=5000, force=True)
-                    fc = await fc_info.value
-                except Exception:
-                    raise RuntimeError(f"Could not open file chooser for {item['name']} — WhatsApp Web UI may have changed")
-
-            await fc.set_files(str(file_path))
-            await page.wait_for_timeout(3000)
+                if fc is None:
+                    raise RuntimeError(
+                        f"Could not attach {item['name']} — WhatsApp Web UI may have changed. "
+                        "Check /qr/page to confirm session is active."
+                    )
+                await fc.set_files(str(file_path))
+                await page.wait_for_timeout(2000)
 
             await attachment_send_button.wait_for(timeout=30000)
-            await page.wait_for_timeout(max(2500, _file_send_wait_ms(size_bytes) - 3500))
+            await page.wait_for_timeout(max(2000, _file_send_wait_ms(size_bytes) - 3000))
 
             clicked = False
             for attempt_cfg in [{"force": False}, {"force": True}]:
