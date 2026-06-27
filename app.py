@@ -2625,6 +2625,7 @@ def _normalize_finance_customer_withholding_row_app(row: dict) -> dict:
         "source_mode": str(raw_row.get("source_mode") or "").strip().upper(),
         "review_pending": "TRUE" if _finance_withholding_flag(raw_row.get("review_pending")) else "",
         "migration_batch": str(raw_row.get("migration_batch") or "").strip(),
+        "dismissed": "TRUE" if _finance_withholding_flag(raw_row.get("dismissed")) else "",
         "updated_at": str(raw_row.get("updated_at") or datetime.now().isoformat(timespec="seconds")).strip(),
     }
     if (
@@ -19085,9 +19086,12 @@ async def finance_bank_movements_upload(files: list[UploadFile] = File(...)):
 @app.get("/finance-customer-withholdings-state")
 async def finance_customer_withholdings_state():
     try:
-        customer_withholding_rows = _dedupe_finance_customer_withholding_rows(
-            load_marketing_rows("finance_customer_withholdings", force_refresh=True)
-        )
+        customer_withholding_rows = [
+            r for r in _dedupe_finance_customer_withholding_rows(
+                load_marketing_rows("finance_customer_withholdings", force_refresh=True)
+            )
+            if not _finance_withholding_flag(r.get("dismissed"))
+        ]
         return JSONResponse(
             {
                 "status": "ok",
