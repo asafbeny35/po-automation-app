@@ -23471,6 +23471,76 @@ async def process(
     return JSONResponse(payload)
 
 
+@app.post("/labels-only")
+async def labels_only(request: Request):
+    """Generate label PDFs and send via WhatsApp — standalone, no order creation."""
+    if not is_request_authenticated(request):
+        return JSONResponse({"error": "auth required"}, status_code=401)
+    try:
+        body = await request.json()
+        labels_input: list[dict] = body.get("labels") or []
+        if not labels_input:
+            return JSONResponse({"error": "חסר מידע מדבקות."}, status_code=400)
+
+        if IS_VERCEL:
+            from services.label_generator_v2 import generate_label_pdf
+        else:
+            from services.label_generator_v4 import generate_label_pdf
+
+        import asyncio as _asyncio
+        label_dir = OUTPUT_DIR / "labels_only"
+        label_dir.mkdir(parents=True, exist_ok=True)
+
+        generated_paths: list[Path] = []
+        for idx, entry in enumerate(labels_input):
+            label_count = max(1, int(float(entry.get("label_count") or 1)))
+            label_data = {
+                "customer":      str(entry.get("customer") or "").strip(),
+                "address":       str(entry.get("address") or "").strip(),
+                "contact_name":  str(entry.get("contact_name") or "").strip(),
+                "phone":         str(entry.get("phone") or "").strip(),
+                "po_number":     str(entry.get("po_number") or "").strip(),
+                "product_lines": [str(l).strip() for l in (entry.get("product_lines") or []) if str(l).strip()],
+                "quantity":      str(entry.get("quantity") or "").strip(),
+                "sku":           str(entry.get("sku") or "").strip(),
+                "unit":          str(entry.get("unit") or "").strip(),
+            }
+            for copy_idx in range(label_count):
+                suffix = f"_{idx+1:02d}_{copy_idx+1:02d}" if label_count > 1 else f"_{idx+1:02d}"
+                out_path = label_dir / f"label_only{suffix}_{datetime.now().strftime('%H%M%S')}.pdf"
+                created = await _asyncio.to_thread(generate_label_pdf, label_data, str(out_path), False)
+                created_path = Path(created)
+                if created_path.exists():
+                    generated_paths.append(created_path)
+
+        if not generated_paths:
+            return JSONResponse({"error": "לא הצלחתי ליצור אף מדבקה."}, status_code=500)
+
+        first = labels_input[0]
+        customer = str(first.get("customer") or "").strip()
+        po = str(first.get("po_number") or "").strip()
+        count = len(generated_paths)
+        wa_message = "\n".join(filter(None, [
+            f"מדבקות{' — ' + customer if customer else ''}{' | ' + po if po else ''}",
+            f"{count} {'מדבקה' if count == 1 else 'מדבקות'}",
+        ]))
+
+        await send_files_via_whatsapp(
+            phone=MARKETING_REMINDER_TARGET_PHONE,
+            message=wa_message,
+            file_paths=[str(p) for p in generated_paths],
+        )
+
+        return JSONResponse({
+            "status": "ok",
+            "labels_sent": count,
+            "message": f"נשלחו {count} {'מדבקה' if count == 1 else 'מדבקות'} בוואטסאפ.",
+        })
+    except Exception as exc:
+        log_handled_error("labels_only failed", exc)
+        return JSONResponse({"error": f"שגיאה ביצירת מדבקות: {exc}"}, status_code=500)
+
+
 @app.post("/finalize-quote")
 async def finalize_quote(request: Request):
     try:

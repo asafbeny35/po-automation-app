@@ -9991,6 +9991,204 @@ a.admin-expense-status:hover {
   min-height: 20px;
 }
 
+/* ===== Labels-Only Modal ===== */
+.labels-only-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  border-color: #7c3aed;
+  color: #fff;
+}
+.labels-only-btn:hover {
+  background: linear-gradient(135deg, #6d28d9 0%, #5b21b6 100%);
+  border-color: #6d28d9;
+}
+.labels-only-btn.muted-btn {
+  background: linear-gradient(135deg, rgba(124,58,237,0.13) 0%, rgba(109,40,217,0.18) 100%);
+  color: #6d28d9;
+  border-color: rgba(124,58,237,0.3);
+}
+.labels-only-btn.muted-btn:hover {
+  background: linear-gradient(135deg, rgba(124,58,237,0.22) 0%, rgba(109,40,217,0.28) 100%);
+}
+.labels-only-modal-card {
+  width: min(100%, 680px);
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+.labels-only-modal-card h3 {
+  margin: 0;
+  font-size: 22px;
+}
+.labels-only-subtitle {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 4px 0 20px;
+  line-height: 1.6;
+}
+.labels-only-entries {
+  display: grid;
+  gap: 14px;
+  flex: 1;
+}
+.labels-only-entry {
+  border: 1px solid rgba(124,58,237,0.18);
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(245,243,255,0.7) 0%, rgba(237,233,254,0.5) 100%);
+  padding: 18px 20px 14px;
+  position: relative;
+}
+.labels-only-entry-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.labels-only-entry-num {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6d28d9;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.labels-only-remove-btn {
+  all: unset;
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 20px;
+  line-height: 1;
+  border-radius: 8px;
+  padding: 2px 6px;
+  transition: color 0.15s, background 0.15s;
+}
+.labels-only-remove-btn:hover {
+  color: #ef4444;
+  background: rgba(239,68,68,0.08);
+}
+.labels-only-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+}
+.labels-only-fields .field-full {
+  grid-column: 1 / -1;
+}
+.labels-only-field {
+  display: grid;
+  gap: 6px;
+}
+.labels-only-field label {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #4b5563;
+}
+.labels-only-field input, .labels-only-field textarea {
+  border: 1px solid rgba(124,58,237,0.22);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  padding: 10px 13px;
+  font: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  resize: none;
+}
+.labels-only-field input:focus, .labels-only-field textarea:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 3px rgba(124,58,237,0.12);
+}
+.labels-only-count-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 16px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(124,58,237,0.12);
+}
+.labels-only-add-btn {
+  margin-top: 4px;
+  border: 1.5px dashed rgba(124,58,237,0.4);
+  background: rgba(124,58,237,0.05);
+  color: #7c3aed;
+  border-radius: 16px;
+  padding: 12px 16px;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: center;
+}
+.labels-only-add-btn:hover {
+  background: rgba(124,58,237,0.1);
+  border-color: rgba(124,58,237,0.6);
+}
+.labels-only-preview-section {
+  margin-top: 16px;
+  border-top: 1px solid rgba(124,58,237,0.12);
+  padding-top: 16px;
+}
+.labels-only-preview-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #6d28d9;
+  margin-bottom: 10px;
+}
+.labels-only-preview-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.labels-only-preview-card {
+  border: 1.5px solid rgba(124,58,237,0.25);
+  border-radius: 14px;
+  background: #fff;
+  padding: 12px 16px;
+  min-width: 200px;
+  max-width: 280px;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  direction: rtl;
+  box-shadow: 0 2px 8px rgba(124,58,237,0.08);
+}
+.labels-only-preview-card .lop-field { display: flex; gap: 6px; }
+.labels-only-preview-card .lop-label { color: #9ca3af; font-size: 11px; min-width: 52px; }
+.labels-only-preview-card .lop-val { font-weight: 600; }
+.labels-only-preview-card .lop-po { font-size: 15px; font-weight: 800; color: #6d28d9; margin-bottom: 4px; }
+.labels-only-preview-card .lop-count { margin-top: 6px; font-size: 11px; color: #6d28d9; font-weight: 700; }
+.labels-only-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(148,163,184,0.15);
+}
+.labels-only-submit-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  color: #fff;
+  border: none;
+  border-radius: 16px;
+  padding: 13px 20px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+}
+.labels-only-submit-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+.labels-only-submit-btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.labels-only-status {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 20px;
+  grid-column: 1 / -1;
+  text-align: center;
+}
+
 .reminder-modal-body {
   display: grid;
   gap: 14px;
@@ -12836,6 +13034,7 @@ input:focus {
             <button class="create-btn" onclick="send('sandbox','delivery_only')">תעודת משלוח בלבד · SB</button>
             <button class="create-btn" onclick="send('sandbox_with_transport','delivery_only')">תעודת משלוח בלבד + משלוח · SB</button>
             <button class="create-btn" onclick="send('sandbox','invoice_only')">חשבונית מס בלבד · SB</button>
+            <button class="create-btn labels-only-btn" onclick="openLabelsOnlyModal()">מדבקות בלבד · SB</button>
           </div>
         </section>
         <section class="create-actions-group prod">
@@ -12851,6 +13050,7 @@ input:focus {
             <button class="create-btn muted-btn" onclick="send('prod','delivery_only')">תעודת משלוח בלבד · PROD</button>
             <button class="create-btn muted-btn" onclick="send('prod_with_transport','delivery_only')">תעודת משלוח בלבד + משלוח · PROD</button>
             <button class="create-btn muted-btn" onclick="send('prod','invoice_only')">חשבונית מס בלבד · PROD</button>
+            <button class="create-btn muted-btn labels-only-btn" onclick="openLabelsOnlyModal()">מדבקות בלבד · PROD</button>
           </div>
         </section>
       </div>
@@ -18002,6 +18202,30 @@ input:focus {
     <div class="confirm-modal-actions">
       <button type="button" class="ghost-btn" id="labelSplitCancel">ביטול</button>
       <button type="button" class="assistant-submit" id="labelSplitSave">שמור</button>
+    </div>
+  </div>
+</div>
+
+<div id="labelsOnlyModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card labels-only-modal-card">
+    <div class="modal-head">
+      <h3>🏷️ מדבקות בלבד</h3>
+      <button type="button" id="labelsOnlyClose" class="modal-close-btn" aria-label="סגור חלון">×</button>
+    </div>
+    <p class="labels-only-subtitle">ערוך את פרטי המדבקות, הוסף כמה קבוצות שתרצה, ובסוף שלח ישירות לוואטסאפ.</p>
+
+    <div id="labelsOnlyEntries" class="labels-only-entries"></div>
+    <button type="button" id="labelsOnlyAdd" class="labels-only-add-btn">＋ הוסף קבוצת מדבקות</button>
+
+    <div class="labels-only-preview-section">
+      <div class="labels-only-preview-title">תצוגה מקדימה</div>
+      <div id="labelsOnlyPreview" class="labels-only-preview-cards"></div>
+    </div>
+
+    <div class="labels-only-actions">
+      <button type="button" class="ghost-btn" id="labelsOnlyCancel">ביטול</button>
+      <button type="button" class="labels-only-submit-btn" id="labelsOnlySubmit">📤 צור ושלח בוואטסאפ</button>
+      <div id="labelsOnlyStatus" class="labels-only-status" aria-live="polite"></div>
     </div>
   </div>
 </div>
@@ -39161,6 +39385,192 @@ document.addEventListener("DOMContentLoaded", () => {
       closeLabelSplitModal();
     }
   });
+
+  // ===== Labels-Only Modal =====
+  (function() {
+    const modal = document.getElementById("labelsOnlyModal");
+    const entriesEl = document.getElementById("labelsOnlyEntries");
+    const addBtn = document.getElementById("labelsOnlyAdd");
+    const closeBtn = document.getElementById("labelsOnlyClose");
+    const cancelBtn = document.getElementById("labelsOnlyCancel");
+    const submitBtn = document.getElementById("labelsOnlySubmit");
+    const previewEl = document.getElementById("labelsOnlyPreview");
+    const statusEl = document.getElementById("labelsOnlyStatus");
+
+    let entries = [];
+
+    function defaultEntry() {
+      const d = window.currentData || {};
+      const items = Array.isArray(d.ordered_items) ? d.ordered_items : (Array.isArray(d.items) ? d.items : []);
+      const firstItem = items[0] || {};
+      const productText = (firstItem.description || firstItem.item_description || "").trim();
+      return {
+        customer:     (d.customer_name || "").trim(),
+        address:      (d.delivery_address || "").trim(),
+        contact_name: (d.contact_name || "").trim(),
+        phone:        (d.contact_phone || "").trim(),
+        po_number:    (d.po_number || "").trim(),
+        product:      productText,
+        sku:          (firstItem.sku || firstItem.item_sku || "").trim(),
+        unit:         (firstItem.unit || firstItem.item_unit || "").trim(),
+        quantity:     String(firstItem.quantity || firstItem.item_quantity || ""),
+        label_count:  "1",
+      };
+    }
+
+    function renderEntry(entry, idx) {
+      const wrap = document.createElement("div");
+      wrap.className = "labels-only-entry";
+      wrap.dataset.idx = idx;
+      wrap.innerHTML = `
+        <div class="labels-only-entry-head">
+          <span class="labels-only-entry-num">קבוצה ${idx + 1}</span>
+          <button type="button" class="labels-only-remove-btn" data-remove="${idx}" title="הסר">✕</button>
+        </div>
+        <div class="labels-only-fields">
+          <div class="labels-only-field field-full">
+            <label>לקוח</label>
+            <input type="text" data-field="customer" value="${escapeAttribute(entry.customer)}">
+          </div>
+          <div class="labels-only-field field-full">
+            <label>כתובת למשלוח</label>
+            <input type="text" data-field="address" value="${escapeAttribute(entry.address)}">
+          </div>
+          <div class="labels-only-field">
+            <label>איש קשר</label>
+            <input type="text" data-field="contact_name" value="${escapeAttribute(entry.contact_name)}">
+          </div>
+          <div class="labels-only-field">
+            <label>טלפון</label>
+            <input type="text" data-field="phone" value="${escapeAttribute(entry.phone)}">
+          </div>
+          <div class="labels-only-field field-full">
+            <label>מספר הזמנה (PO)</label>
+            <input type="text" data-field="po_number" value="${escapeAttribute(entry.po_number)}">
+          </div>
+          <div class="labels-only-field field-full">
+            <label>תיאור מוצר</label>
+            <input type="text" data-field="product" value="${escapeAttribute(entry.product)}">
+          </div>
+          <div class="labels-only-field">
+            <label>מק״ט</label>
+            <input type="text" data-field="sku" value="${escapeAttribute(entry.sku)}">
+          </div>
+          <div class="labels-only-field">
+            <label>יחידה</label>
+            <input type="text" data-field="unit" value="${escapeAttribute(entry.unit)}">
+          </div>
+        </div>
+        <div class="labels-only-count-row">
+          <div class="labels-only-field">
+            <label>כמות על המדבקה</label>
+            <input type="text" inputmode="decimal" data-field="quantity" value="${escapeAttribute(entry.quantity)}">
+          </div>
+          <div class="labels-only-field">
+            <label>מספר מדבקות להדפסה</label>
+            <input type="number" min="1" max="100" data-field="label_count" value="${escapeAttribute(entry.label_count || "1")}">
+          </div>
+        </div>
+      `;
+      wrap.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => {
+          entry[inp.dataset.field] = inp.value;
+          renderPreview();
+        });
+      });
+      wrap.querySelector("[data-remove]").addEventListener("click", () => {
+        entries.splice(idx, 1);
+        renderAll();
+      });
+      return wrap;
+    }
+
+    function renderAll() {
+      entriesEl.innerHTML = "";
+      entries.forEach((e, i) => entriesEl.appendChild(renderEntry(e, i)));
+      renderPreview();
+    }
+
+    function renderPreview() {
+      previewEl.innerHTML = "";
+      entries.forEach((e, i) => {
+        const count = Math.max(1, parseInt(e.label_count) || 1);
+        const card = document.createElement("div");
+        card.className = "labels-only-preview-card";
+        card.innerHTML = `
+          ${e.po_number ? `<div class="lop-po">${escapeHtml(e.po_number)}</div>` : ""}
+          ${e.customer  ? `<div class="lop-field"><span class="lop-label">לקוח</span><span class="lop-val">${escapeHtml(e.customer)}</span></div>` : ""}
+          ${e.address   ? `<div class="lop-field"><span class="lop-label">כתובת</span><span class="lop-val">${escapeHtml(e.address)}</span></div>` : ""}
+          ${(e.contact_name || e.phone) ? `<div class="lop-field"><span class="lop-label">קשר</span><span class="lop-val">${escapeHtml([e.contact_name, e.phone].filter(Boolean).join(" | "))}</span></div>` : ""}
+          ${e.product   ? `<div class="lop-field"><span class="lop-label">מוצר</span><span class="lop-val">${escapeHtml(e.product)}</span></div>` : ""}
+          ${e.quantity  ? `<div class="lop-field"><span class="lop-label">כמות</span><span class="lop-val">${escapeHtml(e.quantity)}${e.unit ? " " + escapeHtml(e.unit) : ""}</span></div>` : ""}
+          ${e.sku       ? `<div class="lop-field"><span class="lop-label">מק״ט</span><span class="lop-val">${escapeHtml(e.sku)}</span></div>` : ""}
+          <div class="lop-count">× ${count} עותקים</div>
+        `;
+        previewEl.appendChild(card);
+      });
+    }
+
+    window.openLabelsOnlyModal = function() {
+      entries = [defaultEntry()];
+      renderAll();
+      statusEl.textContent = "";
+      submitBtn.disabled = false;
+      modal.classList.add("visible");
+      modal.setAttribute("aria-hidden", "false");
+    };
+
+    function closeModal() {
+      modal.classList.remove("visible");
+      modal.setAttribute("aria-hidden", "true");
+    }
+
+    closeBtn?.addEventListener("click", closeModal);
+    cancelBtn?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+
+    addBtn?.addEventListener("click", () => {
+      entries.push(defaultEntry());
+      renderAll();
+      entriesEl.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+
+    submitBtn?.addEventListener("click", async () => {
+      if (!entries.length) return;
+      submitBtn.disabled = true;
+      statusEl.style.color = "var(--muted)";
+      statusEl.textContent = "יוצר מדבקות ושולח...";
+      try {
+        const payload = entries.map(e => ({
+          customer:      e.customer,
+          address:       e.address,
+          contact_name:  e.contact_name,
+          phone:         e.phone,
+          po_number:     e.po_number,
+          product_lines: e.product ? [e.product] : [],
+          quantity:      e.quantity,
+          sku:           e.sku,
+          unit:          e.unit,
+          label_count:   Math.max(1, parseInt(e.label_count) || 1),
+        }));
+        const res = await fetch("/labels-only", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ labels: payload }),
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "שגיאה בשרת");
+        statusEl.style.color = "#16a34a";
+        statusEl.textContent = data.message || "נשלח בהצלחה!";
+        showToast("success", "מדבקות נשלחו", data.message || "המדבקות נשלחו לוואטסאפ.");
+        setTimeout(closeModal, 2200);
+      } catch (err) {
+        statusEl.style.color = "#b91c1c";
+        statusEl.textContent = "שגיאה: " + (err.message || "לא הצלחתי לשלוח");
+        submitBtn.disabled = false;
+      }
+    });
+  })();
 
   restoreDraftIfExists();
   renderTransportLabelState();

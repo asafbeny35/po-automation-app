@@ -2917,6 +2917,40 @@ a.admin-expense-status:hover {
   min-height: 20px;
 }
 
+/* ===== Labels-Only Modal (mobile) ===== */
+.labels-only-btn { background: linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%); border-color:#7c3aed; color:#fff; }
+.labels-only-btn:hover { opacity:.88; }
+.labels-only-btn.muted-btn { background:rgba(124,58,237,.13); color:#6d28d9; border-color:rgba(124,58,237,.3); }
+.labels-only-modal-card { width:min(100%,680px); max-height:90vh; overflow-y:auto; display:flex; flex-direction:column; }
+.labels-only-modal-card h3 { margin:0; font-size:20px; }
+.labels-only-subtitle { color:var(--muted); font-size:13px; margin:4px 0 16px; line-height:1.6; }
+.labels-only-entries { display:grid; gap:12px; flex:1; }
+.labels-only-entry { border:1px solid rgba(124,58,237,.18); border-radius:18px; background:linear-gradient(135deg,rgba(245,243,255,.7),rgba(237,233,254,.5)); padding:16px; position:relative; }
+.labels-only-entry-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+.labels-only-entry-num { font-size:12px; font-weight:800; color:#6d28d9; }
+.labels-only-remove-btn { all:unset; cursor:pointer; color:#9ca3af; font-size:18px; line-height:1; border-radius:8px; padding:2px 6px; }
+.labels-only-remove-btn:hover { color:#ef4444; background:rgba(239,68,68,.08); }
+.labels-only-fields { display:grid; gap:10px; }
+.labels-only-field { display:grid; gap:5px; }
+.labels-only-field label { font-size:12px; font-weight:700; color:#4b5563; }
+.labels-only-field input { border:1px solid rgba(124,58,237,.22); border-radius:11px; background:#fff; color:var(--ink); padding:10px 12px; font:inherit; font-size:14px; }
+.labels-only-field input:focus { outline:none; border-color:#7c3aed; box-shadow:0 0 0 3px rgba(124,58,237,.12); }
+.labels-only-count-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; padding-top:10px; border-top:1px solid rgba(124,58,237,.12); }
+.labels-only-add-btn { margin-top:4px; border:1.5px dashed rgba(124,58,237,.4); background:rgba(124,58,237,.05); color:#7c3aed; border-radius:14px; padding:11px 16px; font:inherit; font-size:14px; font-weight:800; cursor:pointer; text-align:center; }
+.labels-only-preview-section { margin-top:14px; border-top:1px solid rgba(124,58,237,.12); padding-top:14px; }
+.labels-only-preview-title { font-size:12px; font-weight:700; color:#6d28d9; margin-bottom:8px; }
+.labels-only-preview-cards { display:flex; flex-direction:column; gap:8px; }
+.labels-only-preview-card { border:1.5px solid rgba(124,58,237,.25); border-radius:12px; background:#fff; padding:10px 14px; font-size:12px; line-height:1.7; direction:rtl; }
+.labels-only-preview-card .lop-field { display:flex; gap:6px; }
+.labels-only-preview-card .lop-label { color:#9ca3af; font-size:11px; min-width:46px; }
+.labels-only-preview-card .lop-val { font-weight:600; }
+.labels-only-preview-card .lop-po { font-size:14px; font-weight:800; color:#6d28d9; margin-bottom:3px; }
+.labels-only-preview-card .lop-count { margin-top:5px; font-size:11px; color:#6d28d9; font-weight:700; }
+.labels-only-actions { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid rgba(148,163,184,.15); }
+.labels-only-submit-btn { background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; border:none; border-radius:14px; padding:12px; font:inherit; font-size:14px; font-weight:800; cursor:pointer; }
+.labels-only-submit-btn:disabled { opacity:.5; cursor:not-allowed; }
+.labels-only-status { margin-top:8px; font-size:13px; font-weight:700; min-height:18px; grid-column:1/-1; text-align:center; }
+
 .reminder-modal-body {
   display: grid;
   gap: 12px;
@@ -3923,6 +3957,7 @@ button:disabled {
       <button class="create-btn" onclick="send('sandbox_with_transport')">צור סנדבוקס + משלוח</button>
       <button class="create-btn muted-btn" onclick="send('prod')">צור אמיתי</button>
       <button class="create-btn muted-btn" onclick="send('prod_with_transport')">צור אמיתי + משלוח</button>
+      <button class="create-btn labels-only-btn" onclick="openLabelsOnlyModal()" style="grid-column:1/-1">מדבקות בלבד</button>
     </div>
 
     <div class="whatsapp-options">
@@ -10251,6 +10286,142 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  // ===== Labels-Only Modal (mobile) =====
+  (function() {
+    const modal = document.getElementById("labelsOnlyModal");
+    const entriesEl = document.getElementById("labelsOnlyEntries");
+    const addBtn = document.getElementById("labelsOnlyAdd");
+    const closeBtn = document.getElementById("labelsOnlyClose");
+    const cancelBtn = document.getElementById("labelsOnlyCancel");
+    const submitBtn = document.getElementById("labelsOnlySubmit");
+    const previewEl = document.getElementById("labelsOnlyPreview");
+    const statusEl = document.getElementById("labelsOnlyStatus");
+    let entries = [];
+
+    function defaultEntry() {
+      const d = window.currentData || {};
+      const items = Array.isArray(d.ordered_items) ? d.ordered_items : (Array.isArray(d.items) ? d.items : []);
+      const firstItem = items[0] || {};
+      return {
+        customer: (d.customer_name || "").trim(),
+        address: (d.delivery_address || "").trim(),
+        contact_name: (d.contact_name || "").trim(),
+        phone: (d.contact_phone || "").trim(),
+        po_number: (d.po_number || "").trim(),
+        product: (firstItem.description || firstItem.item_description || "").trim(),
+        sku: (firstItem.sku || firstItem.item_sku || "").trim(),
+        unit: (firstItem.unit || firstItem.item_unit || "").trim(),
+        quantity: String(firstItem.quantity || firstItem.item_quantity || ""),
+        label_count: "1",
+      };
+    }
+
+    function field(label, fieldKey, value, inputmode) {
+      return `<div class="labels-only-field">
+        <label>${label}</label>
+        <input type="text" ${inputmode ? `inputmode="${inputmode}"` : ""} data-field="${fieldKey}" value="${escapeAttribute(value)}">
+      </div>`;
+    }
+
+    function renderEntry(entry, idx) {
+      const wrap = document.createElement("div");
+      wrap.className = "labels-only-entry";
+      wrap.innerHTML = `
+        <div class="labels-only-entry-head">
+          <span class="labels-only-entry-num">קבוצה ${idx + 1}</span>
+          <button type="button" class="labels-only-remove-btn" data-remove="${idx}">✕</button>
+        </div>
+        <div class="labels-only-fields">
+          ${field("לקוח", "customer", entry.customer)}
+          ${field("כתובת", "address", entry.address)}
+          ${field("איש קשר", "contact_name", entry.contact_name)}
+          ${field("טלפון", "phone", entry.phone)}
+          ${field("מספר הזמנה (PO)", "po_number", entry.po_number)}
+          ${field("תיאור מוצר", "product", entry.product)}
+          ${field("מק״ט", "sku", entry.sku)}
+          ${field("יחידה", "unit", entry.unit)}
+        </div>
+        <div class="labels-only-count-row">
+          ${field("כמות על המדבקה", "quantity", entry.quantity, "decimal")}
+          <div class="labels-only-field">
+            <label>מס׳ מדבקות</label>
+            <input type="number" min="1" max="100" data-field="label_count" value="${escapeAttribute(entry.label_count || "1")}">
+          </div>
+        </div>`;
+      wrap.querySelectorAll("input").forEach(inp => {
+        inp.addEventListener("input", () => { entry[inp.dataset.field] = inp.value; renderPreview(); });
+      });
+      wrap.querySelector("[data-remove]").addEventListener("click", () => { entries.splice(idx, 1); renderAll(); });
+      return wrap;
+    }
+
+    function renderAll() {
+      entriesEl.innerHTML = "";
+      entries.forEach((e, i) => entriesEl.appendChild(renderEntry(e, i)));
+      renderPreview();
+    }
+
+    function renderPreview() {
+      previewEl.innerHTML = "";
+      entries.forEach(e => {
+        const count = Math.max(1, parseInt(e.label_count) || 1);
+        const card = document.createElement("div");
+        card.className = "labels-only-preview-card";
+        card.innerHTML = `
+          ${e.po_number ? `<div class="lop-po">${escapeHtml(e.po_number)}</div>` : ""}
+          ${e.customer ? `<div class="lop-field"><span class="lop-label">לקוח</span><span class="lop-val">${escapeHtml(e.customer)}</span></div>` : ""}
+          ${e.address ? `<div class="lop-field"><span class="lop-label">כתובת</span><span class="lop-val">${escapeHtml(e.address)}</span></div>` : ""}
+          ${(e.contact_name || e.phone) ? `<div class="lop-field"><span class="lop-label">קשר</span><span class="lop-val">${escapeHtml([e.contact_name, e.phone].filter(Boolean).join(" | "))}</span></div>` : ""}
+          ${e.product ? `<div class="lop-field"><span class="lop-label">מוצר</span><span class="lop-val">${escapeHtml(e.product)}</span></div>` : ""}
+          ${e.quantity ? `<div class="lop-field"><span class="lop-label">כמות</span><span class="lop-val">${escapeHtml(e.quantity)}${e.unit ? " " + escapeHtml(e.unit) : ""}</span></div>` : ""}
+          ${e.sku ? `<div class="lop-field"><span class="lop-label">מק״ט</span><span class="lop-val">${escapeHtml(e.sku)}</span></div>` : ""}
+          <div class="lop-count">× ${count} עותקים</div>`;
+        previewEl.appendChild(card);
+      });
+    }
+
+    window.openLabelsOnlyModal = function() {
+      entries = [defaultEntry()];
+      renderAll();
+      statusEl.textContent = "";
+      submitBtn.disabled = false;
+      modal.classList.add("visible");
+      modal.setAttribute("aria-hidden", "false");
+    };
+
+    function closeModal() { modal.classList.remove("visible"); modal.setAttribute("aria-hidden", "true"); }
+    closeBtn?.addEventListener("click", closeModal);
+    cancelBtn?.addEventListener("click", closeModal);
+    modal?.addEventListener("click", e => { if (e.target === modal) closeModal(); });
+    addBtn?.addEventListener("click", () => { entries.push(defaultEntry()); renderAll(); entriesEl.lastElementChild?.scrollIntoView({ behavior: "smooth", block: "nearest" }); });
+
+    submitBtn?.addEventListener("click", async () => {
+      if (!entries.length) return;
+      submitBtn.disabled = true;
+      statusEl.style.color = "var(--muted)";
+      statusEl.textContent = "יוצר ושולח...";
+      try {
+        const payload = entries.map(e => ({
+          customer: e.customer, address: e.address, contact_name: e.contact_name, phone: e.phone,
+          po_number: e.po_number, product_lines: e.product ? [e.product] : [],
+          quantity: e.quantity, sku: e.sku, unit: e.unit,
+          label_count: Math.max(1, parseInt(e.label_count) || 1),
+        }));
+        const res = await fetch("/labels-only", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ labels: payload }) });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "שגיאה");
+        statusEl.style.color = "#16a34a";
+        statusEl.textContent = data.message || "נשלח!";
+        showToast("success", "מדבקות נשלחו", data.message || "");
+        setTimeout(closeModal, 2200);
+      } catch (err) {
+        statusEl.style.color = "#b91c1c";
+        statusEl.textContent = "שגיאה: " + (err.message || "נכשל");
+        submitBtn.disabled = false;
+      }
+    });
+  })();
+
   function clearUiState() {
     window.currentData = null;
     window.originalData = null;
@@ -11722,6 +11893,27 @@ document.addEventListener("DOMContentLoaded", () => {
     <div class="confirm-modal-actions">
       <button type="button" class="ghost-btn" id="receiptCreateCancel">ביטול</button>
       <button type="button" class="assistant-submit" id="receiptCreateConfirm">הפק קבלה</button>
+    </div>
+  </div>
+</div>
+
+<div id="labelsOnlyModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card labels-only-modal-card">
+    <div class="modal-head">
+      <h3>🏷️ מדבקות בלבד</h3>
+      <button type="button" id="labelsOnlyClose" class="modal-close-btn" aria-label="סגור">×</button>
+    </div>
+    <p class="labels-only-subtitle">ערוך פרטי מדבקות, הוסף קבוצות ושלח לוואטסאפ.</p>
+    <div id="labelsOnlyEntries" class="labels-only-entries"></div>
+    <button type="button" id="labelsOnlyAdd" class="labels-only-add-btn">＋ הוסף קבוצת מדבקות</button>
+    <div class="labels-only-preview-section">
+      <div class="labels-only-preview-title">תצוגה מקדימה</div>
+      <div id="labelsOnlyPreview" class="labels-only-preview-cards"></div>
+    </div>
+    <div class="labels-only-actions">
+      <button type="button" class="ghost-btn" id="labelsOnlyCancel">ביטול</button>
+      <button type="button" class="labels-only-submit-btn" id="labelsOnlySubmit">📤 שלח בוואטסאפ</button>
+      <div id="labelsOnlyStatus" class="labels-only-status" aria-live="polite"></div>
     </div>
   </div>
 </div>
