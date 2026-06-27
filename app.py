@@ -24151,8 +24151,6 @@ async def finalize(request: Request):
             file_paths.append(str(Path(delivery_pdf_path)))
         if invoice_pdf_path and Path(invoice_pdf_path).exists():
             file_paths.append(str(Path(invoice_pdf_path)))
-    print(f"WA_DEBUG: merged_pdf_path={merged_pdf_path}, exists={merged_pdf_path and Path(merged_pdf_path).exists()}, delivery_pdf_path={delivery_pdf_path}, file_paths={file_paths}")
-
     async def _run_finalize_whatsapp_send() -> dict:
         if not file_paths:
             print("WHATSAPP: no files to send")
