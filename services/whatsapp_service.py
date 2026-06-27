@@ -263,10 +263,16 @@ async def _send_via_railway(phone: str, message: str, file_paths: list[str]) -> 
     payload: dict[str, Any] = {"phone": phone, "message": message, "files": files}
     if secret:
         payload["secret"] = secret
-    async with httpx.AsyncClient(timeout=300) as client:
-        response = await client.post(f"{base_url}/send", json=payload)
-        response.raise_for_status()
-        return {"status": "ok", "provider": "railway", **response.json()}
+    # Use a short connect timeout but don't wait for Railway to finish sending —
+    # WhatsApp delivery can take 30-120s and we don't want Vercel to timeout.
+    async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=25.0, write=25.0, pool=5.0)) as client:
+        try:
+            response = await client.post(f"{base_url}/send", json=payload)
+            response.raise_for_status()
+            return {"status": "ok", "provider": "railway", **response.json()}
+        except httpx.ReadTimeout:
+            # Railway accepted the request but is still processing — that's OK
+            return {"status": "dispatched", "provider": "railway", "note": "Railway accepted; delivery in progress"}
 
 
 async def send_files_via_whatsapp(phone: str, message: str, file_paths: list[str]) -> dict[str, Any]:
