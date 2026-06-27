@@ -14930,6 +14930,23 @@ def _load_mobile_domain_rows(domain: str, force_refresh: bool = False) -> list[d
     return [dict(row) for row in rows if isinstance(row, dict)]
 
 
+@app.get("/debug-fonts")
+async def debug_fonts():
+    from pathlib import Path as _P
+    import services.label_generator as _lg
+    bundled = _P(_lg.__file__).resolve().parent / "fonts"
+    static = _P(_lg.__file__).resolve().parents[1] / "static" / "fonts"
+    return JSONResponse({
+        "FONT_NAME": _lg.FONT_NAME,
+        "FONT_BOLD": _lg.FONT_BOLD,
+        "bundled_dir": str(bundled),
+        "bundled_regular_exists": (bundled / "Heebo-Regular.ttf").exists(),
+        "bundled_bold_exists": (bundled / "Heebo-Bold.ttf").exists(),
+        "static_dir": str(static),
+        "static_regular_exists": (static / "Heebo-Regular.ttf").exists(),
+    })
+
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     if not is_request_authenticated(request):
