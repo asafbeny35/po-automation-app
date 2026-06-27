@@ -24128,14 +24128,20 @@ async def finalize(request: Request):
 
     async def _run_finalize_whatsapp_send() -> dict:
         if not file_paths:
+            print("WHATSAPP: no files to send")
             return {"status": "skipped", "reason": "no_files"}
+        existing_files = [fp for fp in file_paths if Path(fp).exists()]
+        print(f"WHATSAPP: sending {len(existing_files)}/{len(file_paths)} files, provider={resolve_whatsapp_provider()}, files={existing_files}")
+        if not existing_files:
+            print("WHATSAPP: all file paths missing from disk")
+            return {"status": "skipped", "reason": "files_not_on_disk", "requested": file_paths}
         sent_targets: list[str] = []
         provider_results: list[dict] = []
         try:
             primary_result = await send_files_via_whatsapp(
                 phone="0547720142",
                 message=f"מסמכים עבור הזמנת רכש {po.po_number}",
-                file_paths=file_paths,
+                file_paths=existing_files,
             )
             sent_targets.append("0547720142")
             if isinstance(primary_result, dict):

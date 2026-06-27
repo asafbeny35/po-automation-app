@@ -266,8 +266,10 @@ async def _send_via_railway(phone: str, message: str, file_paths: list[str]) -> 
     # Railway holds the connection while WhatsApp Web sends the files (30-120s).
     # We give it up to 180s — callers on Vercel run this concurrently with Drive/Sheets
     # so the wall-clock cost is absorbed rather than added serially.
+    print(f"RAILWAY: posting to {base_url}/send, files={[f['name'] for f in files]}, phone={phone}")
     async with httpx.AsyncClient(timeout=httpx.Timeout(connect=10.0, read=180.0, write=60.0, pool=5.0)) as client:
         response = await client.post(f"{base_url}/send", json=payload)
+        print(f"RAILWAY: response status={response.status_code}, body={response.text[:300]}")
         response.raise_for_status()
         return {"status": "ok", "provider": "railway", **response.json()}
 
