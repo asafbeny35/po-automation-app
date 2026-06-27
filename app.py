@@ -24402,6 +24402,8 @@ async def finalize(request: Request):
         return inventory_result
 
     # Run WhatsApp + Drive + Sheets + Inventory all in parallel
+    import logging as _logging
+    _logging.warning(f"FINALIZE_DEBUG: file_paths={file_paths}, skip_whatsapp={skip_whatsapp}, provider={resolve_whatsapp_provider()}")
     _gather_results = await asyncio.gather(
         _whatsapp_task_with_guard(),
         _drive_task_with_vercel_guard(),
@@ -24410,6 +24412,7 @@ async def finalize(request: Request):
         return_exceptions=True,
     )
     whatsapp_send_result = _gather_results[0] if not isinstance(_gather_results[0], BaseException) else {"status": "error", "error": str(_gather_results[0])}
+    _logging.warning(f"FINALIZE_DEBUG: whatsapp_send_result={whatsapp_send_result}")
     drive_sync_result = _gather_results[1] if not isinstance(_gather_results[1], BaseException) else {"status": "error", "error": str(_gather_results[1])}
     sheets_result = _gather_results[2] if not isinstance(_gather_results[2], BaseException) else {"error": str(_gather_results[2])}
     inventory_deduction_result = _gather_results[3] if not isinstance(_gather_results[3], BaseException) else {"status": "error", "error": str(_gather_results[3])}
