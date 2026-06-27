@@ -18,10 +18,10 @@ def _register_fonts():
         ("/Library/Fonts/Arial Unicode.ttf", "HebFont"),
         ("/System/Library/Fonts/Supplemental/Arial.ttf", "HebFont"),
         ("/Library/Fonts/Arial.ttf", "HebFont"),
-        (str(_BUNDLED / "Heebo-Bold.ttf"), "HebBold"),
-        (str(_BUNDLED / "Heebo-Regular.ttf"), "HebFont"),
-        (str(_STATIC / "Heebo-Bold.ttf"), "HebBold"),
-        (str(_STATIC / "Heebo-Regular.ttf"), "HebFont"),
+        (str(_BUNDLED / "ArialBold.ttf"), "HebBold"),
+        (str(_BUNDLED / "Arial.ttf"), "HebFont"),
+        (str(_STATIC / "ArialBold.ttf"), "HebBold"),
+        (str(_STATIC / "Arial.ttf"), "HebFont"),
     ]
 
     found = {}
