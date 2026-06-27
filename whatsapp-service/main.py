@@ -210,32 +210,30 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
                 "div[role='button'][aria-label='Send'], button[aria-label='Send']"
             ).last
 
-            # Strategy 1: inject file directly into a hidden <input type="file"> in the DOM.
-            # This is the most robust approach — doesn't depend on menu UI selectors.
+            # Open the attach menu first — activates file input listeners in WhatsApp Web
+            await attach_button.first.wait_for(timeout=30000)
+            await attach_button.first.click()
+            await page.wait_for_timeout(800)
+
+            # Strategy 1: set_input_files on the now-active hidden file input
             injected = False
             try:
-                injected = await page.evaluate(f"""() => {{
-                    const inputs = Array.from(document.querySelectorAll('input[type="file"]'));
-                    return inputs.length > 0;
-                }}""")
+                file_inputs = page.locator("input[type='file']")
+                count = await file_inputs.count()
+                for i in range(count):
+                    try:
+                        await file_inputs.nth(i).set_input_files(str(file_path), timeout=5000)
+                        await page.wait_for_timeout(2500)
+                        if await attachment_send_button.count() > 0:
+                            injected = True
+                            break
+                    except Exception:
+                        continue
             except Exception:
                 pass
 
-            if injected:
-                try:
-                    # Set file on the first available file input (bypasses the attach menu entirely)
-                    file_input = page.locator("input[type='file']").first
-                    await file_input.set_input_files(str(file_path), timeout=10000)
-                    await page.wait_for_timeout(2000)
-                except Exception:
-                    injected = False
-
             if not injected:
-                # Strategy 2: click attach button, then try menu item selectors
-                await attach_button.first.wait_for(timeout=30000)
-                await attach_button.first.click()
-                await page.wait_for_timeout(600)
-
+                # Strategy 2: click Document menu item to get a file chooser
                 fc = None
                 for selector in [
                     "li[data-testid='mi-attach-document']",
