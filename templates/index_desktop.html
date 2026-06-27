@@ -39331,6 +39331,16 @@ document.addEventListener("DOMContentLoaded", () => {
         const productName = result.inventory_deduction_result.product || "המלאי";
         showToast("success", "המלאי עודכן", `${productName} עודכן אוטומטית ב-${formatInventoryUnits(deductedUnits)}.`);
       }
+      const waResult = result?.whatsapp_send_result;
+      if (waResult && waResult.status === "error") {
+        showToast("error", "שגיאת WhatsApp", waResult.error || "שליחת המסמכים בוואטסאפ נכשלה.");
+        console.error("whatsapp_send_result:", JSON.stringify(waResult));
+      } else if (waResult && waResult.status === "skipped") {
+        showToast("warning", "WhatsApp לא נשלח", `סיבה: ${waResult.reason || "לא ידוע"}`);
+        console.warn("whatsapp_send_result:", JSON.stringify(waResult));
+      } else {
+        console.log("whatsapp_send_result:", JSON.stringify(waResult));
+      }
       showToast("success", isQuoteFlow ? "הצעת המחיר מוכנה" : "המסמכים מוכנים", isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה וקישורי השליחה זמינים למטה." : "המסמכים נוצרו בהצלחה וקישורי ההורדה זמינים למטה.");
     } catch (error) {
       stopProgressTimer();
