@@ -47,14 +47,15 @@ async def _warm_whatsapp():
             window.chrome = {runtime: {}};
         """)
         await page.goto("https://web.whatsapp.com", wait_until="domcontentloaded", timeout=60000)
-        # Wait until chat is ready (authenticated)
+        # Wait until authenticated (chat list visible — NOT QR canvas alone)
         for _ in range(60):
             await page.wait_for_timeout(2000)
-            chat = page.locator("div[aria-label='Chat list'], div[data-icon='chat'], canvas")
+            chat = page.locator("div[aria-label='Chat list'], div[data-icon='chat'], #side")
             if await chat.count() > 0:
-                break
-        _WA_READY = True
-        logging.warning("WhatsApp Web warmed up and ready.")
+                _WA_READY = True
+                logging.warning("WhatsApp Web warmed up and authenticated.")
+                return
+        logging.warning("WhatsApp Web warm-up: not authenticated (QR scan needed).")
     except Exception as exc:
         import logging
         logging.error(f"WhatsApp warm-up failed: {exc}")
@@ -208,25 +209,52 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
             attachment_send_button = page.locator(
                 "div[role='button'][aria-label='Send'], button[aria-label='Send']"
             ).last
-            preview_thumbnail = page.locator(
-                "div[role='tab'][aria-label^='Document thumbnail'], "
-                "div[role='tab'][aria-label^='Open document'], "
-                "div[role='button'][aria-label^='Open document']"
-            ).last
 
             await attach_button.first.wait_for(timeout=30000)
             await attach_button.first.click()
-            await page.wait_for_timeout(250)
+            await page.wait_for_timeout(400)
 
-            async with page.expect_file_chooser() as fc_info:
-                await page.get_by_role("menuitem", name="Document").click()
-            fc = await fc_info.value
+            # Try to set file via file chooser triggered by attach menu.
+            # WhatsApp Web UI changes frequently — try multiple strategies.
+            fc = None
+            for doc_selector in [
+                # English labels
+                lambda: page.get_by_role("menuitem", name="Document"),
+                lambda: page.get_by_role("menuitem", name="Documents"),
+                # Hebrew labels
+                lambda: page.get_by_role("menuitem", name="מסמך"),
+                lambda: page.get_by_role("menuitem", name="מסמכים"),
+                # Generic fallbacks
+                lambda: page.locator("li[data-testid='mi-attach-document']"),
+                lambda: page.locator("li[data-testid='attach-document']"),
+                lambda: page.locator("input[type='file'][accept*='pdf'], input[type='file'][accept*='application']"),
+            ]:
+                try:
+                    loc = doc_selector()
+                    if await loc.count() == 0:
+                        continue
+                    async with page.expect_file_chooser(timeout=8000) as fc_info:
+                        await loc.first.click(timeout=5000)
+                    fc = await fc_info.value
+                    break
+                except Exception:
+                    continue
+
+            if fc is None:
+                # Last resort: find any visible file input in the attach menu
+                try:
+                    async with page.expect_file_chooser(timeout=8000) as fc_info:
+                        await page.locator("input[type='file']").first.click(timeout=5000, force=True)
+                    fc = await fc_info.value
+                except Exception:
+                    raise RuntimeError(f"Could not open file chooser for {item['name']} — WhatsApp Web UI may have changed")
+
             await fc.set_files(str(file_path))
+            await page.wait_for_timeout(3000)
 
             await attachment_send_button.wait_for(timeout=30000)
             await page.wait_for_timeout(max(2500, _file_send_wait_ms(size_bytes) - 3500))
 
-            # try direct click first
             clicked = False
             for attempt_cfg in [{"force": False}, {"force": True}]:
                 try:
@@ -237,32 +265,8 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
                 except Exception:
                     pass
 
-            async def _preview_open():
-                try:
-                    return await preview_thumbnail.is_visible()
-                except Exception:
-                    return False
-
-            if clicked:
-                for _ in range(16):
-                    if not await _preview_open():
-                        break
-                    await page.wait_for_timeout(250)
-
-            if await _preview_open():
-                try:
-                    await preview_thumbnail.evaluate(
-                        "el => { el.scrollIntoView({block:'center'}); el.focus(); }"
-                    )
-                except Exception:
-                    pass
-                for _ in range(5):
-                    await page.keyboard.press("Tab")
-                    await page.wait_for_timeout(350)
+            if not clicked:
                 await page.keyboard.press("Enter")
-
-            if await _preview_open():
-                raise RuntimeError(f"WhatsApp attachment preview did not close for {item['name']}")
 
             await page.wait_for_timeout(_file_post_send_wait_ms(size_bytes))
 
