@@ -24158,7 +24158,7 @@ async def finalize(request: Request):
             print("WHATSAPP: no files to send")
             return {"status": "skipped", "reason": "no_files"}
         existing_files = [fp for fp in file_paths if Path(fp).exists()]
-        print(f"WHATSAPP: sending {len(existing_files)}/{len(file_paths)} files, provider={resolve_whatsapp_provider()}, files={existing_files}")
+        print(f"WHATSAPP: sending {len(existing_files)}/{len(file_paths)} files, files={existing_files}")
         if not existing_files:
             print("WHATSAPP: all file paths missing from disk")
             return {"status": "skipped", "reason": "files_not_on_disk", "requested": file_paths}
