@@ -23473,6 +23473,32 @@ async def process(
     return JSONResponse(payload)
 
 
+@app.get("/debug-whatsapp")
+async def debug_whatsapp():
+    """Diagnostic: test Railway WhatsApp connectivity without a real order."""
+    from services.whatsapp_service import resolve_whatsapp_provider, _railway_is_configured, settings as _wa_settings
+    import httpx, base64
+    provider = resolve_whatsapp_provider()
+    railway_url = str(_wa_settings.whatsapp_railway_url or "").rstrip("/")
+    railway_configured = _railway_is_configured()
+    info = {
+        "provider": provider,
+        "railway_configured": railway_configured,
+        "railway_url_prefix": railway_url[:40] if railway_url else None,
+        "railway_ping": None,
+        "railway_ping_error": None,
+    }
+    if railway_configured and railway_url:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                r = await client.get(f"{railway_url}/health")
+                info["railway_ping"] = r.status_code
+                info["railway_body"] = r.text[:200]
+        except Exception as e:
+            info["railway_ping_error"] = str(e)
+    return JSONResponse(info)
+
+
 @app.post("/labels-only")
 async def labels_only(request: Request):
     """Generate label PDFs and send via WhatsApp — standalone, no order creation."""
