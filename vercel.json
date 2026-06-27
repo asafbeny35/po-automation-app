@@ -8,7 +8,7 @@
         "maxLambdaSize": "50mb",
         "requirementsFile": "requirements-vercel.txt",
         "maxDuration": 300,
-        "includeFiles": "static/fonts/**"
+        "includeFiles": "services/fonts/**"
       }
     },
     {

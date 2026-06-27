@@ -9,7 +9,8 @@ from reportlab.pdfgen import canvas
 
 
 def _register_fonts():
-    _STATIC_FONTS = Path(__file__).resolve().parents[1] / "static" / "fonts"
+    _BUNDLED = Path(__file__).resolve().parent / "fonts"
+    _STATIC = Path(__file__).resolve().parents[1] / "static" / "fonts"
     candidates = [
         ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", "HebBold"),
         ("/Library/Fonts/Arial Bold.ttf", "HebBold"),
@@ -17,8 +18,10 @@ def _register_fonts():
         ("/Library/Fonts/Arial Unicode.ttf", "HebFont"),
         ("/System/Library/Fonts/Supplemental/Arial.ttf", "HebFont"),
         ("/Library/Fonts/Arial.ttf", "HebFont"),
-        (str(_STATIC_FONTS / "Heebo-Bold.ttf"), "HebBold"),
-        (str(_STATIC_FONTS / "Heebo-Regular.ttf"), "HebFont"),
+        (str(_BUNDLED / "Heebo-Bold.ttf"), "HebBold"),
+        (str(_BUNDLED / "Heebo-Regular.ttf"), "HebFont"),
+        (str(_STATIC / "Heebo-Bold.ttf"), "HebBold"),
+        (str(_STATIC / "Heebo-Regular.ttf"), "HebFont"),
     ]
 
     found = {}
