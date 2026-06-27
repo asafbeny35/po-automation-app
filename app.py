@@ -262,7 +262,7 @@ MARKETING_DRIVE_ASSETS = {
         "local_path": MARKETING_DOCS_DIR / "קטלוג מוצרים חדש.pdf",
         "drive_name": "ברושור עברית.pdf",
         "folders": ("ברושורים",),
-        "label": "ברושור מלא בעברית",
+        "label": "ברושור מלא",
         "category": "ברושורים",
     },
     "brochure-arabic": {
@@ -285,14 +285,6 @@ MARKETING_DRIVE_ASSETS = {
         "folders": ("קוואיטפייפ",),
         "label": "קוואיטפייפ - דף מוצר",
         "category": "קוואיטפייפ",
-    },
-    "quietpipe-lab-report": {
-        "local_path": MARKETING_DOCS_DIR / "קוואיטפייפ - דוח מעבדה - Puetz - ממותג.pdf",
-        "drive_name": "קוואיטפייפ - דוח מעבדה - Puetz.pdf",
-        "folders": ("קוואיטפייפ",),
-        "label": "קוואיטפייפ - דוח מעבדה",
-        "category": "קוואיטפייפ",
-        "share_link": "https://www.quietpipe.co.il/lab-report",
     },
     "building-products-brochure": {
         "local_path": MARKETING_DOCS_DIR / "סדרת מוצרי ההגנה והאקוסטיקה - בן יעקב פתרונות טקסטיל.pdf",

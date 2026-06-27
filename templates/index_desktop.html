@@ -23337,7 +23337,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (context.customer_name) {
       return `חומרים מקצועיים מבן יעקב פתרונות טקסטיל עבור ${context.customer_name}`;
     }
-    return "מסמכי שיווק מבן יעקב פתרונות טקסטיל";
+    return "קטלוג סדרת ההגנה והאקוסטיקה - כחול לבן | בן יעקב פתרונות טקסטיל";
   }
 
   function marketingDefaultMailBody(context = {}) {
@@ -23857,9 +23857,6 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="marketing-doc-actions">
           ${doc.asset_key ? `<a class="ghost-btn marketing-doc-open-btn" href="/marketing-drive/${encodeURIComponent(doc.asset_key)}" target="_blank" rel="noopener">פתח</a>` : `<button type="button" class="ghost-btn marketing-doc-open-btn" disabled>פתח</button>`}
-          ${doc.share_link_url
-            ? `<button type="button" class="ghost-btn marketing-doc-copy-btn" data-marketing-doc-copy-link="${escapeHtml(doc.asset_key || "")}">העתק קישור</button>`
-            : `<button type="button" class="ghost-btn marketing-doc-copy-btn" data-marketing-doc-copy="${escapeHtml(doc.asset_key || "")}" ${doc.drive_url ? "" : "disabled"}>העתק קישור</button>`}
           <button type="button" class="assistant-submit marketing-doc-mail-btn" data-marketing-doc-mail="${escapeHtml(doc.asset_key || "")}">שלח במייל</button>
           ${doc.share_link_url
             ? `<button type="button" class="ghost-btn marketing-doc-whatsapp-btn" data-marketing-doc-share-link="${escapeHtml(doc.asset_key || "")}">שתף קישור</button>`
@@ -25033,7 +25030,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderMarketingHistory(marketingState?.history || []);
       saveMarketingStateCache();
       closeMarketingCommModal();
-      showToast("success", testSend ? "טסט נשלח" : "המייל נשלח", testSend ? "מייל טסט נשלח ל-asafbeny@gmail.com." : "נשלח מייל שיווקי עם הברושור בעברית.");
+      showToast("success", testSend ? "טסט נשלח" : "המייל נשלח", testSend ? "מייל טסט נשלח ל-asafbeny@gmail.com." : "נשלח מייל שיווקי.");
     } catch (error) {
       showToast("error", testSend ? "שליחת טסט נכשלה" : "שליחת מייל נכשלה", error.message || "לא הצלחתי לשלוח את המייל.");
     } finally {
