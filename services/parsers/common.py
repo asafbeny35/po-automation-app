@@ -81,16 +81,26 @@ def normalize_amount(value):
 
 
 def normalize_date(value: str | None) -> str:
+    from datetime import date as _date
     value = normalize_ws(value or "")
     if not value:
         return ""
-    m = re.search(r"(\d{2})/(\d{2})/(\d{4})", value)
+    m = re.search(r"(\d{1,2})/(\d{1,2})/(\d{4})", value)
     if m:
-        return f"{m.group(1)}/{m.group(2)}/{m.group(3)}"
-    m = re.search(r"(\d{2})/(\d{2})/(\d{2})", value)
+        dd, mm, yyyy = m.group(1).zfill(2), m.group(2).zfill(2), int(m.group(3))
+        # If year looks implausible (too old) try swapping day and 2-digit year
+        if yyyy < 2020:
+            alt_yy = int(dd)
+            alt_dd = str(yyyy % 100).zfill(2)
+            alt_year = 2000 + alt_yy
+            if 2020 <= alt_year <= _date.today().year + 1 and 1 <= int(alt_dd) <= 31:
+                return f"{alt_dd}/{mm}/{alt_year}"
+        return f"{dd}/{mm}/{yyyy}"
+    m = re.search(r"(\d{1,2})/(\d{1,2})/(\d{2})", value)
     if m:
+        dd, mm = m.group(1).zfill(2), m.group(2).zfill(2)
         yy = int(m.group(3))
-        return f"{m.group(1)}/{m.group(2)}/{2000 + yy}"
+        return f"{dd}/{mm}/{2000 + yy}"
     return value
 
 
