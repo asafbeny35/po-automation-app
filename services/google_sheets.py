@@ -1141,6 +1141,7 @@ FINANCE_CUSTOMER_WITHHOLDINGS_FIELDS = [
     "source_mode",
     "review_pending",
     "migration_batch",
+    "dismissed",
     "updated_at",
 ]
 
@@ -4592,6 +4593,7 @@ def _normalize_finance_customer_withholding_row(row: dict) -> dict:
     normalized["withholding_applied"] = "TRUE" if str(normalized.get("withholding_applied") or "").strip().upper() == "TRUE" else ""
     normalized["source_mode"] = _normalize_customer_source_mode(normalized.get("source_mode", ""))
     normalized["review_pending"] = "TRUE" if str(normalized.get("review_pending") or "").strip().upper() == "TRUE" else ""
+    normalized["dismissed"] = "TRUE" if str(normalized.get("dismissed") or "").strip().upper() == "TRUE" else ""
     normalized["migration_batch"] = str(normalized.get("migration_batch") or "").strip()
     for amount_field in ("gross_amount", "withholding_percent", "withheld_amount", "paid_amount"):
         raw = str(normalized.get(amount_field) or "").strip().replace(",", "")
