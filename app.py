@@ -14931,7 +14931,9 @@ def _load_mobile_domain_rows(domain: str, force_refresh: bool = False) -> list[d
 
 
 @app.get("/debug-fonts")
-async def debug_fonts():
+async def debug_fonts(request: Request):
+    if not is_request_authenticated(request):
+        return JSONResponse({"error": "auth required"}, status_code=401)
     from pathlib import Path as _P
     import services.label_generator as _lg
     bundled = _P(_lg.__file__).resolve().parent / "fonts"
