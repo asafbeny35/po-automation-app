@@ -9,6 +9,7 @@ from reportlab.pdfgen import canvas
 
 
 def _register_fonts():
+    _STATIC_FONTS = Path(__file__).resolve().parents[1] / "static" / "fonts"
     candidates = [
         ("/System/Library/Fonts/Supplemental/Arial Bold.ttf", "HebBold"),
         ("/Library/Fonts/Arial Bold.ttf", "HebBold"),
@@ -16,6 +17,8 @@ def _register_fonts():
         ("/Library/Fonts/Arial Unicode.ttf", "HebFont"),
         ("/System/Library/Fonts/Supplemental/Arial.ttf", "HebFont"),
         ("/Library/Fonts/Arial.ttf", "HebFont"),
+        (str(_STATIC_FONTS / "Heebo-Bold.ttf"), "HebBold"),
+        (str(_STATIC_FONTS / "Heebo-Regular.ttf"), "HebFont"),
     ]
 
     found = {}
@@ -31,9 +34,6 @@ def _register_fonts():
     bold = "HebBold" if "HebBold" in found else regular
 
     if not regular:
-        # Hosted Linux runtimes do not have the local Mac font set.
-        # Fall back to built-in ReportLab fonts so import-time initialization
-        # does not crash the entire API process.
         return "Helvetica", "Helvetica-Bold"
 
     return regular, bold
