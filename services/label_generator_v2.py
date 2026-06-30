@@ -6,6 +6,7 @@ from .runtime_paths import PROJECT_ROOT, runtime_root
 
 
 TEMPLATE_PDF = PROJECT_ROOT / "assets" / "label_template.pdf"
+BUNDLED_FONT = PROJECT_ROOT / "assets" / "NotoSansHebrew-Regular.ttf"
 CACHE_DIR = runtime_root() / "output" / "_label_cache"
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 BG_PNG = CACHE_DIR / "label_template_bg.png"
@@ -16,17 +17,22 @@ def rtl(text: str) -> str:
 
 
 def get_font(size: int, bold: bool = False):
-    candidates = []
+    # Bundled font always comes first — guaranteed Hebrew support on any environment
+    candidates = [str(BUNDLED_FONT)]
     if bold:
         candidates += [
             "/System/Library/Fonts/Supplemental/Arial Bold.ttf",
             "/Library/Fonts/Arial Bold.ttf",
+            "/usr/share/fonts/opentype/noto/NotoSansHebrew-Bold.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansHebrew-Bold.ttf",
         ]
     candidates += [
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
         "/Library/Fonts/Arial Unicode.ttf",
         "/System/Library/Fonts/Supplemental/Arial.ttf",
         "/Library/Fonts/Arial.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansHebrew-Regular.ttf",
+        "/usr/share/fonts/truetype/noto/NotoSansHebrew-Regular.ttf",
     ]
 
     for path in candidates:
@@ -36,7 +42,10 @@ def get_font(size: int, bold: bool = False):
             except Exception:
                 pass
 
-    raise RuntimeError("No usable font found on this Mac")
+    try:
+        return ImageFont.load_default()
+    except Exception as exc:
+        raise RuntimeError("No usable font found for label generation") from exc
 
 
 def ensure_background():
