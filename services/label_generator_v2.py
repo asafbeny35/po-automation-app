@@ -162,7 +162,9 @@ def generate_label_pdf(data, output="output/label_v2.pdf", debug=False):
     item2 = ""
 
     qty = str(data.get("quantity", "")).strip()
-    qty_text = rtl(f"{qty} יח׳" if qty else "")
+    # אם הכמות כבר מכילה יחידה (מ"ר, ק"ג וכו') — לא מוסיפים יח'
+    has_unit = any('א' <= c <= 'ת' for c in qty)
+    qty_text = rtl(qty if (not qty or has_unit) else f"{qty} יח׳")
 
     sku = str(data.get("sku", "")).strip()
     sku_text = sku  # מספר — לא צריך bidi
