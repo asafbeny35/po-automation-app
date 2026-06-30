@@ -33,6 +33,7 @@ import sys
 import os
 import ipaddress
 from types import SimpleNamespace
+from functools import lru_cache
 from urllib.request import urlopen
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import HTMLResponse, JSONResponse, FileResponse, RedirectResponse, Response
@@ -96,6 +97,14 @@ from services.google_sheets import (
     save_order_history_rows,
     get_cached_order_history_rows,
     load_quote_history_rows,
+    load_installation_case_rows,
+    save_installation_case_rows,
+    get_cached_installation_case_rows,
+    upsert_installation_case_row,
+    load_installation_visit_rows,
+    save_installation_visit_rows,
+    get_cached_installation_visit_rows,
+    upsert_installation_visit_row,
     load_pazomat_rows,
     load_sibus_rows,
     load_working_order_rows,
@@ -130,6 +139,7 @@ from services.google_drive_sync import (
     download_file as download_drive_file,
     delete_file as delete_drive_file,
     list_child_folders,
+    list_folder_files,
     google_drive_connection_status,
     google_drive_health_summary,
     managed_storage_root_folder_id,
@@ -168,10 +178,12 @@ from services.parsers.common import (
     normalize_amount,
     normalize_date,
     fix_hebrew_text,
+    fix_hebrew_rtl_text,
 )
 from services.auth import (
     AUTH_COOKIE_NAME,
     authenticated_user_id,
+    authenticated_session_info,
     auth_cookie_settings,
     build_totp_setup_payload,
     clear_auth_cookie,
@@ -612,6 +624,11 @@ def _marketing_drive_asset_view_link(asset: dict) -> str:
     if not file_id:
         raise FileNotFoundError("קובץ שיווק לא סונכרן ל-Google Drive.")
     return f"https://drive.google.com/file/d/{file_id}/view"
+
+
+def _company_catalog_link() -> str:
+    asset = _ensure_marketing_drive_asset("brochure-hebrew")
+    return _marketing_drive_asset_view_link(asset)
 
 
 def _ensure_marketing_drive_root_folder() -> str:
@@ -12282,6 +12299,7 @@ def _build_purchase_order_from_request_data(data: dict) -> PurchaseOrderData:
     item_description = str(data.get("item_description") or "").strip()
     item_sku = str(data.get("item_sku") or "").strip()
     item_unit = str(data.get("item_unit") or "").strip()
+    requires_installation_flag = _normalize_requires_installation_flag(data.get("requires_installation"))
     raw_items = data.get("items") or []
     po_items: list[POItem] = []
     if isinstance(raw_items, list):
@@ -12349,6 +12367,13 @@ def _build_purchase_order_from_request_data(data: dict) -> PurchaseOrderData:
             "contact_phone": data.get("contact_phone") or "",
             "footer_text": data.get("footer_text") or "",
             "item_unit": data.get("item_unit") or "",
+            "requires_installation": (
+                True
+                if requires_installation_flag == "TRUE"
+                else False
+                if requires_installation_flag == "FALSE"
+                else None
+            ),
         },
     )
 
@@ -12362,12 +12387,10 @@ def _label_excluded_by_default_po_item(item: POItem | None) -> bool:
         "משלוח",
         "עבודה",
         "שירות",
-        "התקנה",
         "labor",
         "labour",
         "service",
         "services",
-        "installation",
         "shipping",
         "freight",
         "delivery charge",
@@ -12398,6 +12421,89 @@ def _should_generate_label_for_po_item(item: POItem | None) -> bool:
     if isinstance(explicit_flag, bool):
         return explicit_flag
     return not _label_excluded_by_default_po_item(item)
+
+
+def _normalize_requires_installation_flag(value) -> str:
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    lowered = str(value or "").strip().lower()
+    if lowered in {"1", "true", "yes", "כן"}:
+        return "TRUE"
+    if lowered in {"0", "false", "no", "לא"}:
+        return "FALSE"
+    return ""
+
+
+def _requires_installation_flag_to_bool(value) -> bool | None:
+    normalized = _normalize_requires_installation_flag(value)
+    if normalized == "TRUE":
+        return True
+    if normalized == "FALSE":
+        return False
+    return None
+
+
+def _installation_is_labor_like_text(text: str) -> bool:
+    normalized = normalize_ws(str(text or "")).lower()
+    if not normalized:
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "עבודה",
+            "עבודת",
+            "שירות",
+            "labor",
+            "labour",
+            "service",
+            "כולל התקנה",
+            "התקנה",
+            "installation",
+            "install",
+        )
+    )
+
+
+def _installation_descriptions_from_items(items) -> list[str]:
+    descriptions: list[str] = []
+    if not isinstance(items, list):
+        return descriptions
+    for raw_item in items:
+        description = ""
+        if isinstance(raw_item, dict):
+            description = str(raw_item.get("description") or "").strip()
+        else:
+            description = str(getattr(raw_item, "description", "") or "").strip()
+        if description:
+            descriptions.append(description)
+    return descriptions
+
+
+def _installation_requirement_from_descriptions(descriptions: list[str], fallback_text: str = "") -> bool:
+    normalized_descriptions = [normalize_ws(text).strip() for text in (descriptions or []) if normalize_ws(text).strip()]
+    if not normalized_descriptions and normalize_ws(fallback_text).strip():
+        normalized_descriptions = [normalize_ws(fallback_text).strip()]
+    if not normalized_descriptions:
+        return False
+    has_merchandise = any(not _installation_is_service_like_text(text) for text in normalized_descriptions)
+    if not has_merchandise:
+        return False
+    combined_texts = list(normalized_descriptions)
+    fallback_normalized = normalize_ws(fallback_text).strip()
+    if fallback_normalized:
+        combined_texts.append(fallback_normalized)
+    if any(_installation_text_has_installation(text) for text in combined_texts):
+        return True
+    return any(_installation_is_labor_like_text(text) for text in normalized_descriptions)
+
+
+def _po_requires_installation(po: PurchaseOrderData, raw_items=None) -> bool:
+    explicit_flag = _requires_installation_flag_to_bool((po.extra or {}).get("requires_installation"))
+    if explicit_flag is not None:
+        return explicit_flag
+    descriptions = _installation_descriptions_from_items(raw_items if isinstance(raw_items, list) else (po.items or []))
+    fallback_text = str((po.items or [None])[0].description or "").strip() if (po.items or []) else ""
+    return _installation_requirement_from_descriptions(descriptions, fallback_text)
 
 
 def _primary_merchandise_po_item(po: PurchaseOrderData) -> POItem | None:
@@ -12501,6 +12607,40 @@ def _label_product_lines_for_po(po: PurchaseOrderData) -> list[str]:
     return fallback_lines[:4] if fallback_lines else []
 
 
+def _label_product_lines_from_delivery_pdf(
+    delivery_pdf_path: str | Path | None,
+    item: POItem | None,
+) -> list[str]:
+    if not delivery_pdf_path or not item:
+        return []
+    try:
+        raw_text = extract_text_pdfplumber(str(delivery_pdf_path))
+        fixed_text = fix_hebrew_rtl_text(raw_text)
+        lines = [normalize_ws(line) for line in str(fixed_text or "").splitlines() if normalize_ws(line)]
+        sku = normalize_ws(str(getattr(item, "sku", "") or ""))
+        quantity = normalize_ws(str(int(item.quantity) if float(item.quantity).is_integer() else item.quantity)) if getattr(item, "quantity", None) not in (None, "") else ""
+        if not sku:
+            return []
+        if quantity:
+            strict_pattern = re.compile(
+                rf"^\s*{re.escape(sku)}\s+{re.escape(quantity)}\s+(.+?)\s+₪[0-9.,]+\s+₪[0-9.,]+\s*$"
+            )
+            for line in lines:
+                match = strict_pattern.match(line)
+                if match:
+                    return _compact_label_product_lines_from_text(match.group(1))
+        loose_pattern = re.compile(
+            rf"^\s*{re.escape(sku)}\s+\S+\s+(.+?)\s+₪[0-9.,]+\s+₪[0-9.,]+\s*$"
+        )
+        for line in lines:
+            match = loose_pattern.match(line)
+            if match:
+                return _compact_label_product_lines_from_text(match.group(1))
+    except Exception as exc:
+        log_handled_error("label delivery pdf product extraction failed", exc)
+    return []
+
+
 def _parse_order_display_date(value: str) -> date | None:
     raw = str(value or "").strip()
     for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
@@ -12538,6 +12678,332 @@ def _is_plasan_delivery_confirmation_row(row: dict | None) -> bool:
     return "פלסן סאסא" in normalized
 
 
+DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL = "asafbeny@gmail.com"
+
+
+def _delivery_confirmation_internal_print_label(row: dict | None) -> str:
+    company = _normalize_company_name(str((row or {}).get("company") or ""))
+    if "דניה סיבוס" in company:
+        return "דניה"
+    if "פורמה פרויקטים" in company or "פורמה פרוייקטים" in company:
+        return "פורמה"
+    return ""
+
+
+def _is_delivery_confirmation_internal_print_only(row: dict | None) -> bool:
+    return bool(_delivery_confirmation_internal_print_label(row))
+
+
+def _build_delivery_confirmation_internal_print_subject(row: dict) -> str:
+    label = _delivery_confirmation_internal_print_label(row) or "אישור מסירה"
+    po_number = str((row or {}).get("po_number") or "—").strip() or "—"
+    order_date = str((row or {}).get("order_date") or "—").strip() or "—"
+    return f"{label} להדפסה ומסירה - {po_number} {order_date}"
+
+
+def _build_delivery_confirmation_internal_print_body(row: dict) -> str:
+    label = _delivery_confirmation_internal_print_label(row) or "לקוח"
+    po_number = str((row or {}).get("po_number") or "—").strip() or "—"
+    order_date = str((row or {}).get("order_date") or "—").strip() or "—"
+    invoice_number = str((row or {}).get("tax_invoice_number") or "—").strip() or "—"
+    return (
+        f"{label} - מסמכים להדפסה ומסירה ידנית.\n\n"
+        f"הזמנת רכש: {po_number}\n"
+        f"תאריך הזמנה: {order_date}\n"
+        f"חשבונית מס: {invoice_number}\n\n"
+        "מצורפים:\n"
+        "1. אישור מסירה חתום\n"
+        "2. הזמנת הרכש של הלקוח\n"
+        "3. חשבונית המס\n"
+    )
+
+
+def _delivery_confirmation_target_indexes(rows: list[dict], target_row: dict) -> list[int]:
+    indexes = _delivery_confirmation_related_indexes(rows, target_row)
+    if indexes:
+        return indexes
+    target_fulfillment_id = str((target_row or {}).get("fulfillment_id") or "").strip()
+    target_history_id = str((target_row or {}).get("history_id") or "").strip()
+    target_po_number = _normalize_delivery_confirmation_po_number((target_row or {}).get("po_number") or "")
+    target_source_mode = str((target_row or {}).get("source_mode") or "").strip().upper()
+    target_invoice_number = str((target_row or {}).get("tax_invoice_number") or "").strip()
+    fallback_indexes: list[int] = []
+    for index, candidate in enumerate(rows or []):
+        candidate_fulfillment_id = str(candidate.get("fulfillment_id") or "").strip()
+        candidate_history_id = str(candidate.get("history_id") or "").strip()
+        candidate_po_number = _normalize_delivery_confirmation_po_number(candidate.get("po_number") or "")
+        candidate_source_mode = str(candidate.get("source_mode") or "").strip().upper()
+        candidate_invoice_number = str(candidate.get("tax_invoice_number") or "").strip()
+        if target_fulfillment_id and candidate_fulfillment_id == target_fulfillment_id:
+            fallback_indexes.append(index)
+            continue
+        if target_history_id and candidate_history_id == target_history_id:
+            fallback_indexes.append(index)
+            continue
+        if target_po_number and candidate_po_number == target_po_number:
+            if target_source_mode and candidate_source_mode and candidate_source_mode != target_source_mode:
+                continue
+            if target_invoice_number and candidate_invoice_number and candidate_invoice_number != target_invoice_number:
+                continue
+            fallback_indexes.append(index)
+    return fallback_indexes
+
+
+def _resolve_delivery_confirmation_history_row(row: dict) -> dict | None:
+    history_id = str((row or {}).get("history_id") or "").strip()
+    target_po_number = _normalize_delivery_confirmation_po_number((row or {}).get("po_number") or "")
+    target_source_mode = str((row or {}).get("source_mode") or "").strip().upper()
+    target_company = _normalize_company_name(str((row or {}).get("company") or ""))
+    target_invoice_number = str((row or {}).get("tax_invoice_number") or "").strip()
+    target_delivery_number = str((row or {}).get("delivery_document_number") or "").strip()
+    rows = load_order_history_rows(force_refresh=False)
+    if history_id:
+        match = next((item for item in rows if str(item.get("history_id") or "").strip() == history_id), None)
+        if match:
+            return dict(match)
+    best_row: dict | None = None
+    best_score = -1
+    for candidate in rows:
+        candidate_po_number = _normalize_delivery_confirmation_po_number(candidate.get("po_number") or "")
+        if target_po_number and candidate_po_number != target_po_number:
+            continue
+        score = 0
+        candidate_mode = str(candidate.get("mode") or candidate.get("source_mode") or "").strip().upper()
+        candidate_company = _normalize_company_name(str(candidate.get("customer_name") or "").strip())
+        candidate_invoice_number = str(candidate.get("tax_invoice_number") or "").strip()
+        candidate_delivery_number = str(candidate.get("delivery_document_number") or "").strip()
+        if target_source_mode and candidate_mode == target_source_mode:
+            score += 3
+        if target_company and candidate_company == target_company:
+            score += 3
+        if target_invoice_number and candidate_invoice_number == target_invoice_number:
+            score += 4
+        if target_delivery_number and candidate_delivery_number == target_delivery_number:
+            score += 4
+        if score > best_score:
+            best_row = candidate
+            best_score = score
+    return dict(best_row) if best_row else None
+
+
+def _is_generated_delivery_confirmation_pdf_name(file_name: str, row: dict) -> bool:
+    normalized_name = str(file_name or "").strip().lower()
+    if not normalized_name.endswith(".pdf"):
+        return True
+    generated_markers = (
+        "invoice",
+        "חשבונית",
+        "delivery",
+        "תעודת משלוח",
+        "מסירה",
+        "label",
+        "מדבקה",
+        "transport",
+        "משלוח",
+        "coc",
+        "כל המסמכים",
+        "signed",
+        "_conf",
+        "confirmation",
+        "מספר הובלה",
+        "תעודת הובלה",
+        "shipping number",
+        "bill of lading",
+    )
+    if any(marker in normalized_name for marker in generated_markers):
+        return True
+    invoice_number = str((row or {}).get("tax_invoice_number") or "").strip()
+    delivery_number = str((row or {}).get("delivery_document_number") or "").strip()
+    if invoice_number and invoice_number.lower() in normalized_name:
+        return True
+    if delivery_number and delivery_number.lower() in normalized_name:
+        return True
+    return False
+
+
+def _resolve_delivery_confirmation_source_po_local_path(row: dict) -> Path | None:
+    history_row = _resolve_delivery_confirmation_history_row(row)
+    candidate_paths: list[Path] = []
+    if history_row:
+        source_file_path = str(history_row.get("source_file_path") or "").strip()
+        if source_file_path:
+            candidate_paths.append(Path(source_file_path))
+        source_file_name = str(history_row.get("source_file_name") or "").strip()
+        output_dir = _order_output_dir_from_history_row(history_row)
+        if output_dir and source_file_name:
+            candidate_paths.append(output_dir / source_file_name)
+        if output_dir and output_dir.exists() and output_dir.is_dir():
+            pdf_candidates = [path for path in output_dir.glob("*.pdf") if path.is_file()]
+            preferred = [path for path in pdf_candidates if not _is_generated_delivery_confirmation_pdf_name(path.name, row)]
+            candidate_paths.extend(preferred or pdf_candidates)
+    for candidate in candidate_paths:
+        try:
+            if candidate.exists() and candidate.is_file():
+                return candidate.resolve()
+        except Exception:
+            continue
+    return None
+
+
+async def _resolve_delivery_confirmation_source_po_attachment(row: dict) -> Path:
+    local_path = _resolve_delivery_confirmation_source_po_local_path(row)
+    if local_path:
+        return local_path
+    order_folder_id = str((row or {}).get("order_drive_folder_id") or "").strip()
+    if order_folder_id:
+        drive_files = list_folder_files(order_folder_id)
+        candidates = [
+            item
+            for item in drive_files
+            if str(item.get("name") or "").strip().lower().endswith(".pdf")
+            and not _is_generated_delivery_confirmation_pdf_name(str(item.get("name") or "").strip(), row)
+        ]
+        if len(candidates) == 1:
+            target_dir = OUTPUT_DIR / "_delivery_confirmation_cache"
+            target_name = str(candidates[0].get("name") or f"source_po_{row.get('po_number')}.pdf").strip()
+            return download_drive_file(str(candidates[0].get("id") or "").strip(), target_dir / target_name).resolve()
+        for candidate in candidates:
+            name = str(candidate.get("name") or "").strip()
+            if re.search(r"(הזמנת\s*רכש|purchase[\s_-]*order|\bpo[\w-]*)", name, re.IGNORECASE):
+                target_dir = OUTPUT_DIR / "_delivery_confirmation_cache"
+                return download_drive_file(str(candidate.get("id") or "").strip(), target_dir / name).resolve()
+    raise RuntimeError("לא הצלחתי לאתר את הזמנת הרכש המקורית לצירוף.")
+
+
+async def _resolve_delivery_confirmation_internal_print_attachments(row: dict, mode: str) -> tuple[dict, list[str]]:
+    resolved_row = await _ensure_delivery_confirmation_drive_assets(row, mode)
+    invoice_attachment: Path | None = None
+    signed_attachment: Path | None = None
+    source_po_attachment: Path | None = None
+
+    invoice_drive_file_id = str(resolved_row.get("invoice_drive_file_id") or "").strip()
+    if invoice_drive_file_id:
+        invoice_number = str(resolved_row.get("tax_invoice_number") or "invoice").strip() or "invoice"
+        invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{invoice_number}.pdf"
+        invoice_attachment = download_drive_file(invoice_drive_file_id, invoice_target).resolve()
+    else:
+        local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(resolved_row)
+        if local_invoice_pdf and local_invoice_pdf.exists():
+            invoice_attachment = local_invoice_pdf.resolve()
+        else:
+            raise RuntimeError("לא הצלחתי לאתר את חשבונית המס לצירוף.")
+
+    signed_local = str(resolved_row.get("signed_delivery_local_path") or "").strip()
+    signed_drive_file_id = str(resolved_row.get("signed_delivery_drive_file_id") or "").strip()
+    if signed_local and Path(signed_local).exists():
+        signed_attachment = Path(signed_local).resolve()
+    elif signed_drive_file_id:
+        signed_name = str(resolved_row.get("signed_delivery_name") or f"signed_{resolved_row.get('po_number')}.pdf").strip()
+        signed_target = OUTPUT_DIR / "_delivery_confirmation_cache" / signed_name
+        signed_attachment = download_drive_file(signed_drive_file_id, signed_target).resolve()
+    else:
+        raise RuntimeError("לא הצלחתי לאתר את אישור המסירה החתום לצירוף.")
+
+    source_po_attachment = (await _resolve_delivery_confirmation_source_po_attachment(resolved_row)).resolve()
+
+    merge_inputs = [
+        signed_attachment,
+        source_po_attachment,
+        invoice_attachment,
+    ]
+    po_number = str(resolved_row.get("po_number") or "delivery_confirmation").strip() or "delivery_confirmation"
+    merged_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"{_safe_folder_name(po_number)}_להדפסה_ומסירה.pdf"
+    merged_path = merge_pdfs(merge_inputs, merged_target)
+    if not merged_path or not Path(merged_path).exists():
+        raise RuntimeError("לא הצלחתי ליצור את קובץ ההדפסה המאוחד.")
+    return resolved_row, [str(Path(merged_path).resolve())]
+
+
+async def _send_delivery_confirmation_internal_print_mail(row: dict, mode: str) -> dict:
+    resolved_row, attachments = await _resolve_delivery_confirmation_internal_print_attachments(row, mode)
+    subject = _build_delivery_confirmation_internal_print_subject(resolved_row)
+    body = _build_delivery_confirmation_internal_print_body(resolved_row)
+    html_body = _delivery_confirmation_mail_html_from_text(body)
+    _send_delivery_confirmation_mail(
+        DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL,
+        subject,
+        body,
+        html_body,
+        attachments,
+        sender_address="office@ben-yacov.com",
+    )
+    return {
+        "status": "ok",
+        "row": resolved_row,
+        "attachments": attachments,
+        "recipients": DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL,
+        "subject": subject,
+    }
+
+
+def _persist_delivery_confirmation_sent_state(rows: list[dict], row: dict, recipients: str) -> tuple[dict, list[str]]:
+    warnings: list[str] = []
+    related_indexes = _delivery_confirmation_target_indexes(rows, row)
+    if not related_indexes:
+        raise RuntimeError("לא הצלחתי לזהות את שורות אישור המסירה לעדכון סטטוס השליחה.")
+
+    sent_at_display = date.today().strftime("%d/%m/%Y")
+    updated_at_value = datetime.now().isoformat(timespec="seconds")
+    for row_index in related_indexes:
+        for field in (
+            "signed_delivery_local_path",
+            "signed_delivery_name",
+            "signed_delivery_drive_file_id",
+            "invoice_drive_file_id",
+            "coc_name",
+            "coc_drive_file_id",
+            "order_drive_folder_id",
+            "order_drive_folder_url",
+        ):
+            incoming_value = str((row or {}).get(field) or "").strip()
+            if incoming_value:
+                rows[row_index][field] = incoming_value
+        rows[row_index]["target_email"] = recipients
+        rows[row_index]["sent"] = "TRUE"
+        rows[row_index]["sent_at"] = sent_at_display
+        rows[row_index]["updated_at"] = updated_at_value
+
+    try:
+        save_delivery_confirmation_rows(rows)
+    except Exception as exc:
+        log_handled_error("delivery confirmation sent status sync failed", exc)
+        warnings.append("המייל נשלח, אבל לא הצלחתי כרגע לשמור את סטטוס השליחה בשיט.")
+
+    try:
+        missing_history_updates = 0
+        for row_index in related_indexes:
+            related_row = rows[row_index]
+            history_id = str(related_row.get("history_id") or "").strip()
+            if history_id:
+                order_history_rows = load_order_history_rows()
+                target_history_row = next((item for item in order_history_rows if str(item.get("history_id") or "").strip() == history_id), None)
+                if target_history_row:
+                    target_history_row["delivery_confirmation_sent"] = "כן"
+                    target_history_row["updated_at"] = updated_at_value
+                    upsert_order_history_row(target_history_row)
+                else:
+                    missing_history_updates += 1
+            else:
+                history_sync = update_order_history_delivery_sent(
+                    po_number=related_row.get("po_number", ""),
+                    tax_invoice_number=related_row.get("tax_invoice_number", ""),
+                    sent=True,
+                    source_mode=related_row.get("source_mode", ""),
+                    customer_name=related_row.get("company", ""),
+                )
+                if history_sync.get("status") == "skipped":
+                    missing_history_updates += 1
+        if missing_history_updates:
+            warnings.append("המייל נשלח, אבל לא הצלחתי לעדכן את כל שורות ההיסטוריה הרלוונטיות.")
+    except Exception as exc:
+        log_handled_error("delivery confirmation history sent status sync failed", exc)
+        warnings.append("המייל נשלח, אבל לא הצלחתי כרגע לעדכן את ההיסטוריה.")
+
+    related_indexes = _delivery_confirmation_target_indexes(rows, row)
+    updated_row = dict(rows[related_indexes[0]])
+    return updated_row, warnings
+
+
 def _build_delivery_confirmation_mail_subject(row: dict) -> str:
     invoice_number = str(row.get("tax_invoice_number") or "—").strip() or "—"
     return f"מצורפת חשבונית {invoice_number} מבן יעקב פתרונות טקסטיל"
@@ -12571,7 +13037,7 @@ def _delivery_mail_bank_update_notice_plain() -> str:
 
 
 def _delivery_confirmation_mail_html_from_text(body: str) -> str:
-    catalog_url = "https://www.ben-yacov.com/_files/ugd/d55e68_8138828b43ee484bb434e597b98e11e1.pdf"
+    catalog_url = _company_catalog_link()
     logo_html = ""
     if DELIVERY_MAIL_GIF_PATH.exists():
         logo_html = '<p style="margin:18px 0 8px;"><img src="cid:ben_yacov_logo" alt="בן יעקב פתרונות טקסטיל" style="max-width:150px; width:150px; height:auto; display:block;"></p>'
@@ -12629,7 +13095,7 @@ def _delivery_confirmation_mail_html_from_text(body: str) -> str:
 
 
 def _delivery_confirmation_mail_html_from_editor_html(html_body: str, fallback_plain: str = "") -> str:
-    catalog_url = "https://www.ben-yacov.com/_files/ugd/d55e68_8138828b43ee484bb434e597b98e11e1.pdf"
+    catalog_url = _company_catalog_link()
     logo_html = ""
     if DELIVERY_MAIL_GIF_PATH.exists():
         logo_html = '<p style="margin:18px 0 8px;"><img src="cid:ben_yacov_logo" alt="בן יעקב פתרונות טקסטיל" style="max-width:150px; width:150px; height:auto; display:block;"></p>'
@@ -12780,7 +13246,7 @@ def _payment_reminder_html_from_text(body: str) -> str:
     raw = str(body or "").replace("\r\n", "\n").replace("\r", "\n").strip()
     if not raw:
         raw = "שלום,"
-    catalog_url = "https://www.ben-yacov.com/_files/ugd/d55e68_8138828b43ee484bb434e597b98e11e1.pdf"
+    catalog_url = _company_catalog_link()
     logo_html = ""
     if DELIVERY_MAIL_GIF_PATH.exists():
         logo_html = '<p style="margin:18px 0 8px;"><img src="cid:ben_yacov_logo" alt="בן יעקב פתרונות טקסטיל" style="max-width:150px; width:150px; height:auto; display:block;"></p>'
@@ -13573,7 +14039,9 @@ def _set_auth_cookie_on_response(response, remember_me: bool, user_id: str, requ
     state = load_auth_state()
     token = issue_auth_token(state["cookie_secret"], remember_me=remember_me, user_id=user_id)
     cookie_settings = auth_cookie_settings(remember_me)
-    if request and request.url.scheme == "https":
+    forwarded_proto = str(request.headers.get("x-forwarded-proto") or "").strip().lower() if request else ""
+    request_is_https = bool(request and (request.url.scheme == "https" or forwarded_proto == "https" or IS_VERCEL))
+    if request_is_https:
         cookie_settings["secure"] = True
     response.set_cookie(AUTH_COOKIE_NAME, token, **cookie_settings)
     return response
@@ -13680,6 +14148,7 @@ CUSTOMER_DOMAIN_CONSTRUCTION = "construction"
 CUSTOMER_DOMAIN_TEXTILE = "textile"
 CUSTOMER_DOMAIN_SUPPLIER = "supplier"
 CUSTOMER_DOMAIN_GRAPHIC_WEB = "graphic_web"
+CUSTOMER_REFERENCE_SEED_DIR = BASE_DIR / "supabase" / "seed" / "current_state"
 
 
 def _normalize_customer_domain_value(value: str) -> str:
@@ -13693,6 +14162,41 @@ def _normalize_customer_domain_value(value: str) -> str:
     if lowered in {CUSTOMER_DOMAIN_GRAPHIC_WEB, "graphic_design", "web_design", "design_web", "עיצוב גרפי ואינטרנט", "עיצוב גרפי", "אינטרנט"}:
         return CUSTOMER_DOMAIN_GRAPHIC_WEB
     return ""
+
+
+def _load_bundled_customer_reference_rows(kind: str = "active") -> list[dict]:
+    target_name = "inactive_customers.json" if kind == "inactive" else "customers.json"
+    target_path = CUSTOMER_REFERENCE_SEED_DIR / target_name
+    try:
+        payload = json.loads(target_path.read_text(encoding="utf-8"))
+    except Exception:
+        return []
+    if not isinstance(payload, list):
+        return []
+    rows: list[dict] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        row = dict(item)
+        row["source_mode"] = _customer_mode_label(row.get("source_mode") or "")
+        row["customer_domain"] = _normalize_customer_domain_value(row.get("customer_domain") or "")
+        row["active"] = "FALSE" if kind == "inactive" else "TRUE"
+        rows.append(row)
+    return _sort_customer_rows(rows)
+
+
+def _effective_inactive_customer_rows(rows: list[dict] | None = None) -> list[dict]:
+    current_rows = [dict(row) for row in (rows or []) if isinstance(row, dict)]
+    return current_rows if current_rows else _load_bundled_customer_reference_rows("inactive")
+
+
+def _customer_rows_need_rebuild(rows: list[dict]) -> bool:
+    valid_rows = [row for row in (rows or []) if isinstance(row, dict)]
+    if not valid_rows:
+        return False
+    active_modes = {str(row.get("source_mode") or "").strip().upper() for row in valid_rows}
+    with_domain = sum(1 for row in valid_rows if _normalize_customer_domain_value(row.get("customer_domain") or ""))
+    return "PROD" not in active_modes or with_domain == 0
 
 
 def _customer_identity_tokens(row: dict | None) -> tuple[str, str, str, str]:
@@ -15162,6 +15666,24 @@ async def auth_login(request: Request):
         template_name = "index_mobile.html" if _is_mobile_request(request) else "index_desktop.html"
         return templates.TemplateResponse(template_name, _index_template_context(request))
     return templates.TemplateResponse("auth.html", _auth_template_context(request))
+
+
+@app.get("/auth/session-status")
+async def auth_session_status(request: Request):
+    session_info = authenticated_session_info(request)
+    if not session_info:
+        return JSONResponse({"authenticated": False, "redirect_to": "/auth/login"}, status_code=401)
+    expires_at = int(session_info.get("exp") or 0)
+    now = int(time.time())
+    return JSONResponse(
+        {
+            "authenticated": True,
+            "user_id": str(session_info.get("sub") or "").strip(),
+            "remember_me": bool(session_info.get("remember")),
+            "expires_at": expires_at,
+            "seconds_remaining": max(0, expires_at - now),
+        }
+    )
 
 
 @app.post("/auth/dev-login")
@@ -16879,16 +17401,224 @@ async def order_history_delete(request: Request):
                 delivery_document_number=str(fallback_row.get("delivery_number") or "").strip(),
                 tax_invoice_number=str(fallback_row.get("tax_invoice_number") or "").strip(),
             )
+        installations_sync_result = {"status": "skipped"}
+        try:
+            installations_sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        except Exception as sync_exc:
+            installations_sync_result = {"status": "error", "error": str(sync_exc)}
+            log_handled_error("order_history_delete installations sync failed", sync_exc)
         return JSONResponse(
             {
                 "status": "ok",
                 "delivery_confirmation_cleanup": delivery_result,
+                "installations_sync": installations_sync_result,
                 **_build_order_history_payload(result.get("rows") or []),
             }
         )
     except Exception as exc:
         log_handled_error("order_history_delete failed", exc)
         return JSONResponse({"error": f"לא הצלחתי למחוק את השורה מההיסטוריה: {exc}"}, status_code=500)
+
+
+@app.get("/installations-state")
+async def installations_state():
+    try:
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+    except Exception as exc:
+        log_handled_error("installations_state failed", exc)
+        cached_cases = get_cached_installation_case_rows()
+        cached_visits = get_cached_installation_visit_rows()
+        if cached_cases:
+            return JSONResponse(
+                {
+                    "status": "ok",
+                    **_build_installations_payload(cached_cases, cached_visits),
+                    "warning": "הוצגו נתוני התקנות אחרונים שנשמרו, כי רענון מלא מהשרת לא הצליח כרגע.",
+                }
+            )
+        return JSONResponse({"error": f"לא הצלחתי לטעון כרגע את דף ההתקנות: {exc}"}, status_code=500)
+
+
+@app.post("/installations-sync-from-history")
+async def installations_sync_from_history():
+    try:
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=True, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+    except Exception as exc:
+        log_handled_error("installations_sync_from_history failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לרענן את דף ההתקנות: {exc}"}, status_code=500)
+
+
+@app.post("/installations-case-update")
+async def installations_case_update(request: Request):
+    try:
+        body = await request.json()
+        installation_id = str(body.get("installation_id") or (body.get("row") or {}).get("installation_id") or "").strip()
+        if not installation_id:
+            return JSONResponse({"error": "חסר מזהה תיק התקנה."}, status_code=400)
+        case_rows = load_installation_case_rows(force_refresh=True)
+        target_row = next((row for row in case_rows if str(row.get("installation_id") or "").strip() == installation_id), None)
+        if not target_row:
+            return JSONResponse({"error": "תיק ההתקנה לא נמצא."}, status_code=404)
+        incoming_row = body.get("row") if isinstance(body.get("row"), dict) else body
+        merged_row = dict(target_row)
+        merged_row["status"] = str(incoming_row.get("status") or merged_row.get("status") or "").strip()
+        merged_row["delay_reason"] = str(incoming_row.get("delay_reason") or "").strip()
+        merged_row["next_visit_date"] = str(incoming_row.get("next_visit_date") or "").strip()
+        merged_row["notes"] = str(incoming_row.get("notes") or "").strip()
+        upsert_installation_case_row(merged_row)
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+    except Exception as exc:
+        log_handled_error("installations_case_update failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לעדכן את תיק ההתקנה: {exc}"}, status_code=500)
+
+
+@app.post("/installations-visit-save")
+async def installations_visit_save(request: Request):
+    try:
+        body = await request.json()
+        visit_payload = body.get("visit") if isinstance(body.get("visit"), dict) else body
+        installation_id = str(visit_payload.get("installation_id") or "").strip()
+        if not installation_id:
+            return JSONResponse({"error": "חסר מזהה תיק התקנה לביקור."}, status_code=400)
+        case_rows = load_installation_case_rows(force_refresh=True)
+        target_case = next((row for row in case_rows if str(row.get("installation_id") or "").strip() == installation_id), None)
+        if not target_case:
+            return JSONResponse({"error": "תיק ההתקנה לא נמצא."}, status_code=404)
+        visit_id = str(visit_payload.get("visit_id") or "").strip()
+        visit_rows = load_installation_visit_rows(force_refresh=True)
+        existing_visit = next((row for row in visit_rows if str(row.get("visit_id") or "").strip() == visit_id), None) if visit_id else None
+        try:
+            case_items = json.loads(str(target_case.get("install_items_json") or "[]"))
+        except Exception:
+            case_items = []
+        if not isinstance(case_items, list) or not case_items:
+            return JSONResponse({"error": "לא נמצאו פריטי התקנה לתיק הזה."}, status_code=400)
+        requested_items_raw = visit_payload.get("installed_items")
+        if isinstance(requested_items_raw, dict):
+            requested_items = [
+                {"item_key": key, "quantity": value}
+                for key, value in requested_items_raw.items()
+            ]
+        elif isinstance(requested_items_raw, list):
+            requested_items = requested_items_raw
+        else:
+            requested_items = []
+
+        ordered_by_key = {
+            str(item.get("item_key") or "").strip(): _installation_number(item.get("ordered_quantity"))
+            for item in case_items
+            if isinstance(item, dict) and str(item.get("item_key") or "").strip()
+        }
+        metadata_by_key = {
+            str(item.get("item_key") or "").strip(): dict(item)
+            for item in case_items
+            if isinstance(item, dict) and str(item.get("item_key") or "").strip()
+        }
+        other_installed_by_key: dict[str, float] = {}
+        for row in visit_rows:
+            if str(row.get("installation_id") or "").strip() != installation_id:
+                continue
+            if visit_id and str(row.get("visit_id") or "").strip() == visit_id:
+                continue
+            try:
+                row_items = json.loads(str(row.get("installed_items_json") or "[]"))
+            except Exception:
+                row_items = []
+            if not isinstance(row_items, list):
+                row_items = []
+            for item in row_items:
+                if not isinstance(item, dict):
+                    continue
+                item_key = str(item.get("item_key") or "").strip()
+                if not item_key:
+                    continue
+                other_installed_by_key[item_key] = round(
+                    other_installed_by_key.get(item_key, 0.0) + _installation_number(item.get("quantity")),
+                    2,
+                )
+
+        normalized_requested_items: list[dict] = []
+        summary_parts: list[str] = []
+        installed_total_quantity = 0.0
+        for raw_item in requested_items:
+            if not isinstance(raw_item, dict):
+                continue
+            item_key = str(raw_item.get("item_key") or "").strip()
+            if not item_key or item_key not in ordered_by_key:
+                continue
+            quantity = _installation_number(raw_item.get("quantity"))
+            if quantity <= 0:
+                continue
+            max_allowed = max(0.0, round(ordered_by_key[item_key] - other_installed_by_key.get(item_key, 0.0), 2))
+            if quantity > max_allowed + 0.001:
+                item_meta = metadata_by_key.get(item_key) or {}
+                label = str(item_meta.get("size_label") or item_meta.get("description") or item_key).strip()
+                return JSONResponse(
+                    {"error": f"הכמות שסימנת עבור {label} חורגת מהכמות שעוד נשארה להתקנה."},
+                    status_code=400,
+                )
+            item_meta = metadata_by_key.get(item_key) or {}
+            normalized_requested_items.append(
+                {
+                    "item_key": item_key,
+                    "description": str(item_meta.get("description") or "").strip(),
+                    "size_label": str(item_meta.get("size_label") or "").strip(),
+                    "sku": str(item_meta.get("sku") or "").strip(),
+                    "unit": str(item_meta.get("unit") or "").strip(),
+                    "quantity": quantity,
+                }
+            )
+            label = str(item_meta.get("size_label") or item_meta.get("description") or item_key).strip()
+            summary_parts.append(f"{label} × {quantity:g}")
+            installed_total_quantity = round(installed_total_quantity + quantity, 2)
+
+        visit_date = str(visit_payload.get("visit_date") or "").strip()
+        scheduled_date = str(visit_payload.get("scheduled_date") or "").strip()
+        if not visit_date and not scheduled_date:
+            return JSONResponse({"error": "חסר תאריך ביקור או תאריך מתוכנן."}, status_code=400)
+
+        visit_status = str(visit_payload.get("status") or "").strip() or ("הותקן חלקית" if installed_total_quantity > 0 else "תואם")
+        visit_row = {
+            "visit_id": visit_id or str((existing_visit or {}).get("visit_id") or f"visit_{uuid.uuid4().hex[:12]}"),
+            "installation_id": installation_id,
+            "created_at": str((existing_visit or {}).get("created_at") or datetime.now().isoformat(timespec="seconds")),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+            "visit_date": visit_date,
+            "scheduled_date": scheduled_date,
+            "status": visit_status,
+            "installed_items_json": json.dumps(normalized_requested_items, ensure_ascii=False),
+            "installed_total_quantity": f"{installed_total_quantity:.2f}",
+            "notes": str(visit_payload.get("notes") or "").strip(),
+            "summary_text": ", ".join(summary_parts),
+        }
+        upsert_installation_visit_row(visit_row)
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+    except Exception as exc:
+        log_handled_error("installations_visit_save failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לשמור את ביקור ההתקנה: {exc}"}, status_code=500)
+
+
+@app.post("/installations-visit-delete")
+async def installations_visit_delete(request: Request):
+    try:
+        body = await request.json()
+        visit_id = str(body.get("visit_id") or "").strip()
+        if not visit_id:
+            return JSONResponse({"error": "חסר מזהה ביקור למחיקה."}, status_code=400)
+        visit_rows = load_installation_visit_rows(force_refresh=True)
+        remaining_rows = [row for row in visit_rows if str(row.get("visit_id") or "").strip() != visit_id]
+        if len(remaining_rows) == len(visit_rows):
+            return JSONResponse({"error": "ביקור ההתקנה לא נמצא."}, status_code=404)
+        save_installation_visit_rows(remaining_rows)
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+    except Exception as exc:
+        log_handled_error("installations_visit_delete failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי למחוק את ביקור ההתקנה: {exc}"}, status_code=500)
 
 
 @app.get("/quote-history-state")
@@ -17120,7 +17850,7 @@ async def delivery_confirmations_upload(request: Request, file: UploadFile = Fil
             rows[row_index]["updated_at"] = datetime.now().isoformat(timespec="seconds")
         save_delivery_confirmation_rows(rows)
         updated_row = dict(rows[related_indexes[0]])
-        drive_warning = ""
+        warning_messages: list[str] = []
         try:
             updated_row = await _ensure_delivery_confirmation_signed_drive_asset(target)
             for row_index in related_indexes:
@@ -17134,15 +17864,38 @@ async def delivery_confirmations_upload(request: Request, file: UploadFile = Fil
             updated_row = dict(rows[related_indexes[0]])
         except Exception as drive_exc:
             log_handled_error("delivery_confirmations_upload drive sync failed", drive_exc)
-            drive_warning = _google_drive_sync_warning(drive_exc)
+            warning_messages.append(_google_drive_sync_warning(drive_exc))
+        if _is_delivery_confirmation_internal_print_only(updated_row):
+            resolved_mode = "sandbox" if str(updated_row.get("source_mode") or source_mode or "").strip().upper() == "SB" else "prod"
+            try:
+                internal_print_result = await _send_delivery_confirmation_internal_print_mail(updated_row, resolved_mode)
+                updated_row = dict(internal_print_result.get("row") or updated_row)
+                for row_index in related_indexes:
+                    rows[row_index]["signed_delivery_local_path"] = str(updated_row.get("signed_delivery_local_path") or rows[row_index].get("signed_delivery_local_path") or "").strip()
+                    rows[row_index]["signed_delivery_name"] = str(updated_row.get("signed_delivery_name") or rows[row_index].get("signed_delivery_name") or "").strip()
+                    rows[row_index]["signed_delivery_drive_file_id"] = str(updated_row.get("signed_delivery_drive_file_id") or rows[row_index].get("signed_delivery_drive_file_id") or "").strip()
+                    if str(updated_row.get("invoice_drive_file_id") or "").strip():
+                        rows[row_index]["invoice_drive_file_id"] = str(updated_row.get("invoice_drive_file_id") or "").strip()
+                    if str(updated_row.get("order_drive_folder_id") or "").strip():
+                        rows[row_index]["order_drive_folder_id"] = str(updated_row.get("order_drive_folder_id") or "").strip()
+                    rows[row_index]["updated_at"] = datetime.now().isoformat(timespec="seconds")
+                updated_row, sent_warnings = _persist_delivery_confirmation_sent_state(
+                    rows,
+                    updated_row,
+                    DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL,
+                )
+                warning_messages.extend(sent_warnings)
+            except Exception as internal_print_exc:
+                log_handled_error("delivery confirmation internal print send failed", internal_print_exc)
+                warning_messages.append(f"אישור המסירה נשמר, אבל לא הצלחתי לשלוח אליך את חבילת ההדפסה: {internal_print_exc}")
         response_payload = {
             "status": "ok",
             "row": updated_row,
             "upload_complete": True,
             **_build_delivery_confirmation_payload(),
         }
-        if drive_warning:
-            response_payload["warning"] = drive_warning
+        if warning_messages:
+            response_payload["warning"] = " ".join(message for message in warning_messages if str(message or "").strip())
         return JSONResponse(response_payload)
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
@@ -17219,6 +17972,7 @@ async def delivery_confirmations_send(request: Request):
             return JSONResponse({"error": "לא נמצאה שורת אישור מסירה מתאימה."}, status_code=404)
 
         row = await _ensure_delivery_confirmation_drive_assets(row, mode)
+        internal_print_only = _is_delivery_confirmation_internal_print_only(row)
         if not recipients:
             company_key = _normalize_company_name(row.get("company", ""))
             delivery_contacts = load_delivery_contact_rows()
@@ -17229,62 +17983,71 @@ async def delivery_confirmations_send(request: Request):
             recipients = str((contact or {}).get("email") or row.get("target_email") or "").strip()
         if test_send:
             recipients = "asafbeny@gmail.com"
+        elif internal_print_only:
+            recipients = DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL
         if not recipients:
             return JSONResponse({"error": "לא נמצא דואר אלקטרוני יעד. עדכן אותו בטבלת אנשי הקשר."}, status_code=400)
 
-        subject = subject or _build_delivery_confirmation_mail_subject(row)
-        message = message or _build_delivery_confirmation_mail_body(row)
+        if internal_print_only and not test_send:
+            subject = subject or _build_delivery_confirmation_internal_print_subject(row)
+            message = message or _build_delivery_confirmation_internal_print_body(row)
+        else:
+            subject = subject or _build_delivery_confirmation_mail_subject(row)
+            message = message or _build_delivery_confirmation_mail_body(row)
 
         attachments: list[str] = []
-        invoice_drive_file_id = str(row.get("invoice_drive_file_id") or "").strip()
-        if invoice_drive_file_id:
-            invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
-            attachments.append(str(download_drive_file(invoice_drive_file_id, invoice_target)))
+        if internal_print_only and not test_send:
+            row, attachments = await _resolve_delivery_confirmation_internal_print_attachments(row, mode)
         else:
-            local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(row)
-            if local_invoice_pdf:
-                attachments.append(str(local_invoice_pdf))
-                order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
-                if order_folder_id:
-                    try:
-                        uploaded = upload_file_to_folder(order_folder_id, local_invoice_pdf, drive_name=local_invoice_pdf.name)
-                        row["invoice_drive_file_id"] = uploaded.get("id", "")
-                    except Exception as drive_exc:
-                        log_handled_error("delivery confirmation local invoice drive sync failed", drive_exc)
-            elif str(row.get("tax_invoice_number") or "").strip():
-                invoice_doc, invoice_mode = await _find_greeninvoice_invoice_document_any_mode(mode, row.get("tax_invoice_number", ""))
-                if invoice_doc:
-                    raw = invoice_doc.get("raw") or {}
-                    url_payload = raw.get("url") or {}
-                    invoice_url = ""
-                    if isinstance(url_payload, dict):
-                        invoice_url = str(url_payload.get("origin") or url_payload.get("he") or "").strip()
-                    if invoice_url:
-                        cfg = get_mode_config(invoice_mode or mode)
-                        client = GreenInvoiceClient(
-                            base_url=cfg["base_url"],
-                            api_key=cfg["api_key"],
-                            api_secret=cfg["api_secret"],
-                        )
-                        token = await client._get_token()
-                        invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
-                        attachments.append(str(await client.download_pdf(token, invoice_url, invoice_target)))
-                        order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
-                        if order_folder_id and attachments:
-                            try:
-                                uploaded = upload_file_to_folder(order_folder_id, Path(attachments[-1]), drive_name=Path(attachments[-1]).name)
-                                row["invoice_drive_file_id"] = uploaded.get("id", "")
-                            except Exception as drive_exc:
-                                log_handled_error("delivery confirmation invoice fallback drive sync failed", drive_exc)
+            invoice_drive_file_id = str(row.get("invoice_drive_file_id") or "").strip()
+            if invoice_drive_file_id:
+                invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
+                attachments.append(str(download_drive_file(invoice_drive_file_id, invoice_target)))
+            else:
+                local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(row)
+                if local_invoice_pdf:
+                    attachments.append(str(local_invoice_pdf))
+                    order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
+                    if order_folder_id:
+                        try:
+                            uploaded = upload_file_to_folder(order_folder_id, local_invoice_pdf, drive_name=local_invoice_pdf.name)
+                            row["invoice_drive_file_id"] = uploaded.get("id", "")
+                        except Exception as drive_exc:
+                            log_handled_error("delivery confirmation local invoice drive sync failed", drive_exc)
+                elif str(row.get("tax_invoice_number") or "").strip():
+                    invoice_doc, invoice_mode = await _find_greeninvoice_invoice_document_any_mode(mode, row.get("tax_invoice_number", ""))
+                    if invoice_doc:
+                        raw = invoice_doc.get("raw") or {}
+                        url_payload = raw.get("url") or {}
+                        invoice_url = ""
+                        if isinstance(url_payload, dict):
+                            invoice_url = str(url_payload.get("origin") or url_payload.get("he") or "").strip()
+                        if invoice_url:
+                            cfg = get_mode_config(invoice_mode or mode)
+                            client = GreenInvoiceClient(
+                                base_url=cfg["base_url"],
+                                api_key=cfg["api_key"],
+                                api_secret=cfg["api_secret"],
+                            )
+                            token = await client._get_token()
+                            invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
+                            attachments.append(str(await client.download_pdf(token, invoice_url, invoice_target)))
+                            order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
+                            if order_folder_id and attachments:
+                                try:
+                                    uploaded = upload_file_to_folder(order_folder_id, Path(attachments[-1]), drive_name=Path(attachments[-1]).name)
+                                    row["invoice_drive_file_id"] = uploaded.get("id", "")
+                                except Exception as drive_exc:
+                                    log_handled_error("delivery confirmation invoice fallback drive sync failed", drive_exc)
 
-        signed_local = str(row.get("signed_delivery_local_path") or "").strip()
-        signed_drive_file_id = str(row.get("signed_delivery_drive_file_id") or "").strip()
-        if signed_local and Path(signed_local).exists():
-            attachments.append(str(Path(signed_local).resolve()))
-        elif signed_drive_file_id:
-            signed_name = str(row.get("signed_delivery_name") or f"signed_{po_number}.pdf")
-            signed_target = OUTPUT_DIR / "_delivery_confirmation_cache" / signed_name
-            attachments.append(str(download_drive_file(signed_drive_file_id, signed_target)))
+            signed_local = str(row.get("signed_delivery_local_path") or "").strip()
+            signed_drive_file_id = str(row.get("signed_delivery_drive_file_id") or "").strip()
+            if signed_local and Path(signed_local).exists():
+                attachments.append(str(Path(signed_local).resolve()))
+            elif signed_drive_file_id:
+                signed_name = str(row.get("signed_delivery_name") or f"signed_{po_number}.pdf")
+                signed_target = OUTPUT_DIR / "_delivery_confirmation_cache" / signed_name
+                attachments.append(str(download_drive_file(signed_drive_file_id, signed_target)))
 
         if _is_plasan_delivery_confirmation_row(row):
             coc_path = ""
@@ -17310,8 +18073,10 @@ async def delivery_confirmations_send(request: Request):
             else:
                 return JSONResponse({"error": "ללקוח פלסן סאסא צריך לצרף גם מסמך COC לפני שליחת המייל."}, status_code=400)
 
-        minimum_attachments = 3 if _is_plasan_delivery_confirmation_row(row) else 2
+        minimum_attachments = 1 if internal_print_only and not test_send else (3 if _is_plasan_delivery_confirmation_row(row) else 2)
         if len(attachments) < minimum_attachments:
+            if internal_print_only and not test_send:
+                return JSONResponse({"error": "צריך קובץ הדפסה מאוחד לפני שליחת חבילת ההדפסה."}, status_code=400)
             return JSONResponse({"error": "צריך גם חשבונית מס וגם ת. משלוח חתומה לפני שליחת המייל."}, status_code=400)
 
         if uploaded_files:
@@ -17362,47 +18127,8 @@ async def delivery_confirmations_send(request: Request):
             if warning_messages:
                 response_payload["warning"] = " ".join(warning_messages)
             return JSONResponse(response_payload)
-        related_indexes = _delivery_confirmation_related_indexes(rows, row) or [rows.index(row)]
-        sent_at_display = date.today().strftime("%d/%m/%Y")
-        for row_index in related_indexes:
-            rows[row_index]["target_email"] = recipients
-            rows[row_index]["sent"] = "TRUE"
-            rows[row_index]["sent_at"] = sent_at_display
-            rows[row_index]["updated_at"] = datetime.now().isoformat(timespec="seconds")
-        try:
-            save_delivery_confirmation_rows(rows)
-        except Exception as exc:
-            log_handled_error("delivery confirmation sent status sync failed", exc)
-            warning_messages.append("המייל נשלח, אבל לא הצלחתי כרגע לשמור את סטטוס השליחה בשיט.")
-        try:
-            missing_history_updates = 0
-            for row_index in related_indexes:
-                related_row = rows[row_index]
-                history_id = str(related_row.get("history_id") or "").strip()
-                if history_id:
-                    order_history_rows = load_order_history_rows()
-                    target_history_row = next((item for item in order_history_rows if str(item.get("history_id") or "").strip() == history_id), None)
-                    if target_history_row:
-                        target_history_row["delivery_confirmation_sent"] = "כן"
-                        target_history_row["updated_at"] = datetime.now().isoformat(timespec="seconds")
-                        upsert_order_history_row(target_history_row)
-                    else:
-                        missing_history_updates += 1
-                else:
-                    history_sync = update_order_history_delivery_sent(
-                        po_number=related_row.get("po_number", ""),
-                        tax_invoice_number=related_row.get("tax_invoice_number", ""),
-                        sent=True,
-                        source_mode=related_row.get("source_mode", ""),
-                        customer_name=related_row.get("company", ""),
-                    )
-                    if history_sync.get("status") == "skipped":
-                        missing_history_updates += 1
-            if missing_history_updates:
-                warning_messages.append("המייל נשלח, אבל לא הצלחתי לעדכן את כל שורות ההיסטוריה הרלוונטיות.")
-        except Exception as exc:
-            log_handled_error("delivery confirmation history sent status sync failed", exc)
-            warning_messages.append("המייל נשלח, אבל לא הצלחתי כרגע לעדכן את ההיסטוריה.")
+        row, sent_warnings = _persist_delivery_confirmation_sent_state(rows, row, recipients)
+        warning_messages.extend(sent_warnings)
         if send_new_bank_details:
             try:
                 if not _mark_customer_bank_details_updated(str(row.get("company") or "").strip()):
@@ -17853,13 +18579,16 @@ async def customers_state():
     try:
         rows = load_customer_rows()
         inactive_rows = load_inactive_customer_rows()
-        existing_reference_rows = [*rows, *inactive_rows]
+        bundled_active_rows = _load_bundled_customer_reference_rows()
+        bundled_inactive_rows = _load_bundled_customer_reference_rows("inactive")
+        effective_inactive_rows = _effective_inactive_customer_rows(inactive_rows or bundled_inactive_rows)
+        existing_reference_rows = [*rows, *inactive_rows, *bundled_active_rows, *bundled_inactive_rows]
         if not rows:
             try:
                 rows = _filter_hidden_customer_rows(
                     _filter_out_inactive_customer_rows(
                         _preserve_customer_custom_fields(await _fetch_all_greeninvoice_customers(), existing_reference_rows),
-                        inactive_rows,
+                        effective_inactive_rows,
                     )
                 )
                 save_customer_rows(rows)
@@ -17874,18 +18603,16 @@ async def customers_state():
             except Exception as bootstrap_exc:
                 log_handled_error("customers_state bootstrap failed", bootstrap_exc)
         rows, enriched = await _enrich_customer_rows_with_source_mode(rows)
-        active_modes = {str(row.get("source_mode") or "").strip().upper() for row in rows if isinstance(row, dict)}
-        needs_prod_rebuild = bool(rows) and "PROD" not in active_modes
+        needs_prod_rebuild = _customer_rows_need_rebuild(rows)
         if needs_prod_rebuild:
             try:
                 rebuilt_rows = _filter_hidden_customer_rows(
                     _filter_out_inactive_customer_rows(
                         _preserve_customer_custom_fields(await _fetch_all_greeninvoice_customers(), existing_reference_rows),
-                        inactive_rows,
+                        effective_inactive_rows,
                     )
                 )
-                rebuilt_modes = {str(row.get("source_mode") or "").strip().upper() for row in rebuilt_rows if isinstance(row, dict)}
-                if rebuilt_rows and "PROD" in rebuilt_modes:
+                if rebuilt_rows and not _customer_rows_need_rebuild(rebuilt_rows):
                     rows = rebuilt_rows
                     save_customer_rows(rows)
                     enriched = False
@@ -17916,10 +18643,18 @@ async def customers_refresh(request: Request):
     try:
         inactive_rows = load_inactive_customer_rows()
         existing_rows = load_customer_rows()
+        bundled_reference_rows = [
+            *_load_bundled_customer_reference_rows(),
+            *_load_bundled_customer_reference_rows("inactive"),
+        ]
+        effective_inactive_rows = _effective_inactive_customer_rows(inactive_rows)
         rows = _filter_hidden_customer_rows(
             _filter_out_inactive_customer_rows(
-                _preserve_customer_custom_fields(await _fetch_all_greeninvoice_customers(), existing_rows + inactive_rows),
-                inactive_rows,
+                _preserve_customer_custom_fields(
+                    await _fetch_all_greeninvoice_customers(),
+                    existing_rows + inactive_rows + bundled_reference_rows,
+                ),
+                effective_inactive_rows,
             )
         )
         save_result = save_customer_rows(rows)
@@ -17985,6 +18720,17 @@ async def customers_drive_refresh():
 async def customers_inactive_state():
     try:
         rows, enriched = await _enrich_customer_rows_with_source_mode(load_inactive_customer_rows())
+        if not rows:
+            rows = _load_bundled_customer_reference_rows("inactive")
+            if rows:
+                save_inactive_customer_rows(rows)
+                enriched = False
+        elif rows and not any(_normalize_customer_domain_value(row.get("customer_domain") or "") for row in rows):
+            bundled_rows = _load_bundled_customer_reference_rows("inactive")
+            if bundled_rows:
+                rows = bundled_rows
+                save_inactive_customer_rows(rows)
+                enriched = False
         rows = _filter_hidden_customer_rows(rows)
         if enriched:
             save_inactive_customer_rows(rows)
@@ -21728,11 +22474,24 @@ def _build_delivery_confirmation_payload() -> dict:
             filtered_confirmations.append(row)
     existing_contact_rows = load_delivery_contact_rows()
     contacts_rows = build_delivery_contact_rows_for_active_orders(filtered_confirmations, existing_contact_rows)
+    contacts_rows_changed = False
+    for contact_row in contacts_rows:
+        if not _is_delivery_confirmation_internal_print_only({"company": contact_row.get("company", "")}):
+            continue
+        if str(contact_row.get("email") or "").strip() != DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL:
+            contact_row["email"] = DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL
+            contacts_rows_changed = True
     if json.dumps(contacts_rows, ensure_ascii=False, sort_keys=True) != json.dumps(existing_contact_rows, ensure_ascii=False, sort_keys=True):
         try:
             save_delivery_contact_rows(contacts_rows)
         except Exception as exc:
             log_handled_error("delivery confirmation contacts save failed during payload build", exc)
+        contacts_rows = [dict(row) for row in contacts_rows]
+    elif contacts_rows_changed:
+        try:
+            save_delivery_contact_rows(contacts_rows)
+        except Exception as exc:
+            log_handled_error("delivery confirmation internal print contacts save failed during payload build", exc)
         contacts_rows = [dict(row) for row in contacts_rows]
     contact_email_by_company = {
         _normalize_company_name(row.get("company", "")): str(row.get("email") or "").strip()
@@ -21742,9 +22501,12 @@ def _build_delivery_confirmation_payload() -> dict:
     confirmation_email_sync_changed = False
     for row in confirmations:
         company_key = _normalize_company_name(row.get("company", ""))
-        desired_target_email = contact_email_by_company.get(company_key, "") or _default_delivery_contact_email(
-            str(row.get("company") or "")
-        )
+        if _is_delivery_confirmation_internal_print_only(row):
+            desired_target_email = DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL
+        else:
+            desired_target_email = contact_email_by_company.get(company_key, "") or _default_delivery_contact_email(
+                str(row.get("company") or "")
+            )
         if desired_target_email and str(row.get("target_email") or "").strip() != desired_target_email:
             row["target_email"] = desired_target_email
             confirmation_email_sync_changed = True
@@ -21846,6 +22608,859 @@ def _build_order_history_payload(rows: list[dict] | None = None) -> dict:
         "rows": normalized_rows,
         "recent_rows": normalized_rows[:4],
         "count": len(normalized_rows),
+    }
+
+
+INSTALLATION_STATUS_OPTIONS = [
+    "ממתין לתיאום",
+    "תואם",
+    "הותקן חלקית",
+    "הושלם",
+    "מושהה",
+    "בוטל",
+]
+
+INSTALLATION_DELAY_REASON_OPTIONS = [
+    "ממתין לתיאום מול שטח",
+    "מחכים לדלתות באתר",
+    "ביקור המשך",
+    "גישה לאתר / לוגיסטיקה",
+    "לקוח דחה",
+    "הזמנה בוטלה",
+    "אחר",
+]
+
+
+def _installation_text_has_installation(text: str) -> bool:
+    normalized = normalize_ws(str(text or "")).lower()
+    if not normalized:
+        return False
+    negative_tokens = (
+        "ללא התקנה",
+        "בלי התקנה",
+        "לא כולל התקנה",
+        "ללא התקנות",
+        "without installation",
+        "without install",
+        "no installation",
+        "no install",
+    )
+    if any(token in normalized for token in negative_tokens):
+        return False
+    return any(token in normalized for token in ("התקנ", "כולל התקנה", "installation", "install"))
+
+
+def _installation_is_service_like_text(text: str) -> bool:
+    normalized = normalize_ws(str(text or "")).lower()
+    if not normalized:
+        return False
+    return any(
+        token in normalized
+        for token in (
+            "הובלה",
+            "משלוח",
+            "shipping",
+            "freight",
+            "delivery charge",
+            "transport",
+            "עבודה",
+            "שירות",
+            "labor",
+            "labour",
+            "service",
+        )
+    )
+
+
+def _installation_root_history_id(row: dict) -> str:
+    raw = str((row or {}).get("partial_root_history_id") or "").strip()
+    if raw:
+        return raw
+    return str((row or {}).get("history_id") or "").strip()
+
+
+def _installation_parse_json_array(raw_value) -> list:
+    if isinstance(raw_value, list):
+        return raw_value
+    try:
+        parsed = json.loads(str(raw_value or "[]"))
+    except Exception:
+        parsed = []
+    return parsed if isinstance(parsed, list) else []
+
+
+def _installation_expected_item_count(row: dict) -> int:
+    label_rows = _installation_parse_json_array((row or {}).get("label_split_rows_json"))
+    indexed_rows = [entry for entry in label_rows if isinstance(entry, dict) and str(entry.get("item_index") or "").strip() != ""]
+    if indexed_rows:
+        try:
+            return max(int(entry.get("item_index") or 0) for entry in indexed_rows) + 1
+        except Exception:
+            pass
+    ordered_items = _installation_parse_json_array((row or {}).get("ordered_items_json"))
+    if ordered_items:
+        return len(ordered_items)
+    current_items = _installation_parse_json_array((row or {}).get("items_json"))
+    if current_items:
+        return len(current_items)
+    return 1 if str((row or {}).get("item_description") or "").strip() else 0
+
+
+def _installation_is_generated_order_pdf(path: Path) -> bool:
+    name = path.name.lower()
+    if not path.is_file() or path.suffix.lower() != ".pdf":
+        return True
+    generated_tokens = (
+        "delivery",
+        "invoice",
+        "label",
+        "all documents",
+        "כל המסמכים",
+        "coc",
+        "transport",
+        "משלוח",
+        "חשבונית",
+        "מדבקה",
+    )
+    return any(token in name for token in generated_tokens)
+
+
+def _installation_source_po_local_path(row: dict) -> str:
+    po_number = str((row or {}).get("po_number") or "").strip()
+    if not po_number:
+        return ""
+    mode = str((row or {}).get("mode") or "PROD").strip().upper()
+    docs_root = PRODUCTION_DOCS_DIR if mode == "PROD" else SANDBOX_DOCS_DIR
+    preferred_names = ("הזמנת רכש", "print purchase order", "pog", "purchase order")
+
+    candidate_dirs: list[Path] = []
+    if docs_root.exists():
+        candidate_dirs.extend(
+            path for path in docs_root.glob(f"*{po_number}*")
+            if path.is_dir()
+        )
+    customer_name = _safe_folder_name(str((row or {}).get("customer_name") or "").strip())
+    if customer_name:
+        direct_dir = docs_root / f"{customer_name} - {po_number}"
+        if direct_dir.is_dir() and direct_dir not in candidate_dirs:
+            candidate_dirs.insert(0, direct_dir)
+
+    for directory in candidate_dirs:
+        pdfs = [path for path in sorted(directory.glob("*.pdf")) if not _installation_is_generated_order_pdf(path)]
+        if not pdfs:
+            continue
+        for preferred_name in preferred_names:
+            match = next((path for path in pdfs if preferred_name in path.name.lower()), None)
+            if match:
+                return str(match)
+        return str(pdfs[0])
+
+    uploads_dir = Path(UPLOADS_DIR) / "working_orders"
+    if uploads_dir.exists():
+        fallback_pdf = next(
+            (
+                path
+                for path in sorted(uploads_dir.glob(f"*{po_number}*.pdf"))
+                if path.is_file()
+            ),
+            None,
+        )
+        if fallback_pdf:
+            return str(fallback_pdf)
+    return ""
+
+
+@lru_cache(maxsize=512)
+def _load_installation_source_po_snapshot(source_path: str) -> dict:
+    clean_path = str(source_path or "").strip()
+    if not clean_path:
+        return {}
+    path = Path(clean_path)
+    if not path.exists():
+        return {}
+    po = parse_purchase_order(path)
+    if not po:
+        return {}
+    items_payload: list[dict] = []
+    for item in getattr(po, "items", []) or []:
+        description = normalize_ws(str(getattr(item, "description", "") or "")).strip()
+        if not description:
+            continue
+        try:
+            quantity = float(str(getattr(item, "quantity", 0) or 0).replace(",", ""))
+        except Exception:
+            quantity = 0.0
+        items_payload.append(
+            {
+                "description": description,
+                "sku": normalize_ws(str(getattr(item, "sku", "") or "")).strip(),
+                "unit": normalize_ws(str(getattr(item, "unit", "") or "")).strip(),
+                "quantity": quantity,
+                "unit_price": _installation_number(getattr(item, "unit_price", 0)),
+                "line_total": _installation_number(getattr(item, "line_total", 0)),
+            }
+        )
+    return {
+        "po_date": str(getattr(po, "po_date", "") or "").strip(),
+        "items": items_payload,
+    }
+
+
+def _installation_recover_history_source_snapshot(row: dict) -> dict:
+    source_path = _installation_source_po_local_path(row)
+    if not source_path:
+        return {}
+    return _load_installation_source_po_snapshot(source_path)
+
+
+def _installation_parse_history_items(row: dict) -> list[dict]:
+    candidates = []
+    raw_ordered = (row or {}).get("ordered_items_json")
+    raw_current = (row or {}).get("items_json")
+    for raw in (raw_ordered, raw_current):
+        parsed = _installation_parse_json_array(raw)
+        if parsed:
+            candidates = parsed
+            break
+    expected_item_count = _installation_expected_item_count(row)
+    if not candidates or (expected_item_count > 0 and len(candidates) < expected_item_count):
+        recovered_snapshot = _installation_recover_history_source_snapshot(row)
+        recovered_items = recovered_snapshot.get("items") if isinstance(recovered_snapshot, dict) else []
+        if isinstance(recovered_items, list) and recovered_items:
+            candidates = recovered_items
+    items: list[dict] = []
+    if not candidates:
+        fallback_description = str((row or {}).get("item_description") or "").strip()
+        if fallback_description:
+            candidates = [
+                {
+                    "description": fallback_description,
+                    "sku": str((row or {}).get("item_sku") or "").strip(),
+                    "unit": str((row or {}).get("item_unit") or "").strip(),
+                    "quantity": str((row or {}).get("item_quantity") or "").strip(),
+                    "unit_price": str((row or {}).get("item_unit_price") or "").strip(),
+                    "line_total": str((row or {}).get("item_line_total") or "").strip(),
+                }
+            ]
+    for index, item in enumerate(candidates):
+        if not isinstance(item, dict):
+            continue
+        description = normalize_ws(str(item.get("description") or "")).strip()
+        if not description:
+            continue
+        sku = normalize_ws(str(item.get("sku") or "")).strip()
+        unit = normalize_ws(str(item.get("unit") or "")).strip()
+        try:
+            quantity = float(str(item.get("quantity") or "0").strip().replace(",", "") or 0)
+        except Exception:
+            quantity = 0.0
+        items.append(
+            {
+                "index": index,
+                "description": description,
+                "sku": sku,
+                "unit": unit,
+                "quantity": quantity,
+            }
+        )
+    return items
+
+
+def _installation_extract_size_label(description: str) -> str:
+    normalized = normalize_ws(str(description or "")).strip()
+    if not normalized:
+        return ""
+    dimension_token = r"(\d{1,3}(?:\.\d{1,2})?)"
+    slash_match = re.search(rf"{dimension_token}\s*/\s*{dimension_token}", normalized)
+    if slash_match:
+        return f"{slash_match.group(1)}/{slash_match.group(2)}"
+    x_match = re.search(rf"{dimension_token}\s*[xX×]\s*{dimension_token}", normalized)
+    if x_match:
+        return f"{x_match.group(1)}/{x_match.group(2)}"
+    if "לפי מידה" in normalized or "עפי מידה" in normalized or "ע\"פ מידה" in normalized:
+        return "לפי מידה"
+    return ""
+
+
+def _installation_build_item_key(item: dict, index: int) -> str:
+    sku = normalize_ws(str((item or {}).get("sku") or "")).strip()
+    description = normalize_ws(str((item or {}).get("description") or "")).strip().lower()
+    size_label = _installation_extract_size_label(description)
+    if sku and size_label:
+        return f"{sku}|{size_label}|{index}"
+    if sku:
+        return f"{sku}|{index}"
+    if size_label:
+        return f"{size_label}|{index}"
+    return f"{description[:80]}|{index}"
+
+
+def _installation_case_source_po_link(row: dict) -> tuple[str, str]:
+    links = _normalize_order_history_links((row or {}).get("document_links_json") or (row or {}).get("document_links") or [])
+    excluded_tokens = (
+        "כל המסמכים",
+        "תעודת משלוח",
+        "חשבונית",
+        "מדבקה",
+        "משלוח",
+        "coc",
+        "delivery",
+        "invoice",
+        "label",
+        "merged",
+    )
+    for link in links:
+        name = normalize_ws(str(link.get("name") or "")).lower()
+        url = str(link.get("url") or "").strip()
+        if not url:
+            continue
+        if any(token in name for token in excluded_tokens):
+            continue
+        file_id = _extract_drive_file_id_from_url(url)
+        return file_id, _normalize_drive_view_link(url)
+    folder_url = str((row or {}).get("order_drive_folder_url") or "").strip()
+    return "", folder_url
+
+
+def _installation_row_requires_installation(row: dict) -> bool:
+    explicit_flag = _requires_installation_flag_to_bool((row or {}).get("requires_installation"))
+    if explicit_flag is not None:
+        return explicit_flag
+    items = _installation_parse_history_items(row)
+    descriptions = [str(item.get("description") or "").strip() for item in items if str(item.get("description") or "").strip()]
+    return _installation_requirement_from_descriptions(
+        descriptions,
+        str((row or {}).get("item_description") or "").strip(),
+    )
+
+
+def _installation_history_row_qualifies(row: dict) -> bool:
+    if str((row or {}).get("mode") or "").strip().upper() != "PROD":
+        return False
+    if _normalize_order_document_mode(str((row or {}).get("document_mode") or "")) == "invoice_only":
+        return False
+    items = _installation_parse_history_items(row)
+    if not items:
+        return False
+    return _installation_row_requires_installation(row)
+
+
+def _installation_number(value) -> float:
+    try:
+        return round(float(str(value or "0").strip().replace(",", "") or 0), 2)
+    except Exception:
+        return 0.0
+
+
+def _installation_visit_item_rows(case_row: dict, visit_rows: list[dict]) -> tuple[list[dict], list[dict], list[dict], float, float, float]:
+    install_items_raw = []
+    try:
+        install_items_raw = json.loads(str((case_row or {}).get("install_items_json") or "[]"))
+    except Exception:
+        install_items_raw = []
+    if not isinstance(install_items_raw, list):
+        install_items_raw = []
+    installed_by_key: dict[str, float] = {}
+    for visit in visit_rows:
+        try:
+            current_items = json.loads(str((visit or {}).get("installed_items_json") or "[]"))
+        except Exception:
+            current_items = []
+        if not isinstance(current_items, list):
+            current_items = []
+        for item in current_items:
+            if not isinstance(item, dict):
+                continue
+            item_key = str(item.get("item_key") or "").strip()
+            if not item_key:
+                continue
+            installed_by_key[item_key] = round(installed_by_key.get(item_key, 0.0) + _installation_number(item.get("quantity")), 2)
+
+    install_items: list[dict] = []
+    installed_items: list[dict] = []
+    remaining_items: list[dict] = []
+    total_ordered = 0.0
+    total_installed = 0.0
+    total_remaining = 0.0
+    for raw_item in install_items_raw:
+        if not isinstance(raw_item, dict):
+            continue
+        item_key = str(raw_item.get("item_key") or "").strip()
+        ordered_quantity = _installation_number(raw_item.get("ordered_quantity"))
+        installed_quantity = min(ordered_quantity, installed_by_key.get(item_key, 0.0))
+        remaining_quantity = max(0.0, round(ordered_quantity - installed_quantity, 2))
+        base_item = {
+            "item_key": item_key,
+            "description": normalize_ws(str(raw_item.get("description") or "")).strip(),
+            "size_label": str(raw_item.get("size_label") or "").strip(),
+            "sku": str(raw_item.get("sku") or "").strip(),
+            "unit": str(raw_item.get("unit") or "").strip(),
+            "ordered_quantity": ordered_quantity,
+            "installed_quantity": installed_quantity,
+            "remaining_quantity": remaining_quantity,
+        }
+        install_items.append(dict(base_item))
+        if installed_quantity > 0:
+            installed_items.append({**base_item, "quantity": installed_quantity})
+        if remaining_quantity > 0:
+            remaining_items.append({**base_item, "quantity": remaining_quantity})
+        total_ordered = round(total_ordered + ordered_quantity, 2)
+        total_installed = round(total_installed + installed_quantity, 2)
+        total_remaining = round(total_remaining + remaining_quantity, 2)
+    return install_items, installed_items, remaining_items, total_ordered, total_installed, total_remaining
+
+
+def _installation_case_sort_key(row: dict) -> tuple[int, str, str]:
+    status = str((row or {}).get("status") or "").strip()
+    status_order = {
+        "ממתין לתיאום": 0,
+        "תואם": 1,
+        "הותקן חלקית": 2,
+        "מושהה": 3,
+        "הושלם": 4,
+        "בוטל": 5,
+    }
+    next_visit = str((row or {}).get("next_visit_date") or "").strip()
+    po_number = str((row or {}).get("po_number") or "").strip()
+    return (status_order.get(status, 9), next_visit or "9999-12-31", po_number)
+
+
+def _build_installation_cases_from_history(order_rows: list[dict], existing_cases: list[dict], visit_rows: list[dict]) -> list[dict]:
+    grouped_rows: dict[str, list[dict]] = {}
+    for row in order_rows:
+        if not _installation_history_row_qualifies(row):
+            continue
+        root_history_id = _installation_root_history_id(row)
+        if not root_history_id:
+            continue
+        grouped_rows.setdefault(root_history_id, []).append(dict(row))
+
+    safe_existing_cases = [dict(case) for case in (existing_cases or []) if isinstance(case, dict)]
+    existing_case_by_root = {
+        str(case.get("root_history_id") or "").strip(): dict(case)
+        for case in safe_existing_cases
+        if str(case.get("root_history_id") or "").strip()
+    }
+    visit_rows_by_installation: dict[str, list[dict]] = {}
+    for visit in visit_rows or []:
+        installation_id = str((visit or {}).get("installation_id") or "").strip()
+        if not installation_id:
+            continue
+        visit_rows_by_installation.setdefault(installation_id, []).append(dict(visit))
+
+    built_rows: list[dict] = []
+    now_iso = datetime.now().isoformat(timespec="seconds")
+    for root_history_id, rows in grouped_rows.items():
+        sorted_rows = sorted(rows, key=lambda row: str(row.get("created_at") or ""))
+        primary_row = dict(sorted_rows[0])
+        latest_row = dict(sorted_rows[-1])
+        existing_case = dict(existing_case_by_root.get(root_history_id) or {})
+        installation_id = str(existing_case.get("installation_id") or f"installation_{root_history_id}").strip()
+        source_snapshot = _installation_recover_history_source_snapshot(primary_row)
+        ordered_items = _installation_parse_history_items(primary_row)
+        install_items_payload: list[dict] = []
+        for index, item in enumerate(ordered_items):
+            description = str(item.get("description") or "").strip()
+            if not description or _installation_is_service_like_text(description):
+                continue
+            ordered_quantity = _installation_number(item.get("quantity"))
+            if ordered_quantity <= 0:
+                continue
+            install_items_payload.append(
+                {
+                    "item_key": _installation_build_item_key(item, index),
+                    "description": description,
+                    "size_label": _installation_extract_size_label(description),
+                    "sku": str(item.get("sku") or "").strip(),
+                    "unit": str(item.get("unit") or "").strip(),
+                    "ordered_quantity": ordered_quantity,
+                }
+            )
+        if not install_items_payload:
+            continue
+        source_po_drive_file_id, source_po_drive_url = _installation_case_source_po_link(primary_row)
+        base_case = {
+            "installation_id": installation_id,
+            "root_history_id": root_history_id,
+            "source_history_id": str(latest_row.get("history_id") or "").strip(),
+            "created_at": str(existing_case.get("created_at") or primary_row.get("created_at") or now_iso).strip(),
+            "updated_at": now_iso,
+            "source_mode": str(latest_row.get("mode") or "PROD").strip().upper() or "PROD",
+            "po_number": str(latest_row.get("po_number") or primary_row.get("po_number") or "").strip(),
+            "po_date": str(primary_row.get("po_date") or latest_row.get("po_date") or (source_snapshot.get("po_date") if isinstance(source_snapshot, dict) else "") or "").strip(),
+            "customer_name": str(latest_row.get("customer_name") or primary_row.get("customer_name") or "").strip(),
+            "customer_id": str(latest_row.get("customer_id") or primary_row.get("customer_id") or "").strip(),
+            "customer_email": str(latest_row.get("customer_email") or primary_row.get("customer_email") or "").strip(),
+            "customer_phone": str(latest_row.get("customer_phone") or primary_row.get("customer_phone") or "").strip(),
+            "delivery_address": str(latest_row.get("delivery_address") or primary_row.get("delivery_address") or "").strip(),
+            "project": str(latest_row.get("project") or primary_row.get("project") or "").strip(),
+            "contact_name": str(latest_row.get("contact_name") or primary_row.get("contact_name") or "").strip(),
+            "contact_phone": str(latest_row.get("contact_phone") or primary_row.get("contact_phone") or "").strip(),
+            "payment_terms_days": str(latest_row.get("payment_terms_days") or primary_row.get("payment_terms_days") or "").strip(),
+            "payment_terms_label": str(latest_row.get("payment_terms_label") or primary_row.get("payment_terms_label") or "").strip(),
+            "status": str(existing_case.get("status") or "ממתין לתיאום").strip() or "ממתין לתיאום",
+            "delay_reason": str(existing_case.get("delay_reason") or "").strip(),
+            "next_visit_date": str(existing_case.get("next_visit_date") or "").strip(),
+            "last_visit_date": str(existing_case.get("last_visit_date") or "").strip(),
+            "visit_count": str(existing_case.get("visit_count") or "0").strip() or "0",
+            "notes": str(existing_case.get("notes") or "").strip(),
+            "order_drive_folder_id": str(latest_row.get("order_drive_folder_id") or primary_row.get("order_drive_folder_id") or "").strip(),
+            "order_drive_folder_url": str(latest_row.get("order_drive_folder_url") or primary_row.get("order_drive_folder_url") or "").strip(),
+            "source_po_drive_file_id": source_po_drive_file_id,
+            "source_po_drive_url": source_po_drive_url,
+            "delivery_document_number": str(latest_row.get("delivery_document_number") or "").strip(),
+            "delivery_document_id": str(latest_row.get("delivery_document_id") or "").strip(),
+            "tax_invoice_number": str(latest_row.get("tax_invoice_number") or "").strip(),
+            "tax_invoice_document_id": str(latest_row.get("tax_invoice_document_id") or "").strip(),
+            "delivery_drive_file_id": str(latest_row.get("delivery_drive_file_id") or existing_case.get("delivery_drive_file_id") or "").strip(),
+            "invoice_drive_file_id": str(latest_row.get("invoice_drive_file_id") or existing_case.get("invoice_drive_file_id") or "").strip(),
+            "merged_drive_file_id": str(latest_row.get("merged_drive_file_id") or existing_case.get("merged_drive_file_id") or "").strip(),
+            "signed_delivery_drive_file_id": str(latest_row.get("signed_delivery_drive_file_id") or existing_case.get("signed_delivery_drive_file_id") or "").strip(),
+            "coc_drive_file_id": str(latest_row.get("coc_drive_file_id") or existing_case.get("coc_drive_file_id") or "").strip(),
+            "delivery_confirmation_sent": str(latest_row.get("delivery_confirmation_sent") or existing_case.get("delivery_confirmation_sent") or "לא").strip() or "לא",
+            "document_links_json": latest_row.get("document_links_json") or "[]",
+            "install_items_json": json.dumps(install_items_payload, ensure_ascii=False),
+            "installed_items_json": "[]",
+            "remaining_items_json": "[]",
+            "total_ordered_quantity": "0.00",
+            "total_installed_quantity": "0.00",
+            "total_remaining_quantity": "0.00",
+            "source_active": "כן",
+            "last_sync_at": now_iso,
+        }
+        case_visits = sorted(
+            visit_rows_by_installation.get(installation_id) or [],
+            key=lambda row: (str(row.get("visit_date") or ""), str(row.get("created_at") or "")),
+            reverse=True,
+        )
+        install_items, installed_items, remaining_items, total_ordered, total_installed, total_remaining = _installation_visit_item_rows(
+            base_case, case_visits
+        )
+        if case_visits:
+            base_case["last_visit_date"] = str(case_visits[0].get("visit_date") or case_visits[0].get("scheduled_date") or "").strip()
+        base_case["visit_count"] = str(len(case_visits))
+        base_case["install_items_json"] = json.dumps(install_items, ensure_ascii=False)
+        base_case["installed_items_json"] = json.dumps(installed_items, ensure_ascii=False)
+        base_case["remaining_items_json"] = json.dumps(remaining_items, ensure_ascii=False)
+        base_case["total_ordered_quantity"] = f"{total_ordered:.2f}"
+        base_case["total_installed_quantity"] = f"{total_installed:.2f}"
+        base_case["total_remaining_quantity"] = f"{total_remaining:.2f}"
+        if total_remaining <= 0:
+            base_case["status"] = "הושלם"
+            base_case["delay_reason"] = ""
+            base_case["next_visit_date"] = ""
+        elif base_case["status"] not in {"מושהה", "בוטל", "הושלם"}:
+            if total_installed > 0:
+                base_case["status"] = "הותקן חלקית"
+            elif base_case["status"] not in {"תואם", "ממתין לתיאום"}:
+                base_case["status"] = "ממתין לתיאום"
+        built_rows.append(base_case)
+    built_rows.sort(key=_installation_case_sort_key)
+    return built_rows
+
+
+def _working_order_requires_installation(row: dict) -> bool:
+    explicit_flag = _requires_installation_flag_to_bool((row or {}).get("requires_installation"))
+    if explicit_flag is not None:
+        return explicit_flag
+    payload_raw = (row or {}).get("payload_json")
+    if payload_raw:
+        try:
+            payload = json.loads(payload_raw) if isinstance(payload_raw, str) else payload_raw
+        except Exception:
+            payload = None
+        if isinstance(payload, dict):
+            payload_flag = _requires_installation_flag_to_bool(payload.get("requires_installation"))
+            if payload_flag is not None:
+                return payload_flag
+    items = _installation_parse_history_items(row)
+    descriptions = [str(item.get("description") or "").strip() for item in items if str(item.get("description") or "").strip()]
+    return _installation_requirement_from_descriptions(
+        descriptions,
+        str((row or {}).get("item_description") or "").strip(),
+    )
+
+
+def _build_pending_installations_from_working_orders(known_po_numbers: set[str]) -> list[dict]:
+    """הזמנות 'בעבודה' שכוללות התקנה אך טרם נוצרה עבורן הזמנה סופית במערכת (אין להן עדיין רשומת order_history)."""
+    try:
+        working_order_rows = get_cached_working_order_rows()
+    except Exception:
+        working_order_rows = []
+    pending_rows: list[dict] = []
+    seen_po_numbers: set[str] = set()
+    for row in working_order_rows or []:
+        po_number = str((row or {}).get("po_number") or "").strip()
+        if not po_number or po_number in known_po_numbers or po_number in seen_po_numbers:
+            continue
+        if not _working_order_requires_installation(row):
+            continue
+        items = _installation_parse_history_items(row)
+        install_items_payload: list[dict] = []
+        for index, item in enumerate(items):
+            description = str(item.get("description") or "").strip()
+            if not description or _installation_is_service_like_text(description):
+                continue
+            ordered_quantity = _installation_number(item.get("quantity"))
+            if ordered_quantity <= 0:
+                continue
+            install_items_payload.append(
+                {
+                    "item_key": _installation_build_item_key(item, index),
+                    "description": description,
+                    "size_label": _installation_extract_size_label(description),
+                    "sku": str(item.get("sku") or "").strip(),
+                    "unit": str(item.get("unit") or "").strip(),
+                    "ordered_quantity": ordered_quantity,
+                    "installed_quantity": 0.0,
+                    "remaining_quantity": ordered_quantity,
+                }
+            )
+        seen_po_numbers.add(po_number)
+        pending_rows.append(
+            {
+                "installation_id": f"pending_working_order_{row.get('row_id') or po_number}",
+                "root_history_id": "",
+                "source_history_id": "",
+                "created_at": str(row.get("created_at") or "").strip(),
+                "updated_at": str(row.get("updated_at") or "").strip(),
+                "source_mode": "PROD",
+                "po_number": po_number,
+                "po_date": str(row.get("po_date") or "").strip(),
+                "customer_name": str(row.get("customer_name") or "").strip(),
+                "customer_id": str(row.get("customer_id") or "").strip(),
+                "customer_email": str(row.get("customer_email") or "").strip(),
+                "customer_phone": str(row.get("customer_phone") or "").strip(),
+                "delivery_address": str(row.get("delivery_address") or "").strip(),
+                "project": str(row.get("project") or "").strip(),
+                "contact_name": str(row.get("contact_name") or "").strip(),
+                "contact_phone": str(row.get("contact_phone") or "").strip(),
+                "payment_terms_days": str(row.get("payment_terms_days") or "").strip(),
+                "payment_terms_label": str(row.get("payment_terms_label") or "").strip(),
+                "status": "ממתין לתיאום",
+                "delay_reason": "",
+                "next_visit_date": "",
+                "last_visit_date": "",
+                "visit_count": 0,
+                "notes": "",
+                "order_drive_folder_id": "",
+                "order_drive_folder_url": "",
+                "source_po_drive_file_id": "",
+                "source_po_drive_url": str(row.get("drive_url") or "").strip(),
+                "delivery_document_number": "",
+                "delivery_document_id": "",
+                "tax_invoice_number": "",
+                "tax_invoice_document_id": "",
+                "delivery_drive_file_id": "",
+                "invoice_drive_file_id": "",
+                "merged_drive_file_id": "",
+                "signed_delivery_drive_file_id": "",
+                "coc_drive_file_id": "",
+                "delivery_confirmation_sent": "לא",
+                "document_links": [],
+                "install_items": install_items_payload,
+                "installed_items": [],
+                "remaining_items": install_items_payload,
+                "total_ordered_quantity": sum(item["ordered_quantity"] for item in install_items_payload),
+                "total_installed_quantity": 0.0,
+                "total_remaining_quantity": sum(item["ordered_quantity"] for item in install_items_payload),
+                "source_active": "כן",
+                "last_sync_at": "",
+                "overdue": False,
+                "visits": [],
+                "pending_order_creation": True,
+                "pending_order_label": "טרם נוצרה הזמנה במערכת",
+            }
+        )
+    return pending_rows
+
+
+def _build_installations_payload(case_rows: list[dict] | None = None, visit_rows: list[dict] | None = None) -> dict:
+    case_rows = case_rows if case_rows is not None else get_cached_installation_case_rows()
+    visit_rows = visit_rows if visit_rows is not None else get_cached_installation_visit_rows()
+    delivery_confirmation_rows = load_delivery_confirmation_rows()
+    confirmations_by_po: dict[str, dict] = {}
+    for confirmation_row in delivery_confirmation_rows or []:
+        po_number = str((confirmation_row or {}).get("po_number") or "").strip()
+        if not po_number:
+            continue
+        existing = confirmations_by_po.get(po_number) or {}
+        existing_has_file = bool(
+            str(existing.get("coc_drive_file_id") or "").strip()
+            or str(existing.get("signed_delivery_drive_file_id") or "").strip()
+        )
+        current_has_file = bool(
+            str(confirmation_row.get("coc_drive_file_id") or "").strip()
+            or str(confirmation_row.get("signed_delivery_drive_file_id") or "").strip()
+        )
+        if not existing or (current_has_file and not existing_has_file):
+            confirmations_by_po[po_number] = dict(confirmation_row)
+    visits_by_installation: dict[str, list[dict]] = {}
+    safe_case_rows = [dict(case) for case in (case_rows or []) if isinstance(case, dict)]
+    safe_visit_rows = [dict(visit) for visit in (visit_rows or []) if isinstance(visit, dict)]
+    for visit in safe_visit_rows:
+        installation_id = str((visit or {}).get("installation_id") or "").strip()
+        if not installation_id:
+            continue
+        normalized_visit = {
+            "visit_id": str(visit.get("visit_id") or "").strip(),
+            "installation_id": installation_id,
+            "visit_date": str(visit.get("visit_date") or "").strip(),
+            "scheduled_date": str(visit.get("scheduled_date") or "").strip(),
+            "status": str(visit.get("status") or "").strip(),
+            "installed_total_quantity": _installation_number(visit.get("installed_total_quantity")),
+            "notes": str(visit.get("notes") or "").strip(),
+            "summary_text": str(visit.get("summary_text") or "").strip(),
+            "installed_items": [],
+        }
+        try:
+            normalized_visit["installed_items"] = json.loads(str(visit.get("installed_items_json") or "[]"))
+        except Exception:
+            normalized_visit["installed_items"] = []
+        visits_by_installation.setdefault(installation_id, []).append(normalized_visit)
+    for installation_id, rows in visits_by_installation.items():
+        rows.sort(key=lambda row: (str(row.get("visit_date") or ""), str(row.get("scheduled_date") or "")), reverse=True)
+
+    normalized_cases: list[dict] = []
+    summary = {
+        "count": 0,
+        "open_count": 0,
+        "completed_count": 0,
+        "partial_count": 0,
+        "scheduled_count": 0,
+        "overdue_count": 0,
+    }
+    today_value = date.today()
+    for case in safe_case_rows:
+        try:
+            install_items = json.loads(str(case.get("install_items_json") or "[]"))
+        except Exception:
+            install_items = []
+        try:
+            installed_items = json.loads(str(case.get("installed_items_json") or "[]"))
+        except Exception:
+            installed_items = []
+        try:
+            remaining_items = json.loads(str(case.get("remaining_items_json") or "[]"))
+        except Exception:
+            remaining_items = []
+        next_visit_date = str(case.get("next_visit_date") or "").strip()
+        next_visit_obj = _parse_order_display_date(next_visit_date)
+        overdue = bool(next_visit_obj and next_visit_obj < today_value and str(case.get("status") or "").strip() not in {"הושלם", "בוטל"})
+        confirmation_row = confirmations_by_po.get(str(case.get("po_number") or "").strip()) or {}
+        confirmation_signed_drive_file_id = str(confirmation_row.get("signed_delivery_drive_file_id") or "").strip()
+        confirmation_coc_drive_file_id = str(confirmation_row.get("coc_drive_file_id") or "").strip()
+        confirmation_sent = "כן" if str(confirmation_row.get("sent") or "").strip().upper() == "TRUE" else "לא"
+        case_delivery_confirmation_sent = str(case.get("delivery_confirmation_sent") or "").strip()
+        normalized_delivery_confirmation_sent = (
+            case_delivery_confirmation_sent
+            if case_delivery_confirmation_sent in {"כן", "אושר ידנית"}
+            else confirmation_sent
+        ) or "לא"
+        normalized_case = {
+            "installation_id": str(case.get("installation_id") or "").strip(),
+            "root_history_id": str(case.get("root_history_id") or "").strip(),
+            "source_history_id": str(case.get("source_history_id") or "").strip(),
+            "created_at": str(case.get("created_at") or "").strip(),
+            "updated_at": str(case.get("updated_at") or "").strip(),
+            "source_mode": str(case.get("source_mode") or "").strip().upper(),
+            "po_number": str(case.get("po_number") or "").strip(),
+            "po_date": str(case.get("po_date") or "").strip(),
+            "customer_name": str(case.get("customer_name") or "").strip(),
+            "customer_id": str(case.get("customer_id") or "").strip(),
+            "customer_email": str(case.get("customer_email") or "").strip(),
+            "customer_phone": str(case.get("customer_phone") or "").strip(),
+            "delivery_address": str(case.get("delivery_address") or "").strip(),
+            "project": str(case.get("project") or "").strip(),
+            "contact_name": str(case.get("contact_name") or "").strip(),
+            "contact_phone": str(case.get("contact_phone") or "").strip(),
+            "payment_terms_days": str(case.get("payment_terms_days") or "").strip(),
+            "payment_terms_label": str(case.get("payment_terms_label") or "").strip(),
+            "status": str(case.get("status") or "").strip(),
+            "delay_reason": str(case.get("delay_reason") or "").strip(),
+            "next_visit_date": next_visit_date,
+            "last_visit_date": str(case.get("last_visit_date") or "").strip(),
+            "visit_count": int(float(str(case.get("visit_count") or "0").strip() or 0)),
+            "notes": str(case.get("notes") or "").strip(),
+            "order_drive_folder_id": str(case.get("order_drive_folder_id") or "").strip(),
+            "order_drive_folder_url": str(case.get("order_drive_folder_url") or "").strip(),
+            "source_po_drive_file_id": str(case.get("source_po_drive_file_id") or "").strip(),
+            "source_po_drive_url": str(case.get("source_po_drive_url") or "").strip(),
+            "delivery_document_number": str(case.get("delivery_document_number") or "").strip(),
+            "delivery_document_id": str(case.get("delivery_document_id") or "").strip(),
+            "tax_invoice_number": str(case.get("tax_invoice_number") or "").strip(),
+            "tax_invoice_document_id": str(case.get("tax_invoice_document_id") or "").strip(),
+            "delivery_drive_file_id": str(case.get("delivery_drive_file_id") or "").strip(),
+            "invoice_drive_file_id": str(case.get("invoice_drive_file_id") or "").strip(),
+            "merged_drive_file_id": str(case.get("merged_drive_file_id") or "").strip(),
+            "signed_delivery_drive_file_id": str(case.get("signed_delivery_drive_file_id") or confirmation_signed_drive_file_id or "").strip(),
+            "coc_drive_file_id": str(case.get("coc_drive_file_id") or confirmation_coc_drive_file_id or "").strip(),
+            "delivery_confirmation_sent": normalized_delivery_confirmation_sent,
+            "document_links": _normalize_order_history_links(case.get("document_links_json")),
+            "install_items": install_items if isinstance(install_items, list) else [],
+            "installed_items": installed_items if isinstance(installed_items, list) else [],
+            "remaining_items": remaining_items if isinstance(remaining_items, list) else [],
+            "total_ordered_quantity": _installation_number(case.get("total_ordered_quantity")),
+            "total_installed_quantity": _installation_number(case.get("total_installed_quantity")),
+            "total_remaining_quantity": _installation_number(case.get("total_remaining_quantity")),
+            "source_active": str(case.get("source_active") or "כן").strip(),
+            "last_sync_at": str(case.get("last_sync_at") or "").strip(),
+            "overdue": overdue,
+            "visits": visits_by_installation.get(str(case.get("installation_id") or "").strip(), []),
+            "pending_order_creation": False,
+        }
+        normalized_cases.append(normalized_case)
+        summary["count"] += 1
+        if normalized_case["status"] in {"הושלם", "בוטל"}:
+            summary["completed_count"] += 1
+        else:
+            summary["open_count"] += 1
+        if normalized_case["status"] == "הותקן חלקית":
+            summary["partial_count"] += 1
+        if normalized_case["status"] == "תואם":
+            summary["scheduled_count"] += 1
+        if overdue:
+            summary["overdue_count"] += 1
+
+    known_po_numbers = {str(case.get("po_number") or "").strip() for case in normalized_cases if str(case.get("po_number") or "").strip()}
+    pending_cases = _build_pending_installations_from_working_orders(known_po_numbers)
+    summary["pending_count"] = len(pending_cases)
+    summary["count"] += len(pending_cases)
+    summary["open_count"] += len(pending_cases)
+    normalized_cases.extend(pending_cases)
+
+    normalized_cases.sort(key=_installation_case_sort_key)
+    return {
+        "rows": normalized_cases,
+        "visits": safe_visit_rows,
+        "summary": summary,
+        "status_options": INSTALLATION_STATUS_OPTIONS,
+        "delay_reason_options": INSTALLATION_DELAY_REASON_OPTIONS,
+    }
+
+
+def _sync_installation_cases_from_order_history(force_refresh: bool = False, persist: bool = True) -> dict:
+    order_rows = load_order_history_rows(force_refresh=force_refresh)
+    existing_cases = load_installation_case_rows(force_refresh=force_refresh) if persist else get_cached_installation_case_rows()
+    visit_rows = load_installation_visit_rows(force_refresh=force_refresh) if persist else get_cached_installation_visit_rows()
+    built_case_rows = _build_installation_cases_from_history(order_rows, existing_cases, visit_rows)
+    valid_installation_ids = {
+        str(row.get("installation_id") or "").strip()
+        for row in built_case_rows
+        if str(row.get("installation_id") or "").strip()
+    }
+    pruned_visit_rows = [
+        row for row in visit_rows
+        if str((row or {}).get("installation_id") or "").strip() in valid_installation_ids
+    ]
+    if persist:
+        if len(pruned_visit_rows) != len(visit_rows):
+            save_installation_visit_rows(pruned_visit_rows)
+        save_installation_case_rows(built_case_rows)
+    return {
+        "rows": built_case_rows,
+        "visits": pruned_visit_rows,
+        "summary": _build_installations_payload(built_case_rows, pruned_visit_rows).get("summary") or {},
     }
 
 
@@ -22105,6 +23720,18 @@ def _delivery_confirmation_related_indexes(rows: list[dict], target_row: dict) -
 
 def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file_name: str, source_file_path: Path | str, source_drive_file_id: str = "") -> dict:
     first_item = _primary_merchandise_po_item(po) or ((po.items or [None])[0])
+    payload_items = [
+        {
+            "description": str(item.description or "").strip(),
+            "sku": str(item.sku or "").strip(),
+            "unit": str(getattr(item, "unit", "") or "יחידה").strip() or "יחידה",
+            "quantity": item.quantity if item.quantity is not None else "",
+            "unit_price": item.unit_price if item.unit_price is not None else "",
+            "line_total": item.line_total if item.line_total is not None else "",
+            "generate_label": _should_generate_label_for_po_item(item),
+        }
+        for item in (po.items or [])
+    ]
     return {
         "mode": mode,
         "source_file": str(source_file_name or "").strip(),
@@ -22132,24 +23759,14 @@ def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file
         "item_line_total": first_item.line_total if first_item else "",
         "item_unit": getattr(first_item, "unit", "") if first_item else "",
         "item_generate_label": _should_generate_label_for_po_item(first_item) if first_item else False,
+        "requires_installation": _po_requires_installation(po, raw_items=payload_items),
         "items_count": len(po.items or []),
         "items_summary": ", ".join(
             str(item.description or "").strip()
             for item in (po.items or [])
             if str(item.description or "").strip()
         ),
-        "items": [
-            {
-                "description": str(item.description or "").strip(),
-                "sku": str(item.sku or "").strip(),
-                "unit": str(getattr(item, "unit", "") or "יחידה").strip() or "יחידה",
-                "quantity": item.quantity if item.quantity is not None else "",
-                "unit_price": item.unit_price if item.unit_price is not None else "",
-                "line_total": item.line_total if item.line_total is not None else "",
-                "generate_label": _should_generate_label_for_po_item(item),
-            }
-            for item in (po.items or [])
-        ],
+        "items": payload_items,
         "footer_text": (po.extra or {}).get("footer_text", ""),
     }
 
@@ -23280,6 +24897,7 @@ async def working_orders_state(force: bool = False):
 @app.post("/working-orders-upload")
 async def working_orders_upload(
     file: UploadFile = File(...),
+    requires_installation: str = Form(""),
 ):
     try:
         file_path, _ = await _store_uploaded_pdf(file, WORKING_ORDER_UPLOADS_DIR, fallback_name="working-order.pdf")
@@ -23306,6 +24924,10 @@ async def working_orders_upload(
         log_handled_error("working order drive sync failed", exc)
 
     payload = _build_process_payload_from_po(po, "prod", file.filename or file_path.name, file_path, drive_file_id)
+    inferred_installation_flag = "TRUE" if bool(payload.get("requires_installation")) else "FALSE"
+    explicit_installation_flag = _normalize_requires_installation_flag(requires_installation)
+    resolved_installation_flag = explicit_installation_flag or inferred_installation_flag
+    payload["requires_installation"] = resolved_installation_flag == "TRUE"
 
     row = {
         "row_id": uuid.uuid4().hex,
@@ -23340,6 +24962,7 @@ async def working_orders_upload(
         "drive_url": drive_url,
         "drive_folder_id": drive_folder_id,
         "drive_folder_url": drive_folder_url,
+        "requires_installation": resolved_installation_flag,
         "order_note_text": "",
         "order_note_file_name": "",
         "order_note_file_path": "",
@@ -23351,6 +24974,44 @@ async def working_orders_upload(
     rows.insert(0, row)
     save_result = save_working_order_rows(rows)
     return JSONResponse({"status": "ok", "row": row, "save_result": save_result, "count": len(rows)})
+
+
+@app.post("/working-orders-installation-save")
+async def working_orders_installation_save(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+
+    row_id = str((body or {}).get("row_id") or "").strip()
+    normalized_flag = _normalize_requires_installation_flag((body or {}).get("requires_installation"))
+    if not row_id:
+        return JSONResponse({"error": "חסר מזהה שורת הזמנה."}, status_code=400)
+    if normalized_flag not in {"TRUE", "FALSE"}:
+        return JSONResponse({"error": "חסר ערך תקין לשדה כולל התקנה."}, status_code=400)
+
+    rows = load_working_order_rows()
+    row_index = next((index for index, row in enumerate(rows) if str(row.get("row_id") or "").strip() == row_id), -1)
+    if row_index < 0:
+        return JSONResponse({"error": "ההזמנה בעבודה לא נמצאה."}, status_code=404)
+
+    target_row = dict(rows[row_index])
+    target_row["requires_installation"] = normalized_flag
+    target_row["updated_at"] = datetime.now().isoformat(timespec="seconds")
+
+    payload = {}
+    try:
+        parsed_payload = json.loads(str(target_row.get("payload_json") or "{}"))
+        if isinstance(parsed_payload, dict):
+            payload = parsed_payload
+    except Exception:
+        payload = {}
+    payload["requires_installation"] = normalized_flag == "TRUE"
+    target_row["payload_json"] = json.dumps(payload, ensure_ascii=False)
+
+    rows[row_index] = target_row
+    save_result = save_working_order_rows(rows)
+    return JSONResponse({"status": "ok", "row": target_row, "save_result": save_result})
 
 
 @app.post("/working-orders-delete")
@@ -24091,7 +25752,12 @@ async def finalize(request: Request):
                 "contact_name": (po.extra or {}).get("contact_name", ""),
                 "phone": (po.extra or {}).get("contact_phone", ""),
                 "po_number": po.po_number,
-                "product_lines": _label_product_lines_from_item(split_item) if split_item else (_label_product_lines_for_po(po) or ([label_product] if label_product else [])),
+                "product_lines": (
+                    _label_product_lines_from_delivery_pdf(delivery_pdf_path, split_item)
+                    or (_label_product_lines_from_item(split_item) if split_item else [])
+                    or _label_product_lines_for_po(po)
+                    or ([label_product] if label_product else [])
+                ),
                 "quantity": split_quantity,
                 "sku": getattr(split_item, "sku", "") if split_item else (item.sku if item else ""),
                 "unit": _label_unit_text(getattr(split_item, "unit", "") or getattr(item, "unit", "") or (po.extra or {}).get("item_unit") or ""),
@@ -24509,6 +26175,7 @@ async def finalize(request: Request):
                 for item in (po.items or [])
             ]
             ordered_items_payload = data.get("ordered_items") if isinstance(data.get("ordered_items"), list) else current_items_payload
+            requires_installation = "TRUE" if _po_requires_installation(po, raw_items=ordered_items_payload) else "FALSE"
             partial_delivery = bool(data.get("partial_delivery"))
             partial_root_history_id = str(data.get("partial_root_history_id") or "").strip()
             if partial_delivery and not partial_root_history_id:
@@ -24567,6 +26234,7 @@ async def finalize(request: Request):
                     "footer_text": str((po.extra or {}).get("footer_text") or "").strip(),
                     "items_json": json.dumps(current_items_payload, ensure_ascii=False),
                     "ordered_items_json": json.dumps(ordered_items_payload, ensure_ascii=False),
+                    "requires_installation": requires_installation,
                     "partial_delivery": "כן" if partial_delivery else "לא",
                     "partial_root_history_id": partial_root_history_id,
                     "label_split_rows_json": json.dumps(data.get("label_split_rows") or [], ensure_ascii=False),
@@ -24586,6 +26254,16 @@ async def finalize(request: Request):
             return {"status": "error", "error": str(e)}
 
     history_result = await asyncio.to_thread(_perform_finalize_history_upsert)
+    installation_sync_result = {"status": "skipped"}
+    try:
+        installation_sync_result = await asyncio.to_thread(
+            _sync_installation_cases_from_order_history,
+            False,
+            True,
+        )
+    except Exception as exc:
+        installation_sync_result = {"status": "error", "error": str(exc)}
+        log_handled_error("installations sync after finalize failed", exc)
 
     try:
         if source_mode_label == "PROD" and str(getattr(invoice_doc, "number", "") or "").strip():
@@ -24679,6 +26357,7 @@ async def finalize(request: Request):
             "drive_sync_result": drive_sync_result,
             "label_drive_file_ids": list((drive_sync_result or {}).get("label_drive_file_ids") or []),
             "history_result": history_result,
+            "installation_sync_result": installation_sync_result,
             "whatsapp_send_result": whatsapp_send_result,
             "working_order_cleanup_result": working_order_cleanup_result,
         }

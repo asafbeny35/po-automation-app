@@ -152,6 +152,15 @@ body {
   gap: 12px;
 }
 
+.working-orders-upload-options {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #475569;
+}
+
 .working-orders-dropzone {
   min-height: 180px;
 }
@@ -201,6 +210,39 @@ body {
 
 .working-orders-link:hover {
   text-decoration: underline;
+}
+
+.working-orders-installation-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.working-orders-installation-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(248, 250, 252, 0.9);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.working-orders-installation-pill.is-active {
+  border-color: rgba(249, 115, 22, 0.26);
+  background: rgba(255, 237, 213, 0.95);
+  color: #c2410c;
+}
+
+.working-orders-installation-toggle.is-active {
+  border-color: rgba(249, 115, 22, 0.26);
+  background: rgba(255, 247, 237, 0.96);
+  color: #c2410c;
 }
 
 .working-orders-action-cell {
@@ -3023,6 +3065,27 @@ body {
   min-width: 0;
 }
 
+.tabs-group-card.split-stack-card {
+  padding: 16px 18px;
+}
+
+.tabs-split-stack {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.tabs-split-pane {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.tabs-split-pane + .tabs-split-pane {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 196, 153, 0.45);
+}
+
 .tabs-group-kicker {
   justify-self: stretch;
   display: block;
@@ -3045,6 +3108,11 @@ body {
   gap: 10px;
   align-content: start;
   grid-auto-rows: 52px;
+}
+
+.tabs-group-actions.compact-actions {
+  gap: 8px;
+  grid-auto-rows: 44px;
 }
 
 .tabs-group-actions.two-col {
@@ -3098,10 +3166,33 @@ body {
   height: 52px;
   font-size: 14px;
   width: 100%;
+  position: relative;
+  overflow: visible;
 }
 
 .top-tab.wide {
   grid-column: 1 / -1;
+}
+
+.top-tab-alert-dot {
+  position: absolute;
+  top: 9px;
+  inset-inline-start: 9px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #dc2626;
+  border: 2px solid rgba(255, 255, 255, 0.98);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  opacity: 0;
+  transform: scale(0.65);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+  pointer-events: none;
+}
+
+.top-tab.has-alert .top-tab-alert-dot {
+  opacity: 1;
+  transform: scale(1);
 }
 
 .top-tab:hover {
@@ -6919,6 +7010,693 @@ body.panel-only .shell {
   border: 1px solid #ffd4b0;
   color: var(--muted);
   line-height: 1.7;
+}
+
+.installations-panel {
+  display: grid;
+  gap: 18px;
+}
+
+.installations-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.installations-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(180px, 0.7fr) auto auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.installations-field {
+  display: grid;
+  gap: 6px;
+}
+
+.installations-field label,
+.installations-toggle {
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.installations-field input,
+.installations-field select,
+.installations-detail-form input,
+.installations-detail-form select,
+.installations-detail-form textarea,
+.installations-visit-form input,
+.installations-visit-form select,
+.installations-visit-form textarea {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  padding: 10px 12px;
+  box-sizing: border-box;
+}
+
+.installations-detail-form textarea,
+.installations-visit-form textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.installations-field input:focus,
+.installations-field select:focus,
+.installations-detail-form input:focus,
+.installations-detail-form select:focus,
+.installations-detail-form textarea:focus,
+.installations-visit-form input:focus,
+.installations-visit-form select:focus,
+.installations-visit-form textarea:focus {
+  outline: none;
+  border-color: rgba(255, 125, 18, 0.32);
+  box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.12);
+}
+
+.installations-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.installations-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand);
+}
+
+.installations-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.installations-summary-card {
+  padding: 14px 16px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 125, 18, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  display: grid;
+  gap: 6px;
+}
+
+.installations-summary-card span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.installations-summary-card strong {
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.installations-summary-meta {
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.installations-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.installations-list-shell,
+.installations-detail-shell {
+  border-radius: 24px;
+  border: 1px solid rgba(255, 125, 18, 0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,250,244,0.94));
+  box-shadow: var(--shadow-sm);
+}
+
+.installations-list-shell {
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.installations-detail-shell {
+  padding: 18px;
+  display: grid;
+  gap: 18px;
+}
+
+.installations-detail-shell > * {
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+  box-sizing: border-box;
+}
+
+.installations-list-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.installations-list-head strong {
+  font-size: 18px;
+}
+
+.installations-list-count {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.installations-list {
+  display: grid;
+  gap: 12px;
+  max-height: 980px;
+  overflow-y: auto;
+  padding-inline-end: 4px;
+}
+
+.installations-empty {
+  padding: 22px 18px;
+  text-align: center;
+  color: #64748b;
+  border-radius: 18px;
+  border: 1px dashed rgba(148, 163, 184, 0.26);
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.installation-case-card {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.05);
+  padding: 14px 15px;
+  display: grid;
+  gap: 10px;
+  text-align: right;
+  cursor: pointer;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+
+.installation-case-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 125, 18, 0.24);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.08);
+}
+
+.installation-case-card.selected {
+  border-color: rgba(255, 125, 18, 0.36);
+  box-shadow: 0 18px 34px rgba(255, 125, 18, 0.12);
+  background: linear-gradient(180deg, rgba(255,255,255,1), rgba(255,247,239,0.96));
+}
+
+.installation-case-card.completed {
+  border-color: rgba(34, 197, 94, 0.18);
+  background: linear-gradient(180deg, rgba(244, 255, 246, 0.98), rgba(233, 250, 239, 0.98));
+  box-shadow: 0 12px 28px rgba(34, 197, 94, 0.08);
+}
+
+.installation-case-card.completed:hover {
+  border-color: rgba(34, 197, 94, 0.28);
+  box-shadow: 0 16px 30px rgba(34, 197, 94, 0.12);
+}
+
+.installation-case-card.completed.selected {
+  border-color: rgba(22, 163, 74, 0.34);
+  background: linear-gradient(180deg, rgba(241, 253, 244, 1), rgba(220, 252, 231, 0.98));
+  box-shadow: 0 18px 34px rgba(22, 163, 74, 0.16);
+}
+
+.installation-case-head,
+.installation-detail-head,
+.installation-visit-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.installation-case-title,
+.installation-detail-title {
+  display: grid;
+  gap: 5px;
+}
+
+.installation-case-kicker {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: fit-content;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 125, 18, 0.18);
+  background: rgba(255, 247, 239, 0.94);
+  color: #9a3412;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.installation-case-title strong,
+.installation-detail-title strong {
+  display: block;
+  font-size: 20px;
+  line-height: 1.2;
+  color: #0f172a;
+  -webkit-text-fill-color: #0f172a;
+  background: none;
+  opacity: 1;
+}
+
+.installation-case-subtitle,
+.installation-detail-subtitle {
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.installation-badges,
+.installation-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.installation-badge,
+.installation-link-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.installation-badge.status-open {
+  background: rgba(59, 130, 246, 0.10);
+  color: #1d4ed8;
+}
+
+.installation-badge.status-partial {
+  background: rgba(245, 158, 11, 0.12);
+  color: #b45309;
+}
+
+.installation-badge.status-complete {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+}
+
+.installation-badge.status-paused {
+  background: rgba(239, 68, 68, 0.10);
+  color: #b91c1c;
+}
+
+.installation-badge.status-overdue {
+  background: rgba(220, 38, 38, 0.12);
+  color: #b91c1c;
+}
+
+.installation-badge.status-delivery {
+  background: rgba(22, 163, 74, 0.10);
+  color: #166534;
+}
+
+.installation-badge.status-pending {
+  background: rgba(148, 163, 184, 0.18);
+  color: #475569;
+}
+
+.installation-link-chip {
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(255, 125, 18, 0.14);
+  color: var(--brand-dark);
+}
+
+.installation-detail-overview {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+  box-sizing: border-box;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 125, 18, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(255, 173, 104, 0.10), transparent 34%),
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(255,249,243,0.96));
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.05);
+}
+
+.installation-detail-overview-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.installation-detail-overview-main {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.installation-detail-overview-main .installation-detail-title strong {
+  font-size: 28px;
+}
+
+.installation-detail-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.installation-detail-summary-item {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255,255,255,0.88);
+  padding: 12px 14px;
+  display: grid;
+  gap: 4px;
+}
+
+.installation-detail-summary-item span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.installation-detail-summary-item strong {
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.35;
+}
+
+.installation-detail-links-panel {
+  display: grid;
+  gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255,255,255,0.86);
+}
+
+.installation-detail-links-panel .installation-section-head {
+  margin: 0;
+}
+
+.installation-detail-section-card {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  max-width: 100%;
+  justify-self: stretch;
+  box-sizing: border-box;
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255,255,255,0.9);
+}
+
+.installation-case-meta,
+.installation-detail-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.installation-meta-card {
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(248, 250, 252, 0.82);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.installation-meta-card span {
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.installation-meta-card strong,
+.installation-meta-card div {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.installation-case-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.installations-detail-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  color: #64748b;
+  text-align: center;
+}
+
+.installations-detail-form,
+.installations-visit-form {
+  display: grid;
+  gap: 14px;
+}
+
+.installation-detail-form-grid,
+.installations-visit-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.installation-detail-form .full,
+.installations-visit-form .full,
+.installation-items-panel,
+.installation-visits-panel {
+  grid-column: 1 / -1;
+}
+
+.installation-items-panel,
+.installation-visits-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.installation-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.installation-section-head strong {
+  font-size: 18px;
+}
+
+.installation-section-head.compact {
+  margin-bottom: -2px;
+}
+
+.installation-section-head.compact strong {
+  font-size: 17px;
+}
+
+.installation-items-table-wrap {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 18px;
+  overflow: auto;
+  background: #fff;
+}
+
+.installation-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 660px;
+}
+
+.installation-items-table th,
+.installation-items-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid rgba(226, 232, 240, 0.86);
+  text-align: right;
+  vertical-align: middle;
+}
+
+.installation-items-table th {
+  background: rgba(248, 250, 252, 0.92);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.installation-items-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.installation-items-table td strong {
+  display: block;
+  font-size: 14px;
+}
+
+.installation-items-table td span {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.installations-visit-items-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.installations-visit-item-card {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: #fff;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.installations-visit-item-card strong {
+  font-size: 14px;
+}
+
+.installations-visit-item-card span {
+  color: #64748b;
+  font-size: 12px;
+}
+
+.installations-visit-item-card input {
+  min-height: 42px;
+}
+
+.installation-visits-list {
+  display: grid;
+  gap: 10px;
+}
+
+.installation-visit-card {
+  border-radius: 18px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: #fff;
+  padding: 12px 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.installation-visit-card-main {
+  display: grid;
+  gap: 4px;
+}
+
+.installation-visit-card-main strong {
+  font-size: 15px;
+}
+
+.installation-visit-card-main span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.installation-visit-delete {
+  all: unset;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid rgba(239, 68, 68, 0.16);
+  background: rgba(254, 242, 242, 0.9);
+  color: #b91c1c;
+}
+
+.installation-visit-delete:hover {
+  background: rgba(254, 226, 226, 0.96);
+}
+
+.installation-inline-note {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.installation-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 1160px) {
+  .installations-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .installations-toolbar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .installations-toolbar,
+  .installation-detail-form-grid,
+  .installations-visit-form-grid,
+  .installations-visit-items-grid,
+  .installation-case-meta,
+  .installation-detail-meta,
+  .installations-summary-grid,
+  .installation-detail-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .installation-detail-overview-top,
+  .installation-case-head,
+  .installation-detail-head,
+  .installation-visit-card-head,
+  .installation-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
 }
 
 .admin-panel {
@@ -12650,10 +13428,23 @@ input:focus {
         <button type="button" class="top-tab" data-tab="activity-log">פעילות</button>
       </div>
     </section>
-    <section class="tabs-group-card">
-      <div class="tabs-group-kicker">אנשים</div>
-      <div class="tabs-group-actions people-group-actions">
-        <button type="button" class="top-tab wide" data-tab="employees-hr">עובדים ושכר</button>
+    <section class="tabs-group-card split-stack-card">
+      <div class="tabs-split-stack">
+        <div class="tabs-split-pane">
+          <div class="tabs-group-kicker">אנשים</div>
+          <div class="tabs-group-actions people-group-actions compact-actions">
+            <button type="button" class="top-tab wide" data-tab="employees-hr">עובדים ושכר</button>
+          </div>
+        </div>
+        <div class="tabs-split-pane">
+          <div class="tabs-group-kicker">שטח</div>
+          <div class="tabs-group-actions field-group-actions compact-actions">
+            <button type="button" class="top-tab wide" data-tab="installations" id="installationsTopTab">
+              <span>התקנות</span>
+              <span class="top-tab-alert-dot" aria-hidden="true"></span>
+            </button>
+          </div>
+        </div>
       </div>
     </section>
     <section class="tabs-group-card">
@@ -13239,6 +14030,12 @@ input:focus {
             <div id="workingOrdersFileName" class="file-name"></div>
           </div>
           <input type="file" id="workingOrdersFileInput" accept="application/pdf,.pdf" style="display:none;">
+          <div class="working-orders-upload-options">
+            <label class="field-toggle" style="margin:0;">
+              <input type="checkbox" id="workingOrdersRequiresInstallationCheckbox">
+              <span>סמן ידנית אם ההזמנה כוללת התקנה</span>
+            </label>
+          </div>
           <div class="workspace-actions">
             <button type="button" id="workingOrdersUploadButton" class="primary-btn">שמור כהזמנה בעבודה</button>
           </div>
@@ -13256,6 +14053,7 @@ input:focus {
                   <th>כמות</th>
                   <th>סה״כ כולל מע״מ</th>
                   <th>הזמנת רכש</th>
+                  <th>התקנה</th>
                   <th>פעולה</th>
                 </tr>
               </thead>
@@ -13327,6 +14125,63 @@ input:focus {
       </div>
       <div id="quoteHistorySummary" class="history-summary">היסטוריית הצעות המחיר עדיין לא נטענה. לחץ על <strong>טען היסטוריה</strong> כדי למשוך את כל ההצעות מהשיט.</div>
       <div id="quoteHistoryRowsHost" class="history-list"></div>
+    </section>
+  </section>
+
+  <section class="tab-panel" data-tab-panel="installations">
+    <section class="inventory-panel installations-panel">
+      <div class="panel-kicker-strip">
+        <div class="section-kicker">שטח</div>
+      </div>
+      <div class="installations-head">
+        <div>
+          <h2>התקנות</h2>
+          <p class="section-copy">כל הזמנה שכוללת התקנה בשטח נכנסת לכאן אוטומטית. מכאן אפשר לתאם ביקורים, לעקוב אחרי כמויות שהותקנו לפי מידה, ולסגור טיפול רק כשהאתר הושלם בפועל.</p>
+        </div>
+        <div class="inventory-actions">
+          <button type="button" id="installationsRefreshButton" class="ghost-btn">טען תיקים</button>
+          <button type="button" id="installationsForceSyncButton" class="ghost-btn">רענן מהיסטוריית הזמנות</button>
+        </div>
+      </div>
+
+      <div id="installationsSummary" class="inventory-summary">דף ההתקנות עדיין לא נטען. לחץ על <strong>טען תיקים</strong> כדי למשוך את כל ההזמנות שכוללות התקנה מהיסטוריית ההזמנות.</div>
+
+      <div class="installations-toolbar">
+        <div class="installations-field">
+          <label for="installationsSearchInput">חיפוש</label>
+          <input id="installationsSearchInput" type="search" placeholder="חפש לפי לקוח, הזמנה, כתובת, איש קשר או הערה">
+        </div>
+        <div class="installations-field">
+          <label for="installationsStatusFilter">סטטוס</label>
+          <select id="installationsStatusFilter">
+            <option value="">כל הסטטוסים</option>
+          </select>
+        </div>
+        <label class="installations-toggle" for="installationsOpenOnly">
+          <input id="installationsOpenOnly" type="checkbox">
+          <span>רק פתוחות</span>
+        </label>
+        <label class="installations-toggle" for="installationsOverdueOnly">
+          <input id="installationsOverdueOnly" type="checkbox">
+          <span>רק כאלה שמועדן חלף</span>
+        </label>
+      </div>
+
+      <div class="installations-layout">
+        <aside class="installations-list-shell">
+          <div class="installations-list-head">
+            <strong>תיקי התקנה</strong>
+            <span id="installationsListCount" class="installations-list-count">0 רשומות</span>
+          </div>
+          <div id="installationsList" class="installations-list">
+            <div class="installations-empty">עדיין לא נטענו תיקי התקנה.</div>
+          </div>
+        </aside>
+
+        <section class="installations-detail-shell">
+          <div id="installationsDetail" class="installations-detail-empty">בחר תיק התקנה מהרשימה כדי לנהל תיאום, ביקורים, כמויות שהותקנו וקישורים למסמכים.</div>
+        </section>
+      </div>
     </section>
   </section>
 
@@ -18656,6 +19511,7 @@ input:focus {
 document.addEventListener("DOMContentLoaded", () => {
   const fileInput = document.getElementById("file");
   const workingOrdersFileInput = document.getElementById("workingOrdersFileInput");
+  const workingOrdersRequiresInstallationCheckbox = document.getElementById("workingOrdersRequiresInstallationCheckbox");
   const transportLabelInput = document.getElementById("transportLabelInput");
   const dropZone = document.getElementById("dropZone");
   const workingOrdersDropZone = document.getElementById("workingOrdersDropZone");
@@ -18840,7 +19696,18 @@ document.addEventListener("DOMContentLoaded", () => {
   const paymentDraftPaid = document.getElementById("paymentDraftPaid");
   const paymentDraftSave = document.getElementById("paymentDraftSave");
   const paymentDraftCancel = document.getElementById("paymentDraftCancel");
+  const installationsRefreshButton = document.getElementById("installationsRefreshButton");
+  const installationsForceSyncButton = document.getElementById("installationsForceSyncButton");
+  const installationsSummary = document.getElementById("installationsSummary");
+  const installationsSearchInput = document.getElementById("installationsSearchInput");
+  const installationsStatusFilter = document.getElementById("installationsStatusFilter");
+  const installationsOpenOnly = document.getElementById("installationsOpenOnly");
+  const installationsOverdueOnly = document.getElementById("installationsOverdueOnly");
+  const installationsList = document.getElementById("installationsList");
+  const installationsListCount = document.getElementById("installationsListCount");
+  const installationsDetail = document.getElementById("installationsDetail");
   const topTabs = Array.from(document.querySelectorAll(".top-tab"));
+  const installationsTopTab = document.getElementById("installationsTopTab");
   const tabPanels = Array.from(document.querySelectorAll(".tab-panel"));
   const inventoryTableBody = document.getElementById("inventoryTableBody");
   const inventorySummary = document.getElementById("inventorySummary");
@@ -20109,6 +20976,15 @@ document.addEventListener("DOMContentLoaded", () => {
   let workingOrdersLoading = false;
   let pendingWorkingOrderDeleteId = "";
   let currentWorkingOrderNoteRowId = "";
+  let installationRows = [];
+  let installationVisitRows = [];
+  let installationSummaryState = {};
+  let installationStatusOptions = [];
+  let installationDelayReasonOptions = [];
+  let installationsLoaded = false;
+  let installationsLoading = false;
+  let selectedInstallationId = "";
+  let installationVisitDrafts = {};
 
   if (!fileInput || !dropZone) return;
 
@@ -20149,6 +21025,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const noteButton = event.target.closest("[data-working-order-note]");
     if (noteButton) {
       openWorkingOrderNoteModal(noteButton.dataset.workingOrderNote || "");
+      return;
+    }
+    const installationButton = event.target.closest("[data-working-order-installation-toggle]");
+    if (installationButton) {
+      saveWorkingOrderInstallationFlag(
+        installationButton.dataset.workingOrderInstallationToggle || "",
+        installationButton.dataset.workingOrderInstallationValue || "",
+      );
       return;
     }
     const deleteButton = event.target.closest("[data-working-order-delete]");
@@ -20527,16 +21411,33 @@ document.addEventListener("DOMContentLoaded", () => {
     return Boolean(String(row?.order_note_text || "").trim() || String(row?.order_note_file_name || "").trim());
   }
 
+  function workingOrderRequiresInstallation(row) {
+    const explicit = String(row?.requires_installation || "").trim().toUpperCase();
+    if (explicit === "TRUE") return true;
+    if (explicit === "FALSE") return false;
+    try {
+      const payload = JSON.parse(String(row?.payload_json || "{}"));
+      if (payload && typeof payload === "object") {
+        if (payload.requires_installation === true) return true;
+        if (payload.requires_installation === false) return false;
+      }
+    } catch (error) {
+      // ignore payload parse errors and fall back to false
+    }
+    return false;
+  }
+
   function renderWorkingOrdersTable() {
     if (!workingOrdersRowsHost) return;
     const rows = Array.isArray(workingOrderRows) ? workingOrderRows : [];
     if (!rows.length) {
-      workingOrdersRowsHost.innerHTML = `<tr><td colspan="8" style="text-align:center;color:#64748b;">אין כרגע הזמנות בעבודה.</td></tr>`;
+      workingOrdersRowsHost.innerHTML = `<tr><td colspan="9" style="text-align:center;color:#64748b;">אין כרגע הזמנות בעבודה.</td></tr>`;
       renderWorkingOrdersTopNote();
       return;
     }
     workingOrdersRowsHost.innerHTML = rows.map(row => {
       const driveUrl = String(row.drive_url || "").trim();
+      const requiresInstallation = workingOrderRequiresInstallation(row);
       const linkHtml = driveUrl
         ? `<a class="working-orders-link" href="${escapeAttribute(driveUrl)}" target="_blank" rel="noopener">צפה בהזמנה</a>`
         : "—";
@@ -20549,6 +21450,21 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${escapeHtml(String(row.item_quantity || "—"))}</td>
           <td>${escapeHtml(formatCurrency(row.total || 0))}</td>
           <td>${linkHtml}</td>
+          <td>
+            <div class="working-orders-installation-cell">
+              <span class="working-orders-installation-pill ${requiresInstallation ? "is-active" : ""}">
+                ${requiresInstallation ? "כוללת התקנה" : "ללא התקנה"}
+              </span>
+              <button
+                type="button"
+                class="ghost-btn working-orders-installation-toggle ${requiresInstallation ? "is-active" : ""}"
+                data-working-order-installation-toggle="${escapeAttribute(row.row_id || "")}"
+                data-working-order-installation-value="${requiresInstallation ? "FALSE" : "TRUE"}"
+              >
+                ${requiresInstallation ? "בטל סימון" : "סמן התקנה"}
+              </button>
+            </div>
+          </td>
           <td>
             <div class="working-orders-action-cell">
               <button type="button" class="ghost-btn" data-working-order-load="${escapeAttribute(row.row_id || "")}">יצירת הזמנה</button>
@@ -20568,6 +21484,42 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     }).join("");
     renderWorkingOrdersTopNote();
+  }
+
+  async function saveWorkingOrderInstallationFlag(rowId, value) {
+    const normalizedRowId = String(rowId || "").trim();
+    const normalizedValue = String(value || "").trim().toUpperCase();
+    if (!normalizedRowId || !["TRUE", "FALSE"].includes(normalizedValue)) return;
+    try {
+      const response = await fetch("/working-orders-installation-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          row_id: normalizedRowId,
+          requires_installation: normalizedValue,
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "לא הצלחתי לשמור את סימון ההתקנה.");
+      }
+      const updatedRow = payload.row || null;
+      if (updatedRow) {
+        workingOrderRows = workingOrderRows.map(row => (
+          String(row.row_id || "").trim() === String(updatedRow.row_id || "").trim() ? updatedRow : row
+        ));
+        renderWorkingOrdersState({ rows: workingOrderRows });
+      }
+      showToast(
+        "success",
+        "סימון ההתקנה נשמר",
+        normalizedValue === "TRUE"
+          ? "ההזמנה סומנה ככוללת התקנה ותופיע בהתאם בהמשך הזרימה."
+          : "סימון ההתקנה הוסר מההזמנה."
+      );
+    } catch (error) {
+      showToast("error", "שמירת סימון ההתקנה נכשלה", error.message || "נסה שוב בעוד רגע.");
+    }
   }
 
   function closeWorkingOrderNoteModal() {
@@ -20763,6 +21715,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      if (workingOrdersRequiresInstallationCheckbox?.checked) {
+        formData.append("requires_installation", "TRUE");
+      }
       const response = await fetch("/working-orders-upload", { method: "POST", body: formData });
       const payload = await response.json();
       if (!response.ok) {
@@ -20776,6 +21731,9 @@ document.addEventListener("DOMContentLoaded", () => {
       renderWorkingOrdersState({ rows: workingOrderRows });
       if (workingOrdersFileInput) {
         workingOrdersFileInput.value = "";
+      }
+      if (workingOrdersRequiresInstallationCheckbox) {
+        workingOrdersRequiresInstallationCheckbox.checked = false;
       }
       showWorkingOrdersFileName();
       showToast("success", "הזמנה נשמרה בעבודה", "ההזמנה נוספה לרכיב הזמנות בעבודה ומוכנה לטעינה למסך.");
@@ -21138,6 +22096,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const safeTabName = tabPanels.some(panel => panel.dataset.tabPanel === tabName) ? tabName : "orders";
     topTabs.forEach(button => button.classList.toggle("active", button.dataset.tab === safeTabName));
     tabPanels.forEach(panel => panel.classList.toggle("active", panel.dataset.tabPanel === safeTabName));
+    if (safeTabName === "installations") {
+      if (!installationsLoaded && !installationsLoading) {
+        loadInstallationsFromServer({ force: false }).catch(error => {
+          console.warn("installations tab load failed", error);
+        });
+      } else if (installationsLoaded) {
+        renderInstallationsView();
+      }
+    }
     if (safeTabName === "project-managers") {
       loadProjectManagersFromServer().catch(error => {
         console.warn("project managers tab load failed", error);
@@ -21160,6 +22127,708 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!customersScrollTopButton) return;
     const shouldShow = window.scrollY > 260;
     customersScrollTopButton.classList.toggle("visible", shouldShow);
+  }
+
+  function installationDriveFileUrl(fileId) {
+    const normalized = String(fileId || "").trim();
+    if (!normalized) return "";
+    return `https://drive.google.com/file/d/${encodeURIComponent(normalized)}/view`;
+  }
+
+  function installationQuantityLabel(value) {
+    const number = Number(value || 0);
+    if (!Number.isFinite(number)) return "0";
+    return number.toLocaleString("he-IL", {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    });
+  }
+
+  function installationStatusClass(status, overdue = false) {
+    if (overdue) return "status-overdue";
+    const normalized = String(status || "").trim();
+    if (normalized === "הושלם") return "status-complete";
+    if (normalized === "הותקן חלקית") return "status-partial";
+    if (normalized === "מושהה" || normalized === "בוטל") return "status-paused";
+    return "status-open";
+  }
+
+  function installationModeLabel(mode) {
+    const normalized = String(mode || "").trim().toUpperCase();
+    if (normalized === "SB") return "SB";
+    if (normalized === "DRIVE") return "DRIVE";
+    return "PROD";
+  }
+
+  function installationIsOpen(row) {
+    const status = String((row || {}).status || "").trim();
+    return !["הושלם", "בוטל"].includes(status);
+  }
+
+  function installationNeedsAttention(row) {
+    const status = String((row || {}).status || "").trim();
+    return ["ממתין לתיאום", "תואם", "הותקן חלקית"].includes(status);
+  }
+
+  function updateInstallationsTopTabIndicator(rows = installationRows) {
+    if (!installationsTopTab) return;
+    const sourceRows = Array.isArray(rows) ? rows : [];
+    const shouldShow = sourceRows.some(installationNeedsAttention);
+    installationsTopTab.classList.toggle("has-alert", shouldShow);
+    installationsTopTab.setAttribute(
+      "title",
+      shouldShow
+        ? "יש תיקי התקנה שעדיין מחכים לתיאום, מתואמים לביצוע או הותקנו חלקית."
+        : "אין כרגע תיקי התקנה פעילים שדורשים המשך טיפול."
+    );
+  }
+
+  function installationDeliveryConfirmationUrl(row) {
+    const signedUrl = installationDriveFileUrl(row?.signed_delivery_drive_file_id);
+    const cocUrl = installationDriveFileUrl(row?.coc_drive_file_id);
+    return cocUrl || signedUrl || "";
+  }
+
+  function installationHasDeliveryConfirmation(row) {
+    const sentState = String(row?.delivery_confirmation_sent || "").trim();
+    return Boolean(installationDeliveryConfirmationUrl(row) || ["כן", "אושר ידנית"].includes(sentState));
+  }
+
+  function installationFullAddress(row) {
+    const deliveryAddress = String((row || {}).delivery_address || "").trim();
+    const project = String((row || {}).project || "").trim();
+    if (!deliveryAddress && !project) return "—";
+    if (!deliveryAddress) return project;
+    if (!project) return deliveryAddress;
+    const normalizedDelivery = deliveryAddress.replace(/\s+/g, " ").trim().toLowerCase();
+    const normalizedProject = project.replace(/\s+/g, " ").trim().toLowerCase();
+    if (!normalizedDelivery || normalizedDelivery === normalizedProject || normalizedProject.includes(normalizedDelivery)) {
+      return project;
+    }
+    if (normalizedDelivery.includes(normalizedProject)) {
+      return deliveryAddress;
+    }
+    return `${deliveryAddress} · ${project}`;
+  }
+
+  function installationItemProgressRows(row) {
+    const items = Array.isArray(row?.install_items) ? row.install_items : [];
+    return items.map((item, index) => {
+      const current = item && typeof item === "object" ? item : {};
+      return {
+        item_key: String(current.item_key || `item_${index}`).trim(),
+        description: String(current.description || "").trim(),
+        size_label: String(current.size_label || "").trim(),
+        sku: String(current.sku || "").trim(),
+        unit: String(current.unit || "").trim() || "יח׳",
+        ordered_quantity: Number(current.ordered_quantity || 0) || 0,
+        installed_quantity: Number(current.installed_quantity || 0) || 0,
+        remaining_quantity: Number(current.remaining_quantity || 0) || 0,
+      };
+    });
+  }
+
+  function installationCaseById(installationId) {
+    const key = String(installationId || "").trim();
+    return installationRows.find(row => String(row?.installation_id || "").trim() === key) || null;
+  }
+
+  function installationDraftFor(row) {
+    const installationId = String(row?.installation_id || "").trim();
+    if (!installationId) return null;
+    if (!installationVisitDrafts[installationId]) {
+      installationVisitDrafts[installationId] = {
+        visit_date: "",
+        scheduled_date: String(row?.next_visit_date || "").trim(),
+        status: String(row?.status || "").trim() || "תואם",
+        notes: "",
+        quantities: {},
+      };
+    }
+    return installationVisitDrafts[installationId];
+  }
+
+  function resetInstallationDraft(row) {
+    const installationId = String(row?.installation_id || "").trim();
+    if (!installationId) return;
+    delete installationVisitDrafts[installationId];
+  }
+
+  function filteredInstallationRows() {
+    const searchValue = String(installationsSearchInput?.value || "").trim().toLowerCase();
+    const statusValue = String(installationsStatusFilter?.value || "").trim();
+    const onlyOpen = !!installationsOpenOnly?.checked;
+    const onlyOverdue = !!installationsOverdueOnly?.checked;
+    return installationRows.filter(row => {
+      if (statusValue && String(row?.status || "").trim() !== statusValue) return false;
+      if (onlyOpen && !installationIsOpen(row)) return false;
+      if (onlyOverdue && !row?.overdue) return false;
+      if (!searchValue) return true;
+      const haystack = [
+        row?.customer_name,
+        row?.po_number,
+        row?.delivery_address,
+        row?.project,
+        row?.contact_name,
+        row?.contact_phone,
+        row?.notes,
+      ].join(" ").toLowerCase();
+      return haystack.includes(searchValue);
+    });
+  }
+
+  function ensureInstallationSelection(rows = filteredInstallationRows()) {
+    const hasSelection = rows.some(row => String(row?.installation_id || "").trim() === String(selectedInstallationId || "").trim());
+    if (hasSelection) return;
+    selectedInstallationId = rows[0] ? String(rows[0].installation_id || "").trim() : "";
+  }
+
+  function nextOpenInstallationId(rows = installationRows, currentInstallationId = "") {
+    const sourceRows = Array.isArray(rows) ? rows : [];
+    const currentId = String(currentInstallationId || "").trim();
+    const currentIndex = sourceRows.findIndex(
+      row => String(row?.installation_id || "").trim() === currentId
+    );
+    const isOpenRow = row => !["הושלם", "בוטל"].includes(String(row?.status || "").trim());
+    for (let index = currentIndex + 1; index < sourceRows.length; index += 1) {
+      if (isOpenRow(sourceRows[index])) {
+        return String(sourceRows[index]?.installation_id || "").trim();
+      }
+    }
+    for (let index = 0; index < sourceRows.length; index += 1) {
+      if (isOpenRow(sourceRows[index])) {
+        return String(sourceRows[index]?.installation_id || "").trim();
+      }
+    }
+    return "";
+  }
+
+  function buildInstallationLinks(row) {
+    const links = [];
+    const seen = new Set();
+    const add = (label, url) => {
+      const normalizedLabel = String(label || "").trim();
+      const normalizedUrl = String(url || "").trim();
+      if (!normalizedLabel || !normalizedUrl) return;
+      const key = `${normalizedLabel}|${normalizedUrl}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      links.push({ label: normalizedLabel, url: normalizedUrl });
+    };
+    add("הזמנת רכש", row?.source_po_drive_url || installationDriveFileUrl(row?.source_po_drive_file_id));
+    add("תיק הזמנה", row?.order_drive_folder_url);
+    add("תעודת משלוח", installationDriveFileUrl(row?.delivery_drive_file_id));
+    add("חשבונית", installationDriveFileUrl(row?.invoice_drive_file_id));
+    add("כל המסמכים", installationDriveFileUrl(row?.merged_drive_file_id));
+    add("אישור מסירה", installationDeliveryConfirmationUrl(row));
+    (Array.isArray(row?.document_links) ? row.document_links : []).forEach(link => {
+      add(link?.name || "מסמך", link?.url || "");
+    });
+    return links;
+  }
+
+  function renderInstallationSummary(filteredRows) {
+    if (!installationsSummary) return;
+    const summary = installationSummaryState || {};
+    const openCount = Number(summary.open_count || 0);
+    const completedCount = Number(summary.completed_count || 0);
+    const partialCount = Number(summary.partial_count || 0);
+    const scheduledCount = Number(summary.scheduled_count || 0);
+    const overdueCount = Number(summary.overdue_count || 0);
+    const lastSync = installationRows
+      .map(row => String(row?.last_sync_at || "").trim())
+      .filter(Boolean)
+      .sort()
+      .slice(-1)[0];
+    const filteredCount = Array.isArray(filteredRows) ? filteredRows.length : 0;
+    installationsSummary.innerHTML = `
+      <div class="installations-summary-grid">
+        <div class="installations-summary-card"><span>פתוחות</span><strong>${escapeHtml(openCount)}</strong></div>
+        <div class="installations-summary-card"><span>הותקן חלקית</span><strong>${escapeHtml(partialCount)}</strong></div>
+        <div class="installations-summary-card"><span>מתואמות</span><strong>${escapeHtml(scheduledCount)}</strong></div>
+        <div class="installations-summary-card"><span>מועד חלף</span><strong>${escapeHtml(overdueCount)}</strong></div>
+        <div class="installations-summary-card"><span>הושלמו / בוטלו</span><strong>${escapeHtml(completedCount)}</strong></div>
+      </div>
+      <div class="installations-summary-meta">
+        מוצגות כרגע <strong>${escapeHtml(filteredCount)}</strong> רשומות מתוך <strong>${escapeHtml(Number(summary.count || installationRows.length || 0))}</strong>.
+        ${lastSync ? ` · סנכרון אחרון: <strong>${escapeHtml(formatDisplayDate(String(lastSync).slice(0, 10)))}</strong> ${escapeHtml(String(lastSync).slice(11, 16) || "")}` : ""}
+      </div>
+    `;
+  }
+
+  function renderInstallationList(rows) {
+    if (!installationsList || !installationsListCount) return;
+    installationsListCount.textContent = `${rows.length} רשומות`;
+    if (!rows.length) {
+      installationsList.innerHTML = `<div class="installations-empty">לא נמצאו כרגע תיקים שמתאימים לסינון שבחרת.</div>`;
+      return;
+    }
+    installationsList.innerHTML = rows.map(row => {
+      const installationId = String(row?.installation_id || "").trim();
+      const selected = installationId === String(selectedInstallationId || "").trim();
+      const normalizedStatus = String(row?.status || "").trim();
+      const isCompleted = normalizedStatus === "הושלם" || normalizedStatus === "הושלמה";
+      const ordered = Number(row?.total_ordered_quantity || 0) || 0;
+      const installed = Number(row?.total_installed_quantity || 0) || 0;
+      const remaining = Number(row?.total_remaining_quantity || 0) || 0;
+      const modeLabel = installationModeLabel(row?.source_mode);
+      const nextVisit = String(row?.next_visit_date || "").trim();
+      const contactParts = [String(row?.contact_name || "").trim(), String(row?.contact_phone || "").trim()].filter(Boolean);
+      const fullAddress = installationFullAddress(row);
+      const hasDeliveryConfirmation = installationHasDeliveryConfirmation(row);
+      return `
+        <button type="button" class="installation-case-card ${selected ? "selected" : ""} ${isCompleted ? "completed" : ""}" data-installation-select="${escapeAttribute(installationId)}">
+          <div class="installation-case-head">
+            <div class="installation-case-title">
+              <span class="installation-case-kicker">לקוח / אתר התקנה</span>
+              <strong>${escapeHtml(row?.customer_name || "לקוח ללא שם")}</strong>
+              <div class="installation-case-subtitle">PO ${escapeHtml(row?.po_number || "—")} · תאריך הזמנה ${escapeHtml(formatDisplayDate(row?.po_date || ""))}</div>
+            </div>
+            <div class="installation-badges">
+              <span class="installation-badge ${installationStatusClass(row?.status, row?.overdue)}">${escapeHtml(row?.overdue ? "מועד חלף" : (row?.status || "ללא סטטוס"))}</span>
+              <span class="installation-badge status-open">${escapeHtml(modeLabel)}</span>
+              ${hasDeliveryConfirmation ? `<span class="installation-badge status-delivery">אישור מסירה קיים</span>` : ""}
+              ${row?.pending_order_creation ? `<span class="installation-badge status-pending">${escapeHtml(row?.pending_order_label || "טרם נוצרה הזמנה במערכת")}</span>` : ""}
+            </div>
+          </div>
+          <div class="installation-case-meta">
+            <div class="installation-meta-card">
+              <span>כתובת</span>
+              <div>${escapeHtml(fullAddress)}</div>
+            </div>
+            <div class="installation-meta-card">
+              <span>איש קשר</span>
+              <div>${escapeHtml(contactParts.join(" · ") || "—")}</div>
+            </div>
+            <div class="installation-meta-card">
+              <span>הוזמן / הותקן</span>
+              <strong>${escapeHtml(`${installationQuantityLabel(ordered)} / ${installationQuantityLabel(installed)}`)}</strong>
+            </div>
+            <div class="installation-meta-card">
+              <span>נותר</span>
+              <strong>${escapeHtml(installationQuantityLabel(remaining))}</strong>
+            </div>
+          </div>
+          <div class="installation-case-footer">
+            <span>${nextVisit ? `המשך מתוכנן: ${escapeHtml(formatDisplayDate(nextVisit))}` : "טרם הוגדר ביקור המשך"}</span>
+            <span>${escapeHtml(row?.visit_count || 0)} ביקורים</span>
+          </div>
+        </button>
+      `;
+    }).join("");
+  }
+
+  function renderInstallationVisits(row) {
+    const visits = Array.isArray(row?.visits) ? row.visits : [];
+    if (!visits.length) {
+      return `<div class="installations-empty">עדיין לא נשמרו ביקורי התקנה לתיק הזה.</div>`;
+    }
+    return `<div class="installation-visits-list">
+      ${visits.map(visit => {
+        const visitId = String(visit?.visit_id || "").trim();
+        const title = visit?.visit_date
+          ? `בוצע ב־${formatDisplayDate(visit.visit_date)}`
+          : visit?.scheduled_date
+            ? `תואם ל־${formatDisplayDate(visit.scheduled_date)}`
+            : "ביקור";
+        const meta = [
+          visit?.status ? `סטטוס: ${visit.status}` : "",
+          Number(visit?.installed_total_quantity || 0) > 0 ? `הותקן: ${installationQuantityLabel(visit.installed_total_quantity || 0)}` : "",
+        ].filter(Boolean).join(" · ");
+        return `
+          <article class="installation-visit-card">
+            <div class="installation-visit-card-head">
+              <div class="installation-visit-card-main">
+                <strong>${escapeHtml(title)}</strong>
+                <span>${escapeHtml(meta || "ללא נתוני כמות")}</span>
+                <span>${escapeHtml(visit?.summary_text || visit?.notes || "ללא פירוט נוסף")}</span>
+              </div>
+              <button type="button" class="installation-visit-delete" data-installation-visit-delete="${escapeAttribute(visitId)}" aria-label="מחק ביקור">×</button>
+            </div>
+          </article>
+        `;
+      }).join("")}
+    </div>`;
+  }
+
+  function renderInstallationDetail(row) {
+    if (!installationsDetail) return;
+    if (!row) {
+      installationsDetail.innerHTML = `<div class="installations-detail-empty">בחר תיק התקנה מהרשימה כדי לנהל תיאום, ביקורים, כמויות שהותקנו וקישורים למסמכים.</div>`;
+      return;
+    }
+    const draft = installationDraftFor(row);
+    const links = buildInstallationLinks(row);
+    const itemRows = installationItemProgressRows(row);
+    const contactBits = [
+      String(row?.contact_name || "").trim(),
+      String(row?.contact_phone || "").trim(),
+    ].filter(Boolean);
+    const customerBits = [
+      String(row?.customer_phone || "").trim(),
+      String(row?.customer_email || "").trim(),
+    ].filter(Boolean);
+    const fullAddress = installationFullAddress(row);
+    const hasDeliveryConfirmation = installationHasDeliveryConfirmation(row);
+    installationsDetail.innerHTML = `
+      <section class="installation-detail-overview">
+        <div class="installation-detail-overview-top">
+          <div class="installation-detail-overview-main">
+            <div class="installation-detail-title">
+              <strong>${escapeHtml(row?.customer_name || "לקוח ללא שם")}</strong>
+              <div class="installation-detail-subtitle">הזמנה ${escapeHtml(row?.po_number || "—")} · תאריך הזמנה ${escapeHtml(formatDisplayDate(row?.po_date || ""))} · ${escapeHtml(fullAddress)}</div>
+            </div>
+            <div class="installation-inline-note">כאן מנהלים את כל מחזור חיי ההתקנה: תיאום, ביצוע חלקי, המשך התקנה וסגירה מלאה של האתר.</div>
+          </div>
+          <div class="installation-badges">
+            <span class="installation-badge ${installationStatusClass(row?.status, row?.overdue)}">${escapeHtml(row?.overdue ? "מועד חלף" : (row?.status || "ללא סטטוס"))}</span>
+            <span class="installation-badge status-open">${escapeHtml(installationModeLabel(row?.source_mode))}</span>
+            ${hasDeliveryConfirmation ? `<span class="installation-badge status-delivery">אישור מסירה קיים</span>` : ""}
+            ${row?.pending_order_creation ? `<span class="installation-badge status-pending">${escapeHtml(row?.pending_order_label || "טרם נוצרה הזמנה במערכת")}</span>` : ""}
+          </div>
+        </div>
+        <div class="installation-detail-summary-grid">
+          <div class="installation-detail-summary-item"><span>לקוח</span><strong>${escapeHtml(row?.customer_name || "—")}</strong></div>
+          <div class="installation-detail-summary-item"><span>תאריך הזמנה</span><strong>${escapeHtml(formatDisplayDate(row?.po_date || ""))}</strong></div>
+          <div class="installation-detail-summary-item"><span>ביקורים שבוצעו</span><strong>${escapeHtml(row?.visit_count || 0)}</strong></div>
+          <div class="installation-detail-summary-item"><span>הותקן / נותר</span><strong>${escapeHtml(`${installationQuantityLabel(row?.total_installed_quantity || 0)} / ${installationQuantityLabel(row?.total_remaining_quantity || 0)}`)}</strong></div>
+        </div>
+      </section>
+
+      <section class="installation-detail-links-panel">
+        <div class="installation-section-head compact">
+          <strong>מסמכים וקישורים</strong>
+          <span class="installation-inline-note">גישה מהירה להזמנת הרכש, לתיק ההזמנה ולמסמכי הביצוע.</span>
+        </div>
+        <div class="installation-links">
+          ${links.length ? links.map(link => `<a class="installation-link-chip" href="${escapeAttribute(link.url)}" target="_blank" rel="noopener noreferrer">${escapeHtml(link.label)}</a>`).join("") : `<span class="installation-inline-note">אין כרגע קישורים למסמכים.</span>`}
+        </div>
+      </section>
+
+      <section class="installation-detail-section-card">
+        <div class="installation-section-head compact">
+          <strong>פרטי אתר ותקשורת</strong>
+          <span class="installation-inline-note">המידע התפעולי שצריך כדי לצאת לשטח ולחזור להמשך העבודה.</span>
+        </div>
+        <div class="installation-detail-meta">
+          <div class="installation-meta-card"><span>כתובת אספקה / התקנה</span><div>${escapeHtml(fullAddress)}</div></div>
+          <div class="installation-meta-card"><span>איש קשר בשטח</span><div>${escapeHtml(contactBits.join(" · ") || "—")}</div></div>
+          <div class="installation-meta-card"><span>מייל / טלפון לקוח</span><div>${escapeHtml(customerBits.join(" · ") || row?.customer_id || "—")}</div></div>
+          <div class="installation-meta-card"><span>תנאי תשלום</span><div>${escapeHtml(row?.payment_terms_label || row?.payment_terms_days || "—")}</div></div>
+        </div>
+      </section>
+
+      <div class="installations-detail-form installation-detail-section-card" data-installation-id="${escapeAttribute(row.installation_id || "")}">
+        <div class="installation-section-head">
+          <strong>ניהול תיק</strong>
+          <span class="installation-inline-note">כאן נשמרים הסטטוס, סיבת העיכוב, התיאום הבא והערות העבודה של האתר.</span>
+        </div>
+        <div class="installation-detail-form-grid">
+          <div class="installations-field">
+            <label for="installationCaseStatus">סטטוס תיק</label>
+            <select id="installationCaseStatus" data-installation-case-field="status">
+              ${installationStatusOptions.map(option => `<option value="${escapeAttribute(option)}" ${String(row?.status || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="installations-field">
+            <label for="installationCaseDelayReason">סיבת עיכוב / הערת מצב</label>
+            <select id="installationCaseDelayReason" data-installation-case-field="delay_reason">
+              <option value="">ללא</option>
+              ${installationDelayReasonOptions.map(option => `<option value="${escapeAttribute(option)}" ${String(row?.delay_reason || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+            </select>
+          </div>
+          <div class="installations-field">
+            <label for="installationCaseNextVisitDate">מועד המשך מתוכנן</label>
+            <input id="installationCaseNextVisitDate" type="date" data-installation-case-field="next_visit_date" value="${escapeAttribute(String(row?.next_visit_date || "").trim())}">
+          </div>
+          <div class="installations-field">
+            <label>ביקור אחרון</label>
+            <input type="text" value="${escapeAttribute(formatDisplayDate(row?.last_visit_date || ""))}" disabled>
+          </div>
+          <div class="installations-field full">
+            <label for="installationCaseNotes">הערות</label>
+            <textarea id="installationCaseNotes" data-installation-case-field="notes" placeholder="מה סוכם עם האתר, מה חסר, אילו מידות נשארו ומה נקודת ההמשך.">${escapeHtml(row?.notes || "")}</textarea>
+          </div>
+        </div>
+        <div class="installation-actions-row">
+          <button type="button" class="primary-btn" data-installation-case-save>שמור שינויים בתיק</button>
+        </div>
+      </div>
+
+      <div class="installation-items-panel installation-detail-section-card">
+        <div class="installation-section-head">
+          <strong>מצב התקנה לפי מידה</strong>
+          <span class="installation-inline-note">הטבלה מחושבת אוטומטית מהכמויות שהוזמנו מול כל ביקורי ההתקנה שכבר נשמרו.</span>
+        </div>
+        <div class="installation-items-table-wrap">
+          <table class="installation-items-table">
+            <thead>
+              <tr>
+                <th>מידה / פריט</th>
+                <th>הוזמן</th>
+                <th>הותקן</th>
+                <th>נותר</th>
+                <th>מק״ט / יחידה</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemRows.map(item => `
+                <tr>
+                  <td><strong>${escapeHtml(item.size_label || item.description || "פריט")}</strong><span>${escapeHtml(item.description || "—")}</span></td>
+                  <td>${escapeHtml(installationQuantityLabel(item.ordered_quantity))}</td>
+                  <td>${escapeHtml(installationQuantityLabel(item.installed_quantity))}</td>
+                  <td>${escapeHtml(installationQuantityLabel(item.remaining_quantity))}</td>
+                  <td>${escapeHtml([item.sku, item.unit].filter(Boolean).join(" · ") || "—")}</td>
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="installation-visits-panel installation-detail-section-card">
+        <div class="installation-section-head">
+          <strong>ביקורים והמשך התקנה</strong>
+          <span class="installation-inline-note">אפשר לשמור ביקור ביצוע בפועל או רק ביקור עתידי מתואם, ולהזין כמה מכל מידה הותקן בכל סבב.</span>
+        </div>
+        ${renderInstallationVisits(row)}
+
+        <div class="installations-visit-form" data-installation-visit-form="${escapeAttribute(row.installation_id || "")}">
+          <div class="installation-section-head">
+            <strong>ביקור חדש / המשך התקנה</strong>
+            <span class="installation-inline-note">אם עדיין לא בוצעה התקנה בפועל, אפשר לשמור רק תאריך מתוכנן וסטטוס תיאום.</span>
+          </div>
+          <div class="installations-visit-form-grid">
+            <div class="installations-field">
+              <label for="installationVisitDate">תאריך ביקור שבוצע</label>
+              <input id="installationVisitDate" type="date" data-installation-visit-field="visit_date" value="${escapeAttribute(String(draft?.visit_date || "").trim())}">
+            </div>
+            <div class="installations-field">
+              <label for="installationScheduledDate">תאריך מתוכנן להמשך</label>
+              <input id="installationScheduledDate" type="date" data-installation-visit-field="scheduled_date" value="${escapeAttribute(String(draft?.scheduled_date || "").trim())}">
+            </div>
+            <div class="installations-field">
+              <label for="installationVisitStatus">סטטוס ביקור</label>
+              <select id="installationVisitStatus" data-installation-visit-field="status">
+                ${installationStatusOptions.map(option => `<option value="${escapeAttribute(option)}" ${String(draft?.status || "") === option ? "selected" : ""}>${escapeHtml(option)}</option>`).join("")}
+              </select>
+            </div>
+            <div class="installations-field full">
+              <label for="installationVisitNotes">הערת ביקור</label>
+              <textarea id="installationVisitNotes" data-installation-visit-field="notes" placeholder="מה הותקן, מה חסר, מתי חוזרים ומה צריך להכין לפעם הבאה.">${escapeHtml(draft?.notes || "")}</textarea>
+            </div>
+          </div>
+
+          <div class="installations-visit-items-grid">
+            ${itemRows.map(item => `
+              <div class="installations-visit-item-card">
+                <strong>${escapeHtml(item.size_label || item.description || "פריט")}</strong>
+                <span>הוזמן ${escapeHtml(installationQuantityLabel(item.ordered_quantity))} · נותר ${escapeHtml(installationQuantityLabel(item.remaining_quantity))} ${escapeHtml(item.unit || "יח׳")}</span>
+                <input type="number" min="0" step="0.01" data-installation-visit-qty="${escapeAttribute(item.item_key)}" value="${escapeAttribute(String((draft?.quantities || {})[item.item_key] || ""))}" placeholder="כמה הותקן עכשיו">
+              </div>
+            `).join("")}
+          </div>
+
+          <div class="installation-actions-row">
+            <button type="button" class="primary-btn" data-installation-visit-save>שמור ביקור</button>
+            <button type="button" class="ghost-btn" data-installation-visit-reset>נקה טופס ביקור</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function renderInstallationsView() {
+    const filteredRows = filteredInstallationRows();
+    ensureInstallationSelection(filteredRows);
+    const selectedRow = installationCaseById(selectedInstallationId);
+    renderInstallationSummary(filteredRows);
+    renderInstallationList(filteredRows);
+    renderInstallationDetail(filteredRows.some(row => String(row?.installation_id || "").trim() === String(selectedInstallationId || "").trim()) ? selectedRow : null);
+  }
+
+  function applyInstallationsPayload(payload) {
+    installationRows = Array.isArray(payload?.rows) ? payload.rows : [];
+    installationVisitRows = Array.isArray(payload?.visits) ? payload.visits : [];
+    installationSummaryState = payload?.summary && typeof payload.summary === "object" ? payload.summary : {};
+    installationStatusOptions = Array.isArray(payload?.status_options) ? payload.status_options : [];
+    installationDelayReasonOptions = Array.isArray(payload?.delay_reason_options) ? payload.delay_reason_options : [];
+    updateInstallationsTopTabIndicator(installationRows);
+    const validIds = new Set(installationRows.map(row => String(row?.installation_id || "").trim()).filter(Boolean));
+    Object.keys(installationVisitDrafts).forEach(key => {
+      if (!validIds.has(key)) delete installationVisitDrafts[key];
+    });
+    const currentStatusValue = String(installationsStatusFilter?.value || "").trim();
+    if (installationsStatusFilter) {
+      installationsStatusFilter.innerHTML = `<option value="">כל הסטטוסים</option>${installationStatusOptions.map(option => `<option value="${escapeAttribute(option)}">${escapeHtml(option)}</option>`).join("")}`;
+      if (currentStatusValue && installationStatusOptions.includes(currentStatusValue)) {
+        installationsStatusFilter.value = currentStatusValue;
+      }
+    }
+    installationsLoaded = true;
+    renderInstallationsView();
+  }
+
+  async function loadInstallationsFromServer({ force = false } = {}) {
+    if (installationsLoading) return;
+    installationsLoading = true;
+    if (installationsRefreshButton) installationsRefreshButton.disabled = true;
+    if (installationsForceSyncButton) installationsForceSyncButton.disabled = true;
+    if (installationsSummary) {
+      installationsSummary.innerHTML = `טוען עכשיו את כל תיקי ההתקנה, ביקורי השטח והכמויות שהותקנו מכל מידה.`;
+    }
+    try {
+      const response = await fetch(force ? "/installations-sync-from-history" : "/installations-state", {
+        method: force ? "POST" : "GET",
+        headers: force ? { "Content-Type": "application/json" } : undefined,
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "לא הצלחתי לטעון את דף ההתקנות.");
+      }
+      applyInstallationsPayload(payload);
+      if (payload.warning) {
+        showToast("info", "הוצג מצב שמור", payload.warning);
+      } else if (force) {
+        showToast("success", "דף ההתקנות עודכן", "תיקי ההתקנה נבנו מחדש מהיסטוריית ההזמנות.");
+      }
+    } catch (error) {
+      if (installationsSummary) {
+        installationsSummary.innerHTML = `טעינת דף ההתקנות נכשלה. ${escapeHtml(error.message || "")}`;
+      }
+      if (!installationsLoaded && installationsDetail) {
+        installationsDetail.innerHTML = `<div class="installations-detail-empty">לא הצלחתי לטעון כרגע את תיקי ההתקנה.</div>`;
+      }
+      showToast("error", force ? "רענון התקנות נכשל" : "טעינת התקנות נכשלה", error.message || "נסה שוב בעוד רגע.");
+    } finally {
+      installationsLoading = false;
+      if (installationsRefreshButton) installationsRefreshButton.disabled = false;
+      if (installationsForceSyncButton) installationsForceSyncButton.disabled = false;
+    }
+  }
+
+  async function saveInstallationCaseChanges() {
+    const row = installationCaseById(selectedInstallationId);
+    if (!row || !installationsDetail) return;
+    const previousInstallationId = String(row?.installation_id || "").trim();
+    const saveButton = installationsDetail.querySelector("[data-installation-case-save]");
+    const status = installationsDetail.querySelector('[data-installation-case-field="status"]')?.value || "";
+    const delayReason = installationsDetail.querySelector('[data-installation-case-field="delay_reason"]')?.value || "";
+    const nextVisitDate = installationsDetail.querySelector('[data-installation-case-field="next_visit_date"]')?.value || "";
+    const notes = installationsDetail.querySelector('[data-installation-case-field="notes"]')?.value || "";
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = "שומר...";
+    }
+    try {
+      const response = await fetch("/installations-case-update", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          installation_id: row.installation_id,
+          row: {
+            status,
+            delay_reason: delayReason,
+            next_visit_date: nextVisitDate,
+            notes,
+          },
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "לא הצלחתי לעדכן את תיק ההתקנה.");
+      }
+      applyInstallationsPayload(payload);
+      if (["הושלם", "בוטל"].includes(String(status || "").trim())) {
+        selectedInstallationId = nextOpenInstallationId(
+          Array.isArray(payload?.rows) ? payload.rows : installationRows,
+          previousInstallationId
+        );
+        renderInstallationsView();
+      }
+      showToast("success", "תיק ההתקנה נשמר", "הסטטוס, תאריך ההמשך וההערות נשמרו.");
+    } catch (error) {
+      showToast("error", "שמירת תיק ההתקנה נכשלה", error.message || "נסה שוב בעוד רגע.");
+    } finally {
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = "שמור שינויים בתיק";
+      }
+    }
+  }
+
+  async function saveInstallationVisit() {
+    const row = installationCaseById(selectedInstallationId);
+    if (!row) return;
+    const draft = installationDraftFor(row);
+    if (!draft) return;
+    const saveButton = installationsDetail?.querySelector("[data-installation-visit-save]");
+    const itemRows = installationItemProgressRows(row);
+    const installedItems = itemRows
+      .map(item => ({
+        item_key: item.item_key,
+        quantity: Number((draft.quantities || {})[item.item_key] || 0) || 0,
+      }))
+      .filter(item => item.quantity > 0);
+    if (!draft.visit_date && !draft.scheduled_date) {
+      showToast("info", "חסר תאריך", "צריך למלא לפחות תאריך ביקור שבוצע או תאריך מתוכנן להמשך.");
+      return;
+    }
+    if (saveButton) {
+      saveButton.disabled = true;
+      saveButton.textContent = "שומר...";
+    }
+    try {
+      const response = await fetch("/installations-visit-save", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          visit: {
+            installation_id: row.installation_id,
+            visit_date: draft.visit_date || "",
+            scheduled_date: draft.scheduled_date || "",
+            status: draft.status || "",
+            notes: draft.notes || "",
+            installed_items: installedItems,
+          },
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "לא הצלחתי לשמור את ביקור ההתקנה.");
+      }
+      resetInstallationDraft(row);
+      applyInstallationsPayload(payload);
+      showToast("success", "ביקור ההתקנה נשמר", installedItems.length ? "עודכנו כמויות הביצוע ונשמר ביקור חדש." : "נשמר תיאום / ביקור ללא כמויות ביצוע.");
+    } catch (error) {
+      showToast("error", "שמירת ביקור נכשלה", error.message || "נסה שוב בעוד רגע.");
+    } finally {
+      if (saveButton) {
+        saveButton.disabled = false;
+        saveButton.textContent = "שמור ביקור";
+      }
+    }
+  }
+
+  async function deleteInstallationVisit(visitId) {
+    const normalizedVisitId = String(visitId || "").trim();
+    if (!normalizedVisitId) return;
+    if (!window.confirm("למחוק את ביקור ההתקנה הזה?")) return;
+    try {
+      const response = await fetch("/installations-visit-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ visit_id: normalizedVisitId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.error || "לא הצלחתי למחוק את ביקור ההתקנה.");
+      }
+      applyInstallationsPayload(payload);
+      showToast("success", "ביקור ההתקנה נמחק", "רישום הביקור הוסר והכמויות חושבו מחדש.");
+    } catch (error) {
+      showToast("error", "מחיקת ביקור נכשלה", error.message || "נסה שוב בעוד רגע.");
+    }
   }
 
   function normalizeCustomerEmailList(value) {
@@ -34276,6 +35945,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return deliveryContactRows.find(row => normalizeDeliveryCompanyName(row.company) === key) || null;
   }
 
+  function isDeliveryInternalPrintOnlyCompany(company) {
+    const normalized = normalizeDeliveryCompanyName(company).replace(/[״"]/g, "");
+    return normalized.includes("דניה סיבוס") || normalized.includes("פורמה פרויקטים") || normalized.includes("פורמה פרוייקטים");
+  }
+
+  function deliveryRecipientForRow(row) {
+    if (isDeliveryInternalPrintOnlyCompany(row?.company || "")) {
+      return "asafbeny@gmail.com";
+    }
+    const contact = findDeliveryContactByCompany(row?.company || "");
+    return String(contact?.email || row?.target_email || "").trim();
+  }
+
   function refreshDeliveryConfirmationRecipients() {
     renderDeliveryConfirmationRows();
     if (currentDeliveryConfirmationRow && deliveryMailModal?.classList.contains("visible")) {
@@ -34283,9 +35965,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const refreshedRow = deliveryConfirmationRows.find(item => deliveryConfirmationRowKey(item) === activeRowKey);
       if (refreshedRow) {
         currentDeliveryConfirmationRow = refreshedRow;
-        const contact = findDeliveryContactByCompany(refreshedRow.company || "");
         if (deliveryMailRecipients) {
-          deliveryMailRecipients.value = String(contact?.email || refreshedRow?.target_email || "").trim();
+          deliveryMailRecipients.value = deliveryRecipientForRow(refreshedRow);
         }
       }
     }
@@ -34294,9 +35975,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const refreshedRow = deliveryConfirmationRows.find(item => deliveryConfirmationRowKey(item) === activeRowKey);
       if (refreshedRow) {
         currentDeliveryCocRow = refreshedRow;
-        const contact = findDeliveryContactByCompany(refreshedRow.company || "");
         if (deliveryCocRecipients) {
-          deliveryCocRecipients.value = String(contact?.email || refreshedRow?.target_email || "").trim();
+          deliveryCocRecipients.value = deliveryRecipientForRow(refreshedRow);
         }
       }
     }
@@ -34355,6 +36035,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDeliveryMailComposeState() {
     const row = currentDeliveryConfirmationRow || {};
     const includeNewBankDetails = deliveryMailIncludesNewBankDetails();
+    const isInternalPrintOnly = isDeliveryInternalPrintOnlyCompany(row?.company || "");
     if (deliveryMailMessage) {
       deliveryMailMessage.value = buildDeliveryMailBody(row, includeNewBankDetails);
     }
@@ -34363,6 +36044,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (deliveryMailAttachments) {
       const isPlasan = String(row?.company || "").replace(/[״"]/g, "").includes("פלסן סאסא");
+      if (isInternalPrintOnly) {
+        deliveryMailAttachments.innerHTML = [
+          `<strong>הקובץ שיצורף:</strong>`,
+          `<span>1. קובץ PDF מאוחד להדפסה: אישור מסירה חתום + הזמנת רכש + חשבונית מס</span>`,
+        ].join("");
+        return;
+      }
       const attachmentLines = [
         `<strong>הקבצים שיצורפו:</strong>`,
         `<span>1. חשבונית מס ${escapeHtml(row?.tax_invoice_number || "—")}</span>`,
@@ -34476,8 +36164,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function openDeliveryMailModal(row) {
     if (!deliveryMailModal || !deliveryMailSubject || !deliveryMailMessage || !deliveryMailRecipients) return;
     currentDeliveryConfirmationRow = row || null;
-    const contact = findDeliveryContactByCompany(row?.company || "");
-    const recipients = String(contact?.email || row?.target_email || "").trim();
+    const recipients = deliveryRecipientForRow(row || {});
     deliveryMailSubject.value = buildDeliveryMailSubject(row || {});
     deliveryMailRecipients.value = recipients;
     deliveryMailMeta.innerHTML = `המייל יישלח עבור <strong>${escapeHtml(row?.company || "לקוח ללא שם")}</strong>, על הזמנה <strong>${escapeHtml(row?.po_number || "—")}</strong> וחשבונית <strong>${escapeHtml(row?.tax_invoice_number || "—")}</strong>.`;
@@ -34493,8 +36180,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function openDeliveryCocModal(row) {
     if (!deliveryCocModal || !deliveryCocRecipients || !row) return;
     currentDeliveryCocRow = row || null;
-    const contact = findDeliveryContactByCompany(row?.company || "");
-    const recipients = String(contact?.email || row?.target_email || "").trim();
+    const recipients = deliveryRecipientForRow(row || {});
     deliveryCocRecipients.value = recipients;
     if (deliveryCocMeta) {
       deliveryCocMeta.innerHTML = `המייל יישלח עבור <strong>${escapeHtml(row?.company || "לקוח ללא שם")}</strong>, על הזמנה <strong>${escapeHtml(row?.po_number || "—")}</strong> ויצרף את מסמך ה־<strong>COC</strong> בלבד.`;
@@ -34732,7 +36418,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <td>
               <div class="delivery-confirm-primary">
                 <div class="delivery-confirm-company-line"><strong>${company}</strong>${sandboxBadge}</div>
-                <div class="delivery-confirm-meta">${formatDeliveryRecipientHtml(findDeliveryContactByCompany(row.company)?.email || row.target_email || "אין עדיין מייל יעד")}</div>
+                <div class="delivery-confirm-meta">${formatDeliveryRecipientHtml(deliveryRecipientForRow(row) || "אין עדיין מייל יעד")}</div>
               </div>
             </td>
             <td>${poNumber}</td>
@@ -35951,6 +37637,70 @@ document.addEventListener("DOMContentLoaded", () => {
       throw error;
     }
   };
+
+  let authSessionCheckTimer = null;
+  let authSessionRedirectInProgress = false;
+
+  function scheduleAuthSessionCheck(expiresAt) {
+    if (authSessionCheckTimer) {
+      clearTimeout(authSessionCheckTimer);
+      authSessionCheckTimer = null;
+    }
+    const expiresAtMs = Number(expiresAt || 0) * 1000;
+    const now = Date.now();
+    const remainingMs = expiresAtMs - now;
+    const nextDelayMs = Number.isFinite(expiresAtMs) && remainingMs > 0
+      ? (remainingMs <= 6 * 60 * 60 * 1000
+          ? Math.max(5000, remainingMs + 1000)
+          : 6 * 60 * 60 * 1000)
+      : 60 * 1000;
+    authSessionCheckTimer = window.setTimeout(() => {
+      void checkAuthSession({ redirectOnUnauthenticated: true });
+    }, nextDelayMs);
+  }
+
+  async function checkAuthSession({ redirectOnUnauthenticated = true } = {}) {
+    if (authSessionRedirectInProgress) return false;
+    try {
+      const response = await nativeFetch("/auth/session-status", {
+        method: "GET",
+        cache: "no-store",
+        headers: { "x-po-session-check": "1" },
+      });
+      if (response.status === 401) {
+        if (redirectOnUnauthenticated) {
+          authSessionRedirectInProgress = true;
+          window.location.replace("/auth/login");
+        }
+        return false;
+      }
+      if (!response.ok) {
+        scheduleAuthSessionCheck(0);
+        return true;
+      }
+      const payload = await response.json().catch(() => null);
+      scheduleAuthSessionCheck(payload?.expires_at || 0);
+      return true;
+    } catch (error) {
+      scheduleAuthSessionCheck(0);
+      return true;
+    }
+  }
+
+  window.addEventListener("focus", () => {
+    void checkAuthSession({ redirectOnUnauthenticated: true });
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      void checkAuthSession({ redirectOnUnauthenticated: true });
+    }
+  });
+  window.addEventListener("pageshow", () => {
+    void checkAuthSession({ redirectOnUnauthenticated: true });
+  });
+  window.setTimeout(() => {
+    void checkAuthSession({ redirectOnUnauthenticated: true });
+  }, 1000);
 
   function syncDraftStorage() {
     try {
@@ -39657,6 +41407,106 @@ document.addEventListener("DOMContentLoaded", () => {
     button.addEventListener("click", () => setActiveTab(button.dataset.tab));
   });
 
+  installationsRefreshButton?.addEventListener("click", () => {
+    void loadInstallationsFromServer({ force: false });
+  });
+
+  installationsForceSyncButton?.addEventListener("click", () => {
+    void loadInstallationsFromServer({ force: true });
+  });
+
+  installationsSearchInput?.addEventListener("input", () => {
+    renderInstallationsView();
+  });
+
+  installationsStatusFilter?.addEventListener("change", () => {
+    renderInstallationsView();
+  });
+
+  installationsOpenOnly?.addEventListener("change", () => {
+    renderInstallationsView();
+  });
+
+  installationsOverdueOnly?.addEventListener("change", () => {
+    renderInstallationsView();
+  });
+
+  const bootstrapInstallationsIndicator = () => {
+    if (installationsLoaded || installationsLoading) return;
+    void loadInstallationsFromServer({ force: false });
+  };
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => bootstrapInstallationsIndicator(), { timeout: 1800 });
+  } else {
+    window.setTimeout(bootstrapInstallationsIndicator, 600);
+  }
+
+  installationsList?.addEventListener("click", event => {
+    const button = event.target.closest("[data-installation-select]");
+    if (!button) return;
+    const installationId = String(button.dataset.installationSelect || "").trim();
+    if (!installationId) return;
+    selectedInstallationId = installationId;
+    renderInstallationsView();
+  });
+
+  installationsDetail?.addEventListener("click", event => {
+    const saveCaseButton = event.target.closest("[data-installation-case-save]");
+    if (saveCaseButton) {
+      void saveInstallationCaseChanges();
+      return;
+    }
+    const saveVisitButton = event.target.closest("[data-installation-visit-save]");
+    if (saveVisitButton) {
+      void saveInstallationVisit();
+      return;
+    }
+    const resetVisitButton = event.target.closest("[data-installation-visit-reset]");
+    if (resetVisitButton) {
+      const row = installationCaseById(selectedInstallationId);
+      if (!row) return;
+      resetInstallationDraft(row);
+      renderInstallationDetail(row);
+      return;
+    }
+    const deleteVisitButton = event.target.closest("[data-installation-visit-delete]");
+    if (deleteVisitButton) {
+      void deleteInstallationVisit(deleteVisitButton.dataset.installationVisitDelete || "");
+    }
+  });
+
+  installationsDetail?.addEventListener("input", event => {
+    const row = installationCaseById(selectedInstallationId);
+    if (!row) return;
+    const draft = installationDraftFor(row);
+    if (!draft) return;
+    const visitField = event.target.closest("[data-installation-visit-field]");
+    if (visitField) {
+      draft[visitField.dataset.installationVisitField] = visitField.value;
+      return;
+    }
+    const qtyField = event.target.closest("[data-installation-visit-qty]");
+    if (qtyField) {
+      draft.quantities[qtyField.dataset.installationVisitQty] = qtyField.value;
+    }
+  });
+
+  installationsDetail?.addEventListener("change", event => {
+    const row = installationCaseById(selectedInstallationId);
+    if (!row) return;
+    const draft = installationDraftFor(row);
+    if (!draft) return;
+    const visitField = event.target.closest("[data-installation-visit-field]");
+    if (visitField) {
+      draft[visitField.dataset.installationVisitField] = visitField.value;
+      return;
+    }
+    const qtyField = event.target.closest("[data-installation-visit-qty]");
+    if (qtyField) {
+      draft.quantities[qtyField.dataset.installationVisitQty] = qtyField.value;
+    }
+  });
+
   try {
     const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
     if (savedTab) {
@@ -43074,7 +44924,8 @@ document.addEventListener("DOMContentLoaded", () => {
     item_sku: "מק״ט",
     items_count: "מספר שורות הזמנה",
     items_summary: "שורות ההזמנה",
-    footer_text: "הערות"
+    footer_text: "הערות",
+    requires_installation: "דורש התקנה"
   };
 
   const fields = document.getElementById("fields");

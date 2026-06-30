@@ -8,17 +8,24 @@
 :root {
   --brand: #ff7d12;
   --brand-dark: #c2410c;
-  --brand-soft: #fff2e8;
-  --ink: #172033;
-  --muted: #667085;
+  --brand-soft: #fff4ec;
+  --ink: #111827;
+  --ink2: #374151;
+  --muted: #6b7280;
+  --muted2: #9ca3af;
   --line: #e5e7eb;
-  --page: linear-gradient(180deg, #fff8f2 0%, #f4f7fb 100%);
-  --panel: rgba(255, 255, 255, 0.92);
-  --shadow-lg: 0 18px 40px rgba(15, 23, 42, 0.12);
-  --shadow-sm: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --line2: #f3f4f6;
+  --page: #f5f5f7;
+  --panel: #ffffff;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.09);
+  --radius: 14px;
+  --radius-lg: 20px;
+  --nav-h: 72px;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
 body {
   margin: 0;
@@ -26,109 +33,249 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: var(--page);
   color: var(--ink);
-  padding: max(14px, env(safe-area-inset-top)) 14px max(18px, env(safe-area-inset-bottom));
+  padding-top: 0;
+  padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
 }
 
-.app-shell {
-  display: grid;
-  gap: 14px;
+/* ─── App header ─── */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--line);
+  padding: max(10px, env(safe-area-inset-top)) 16px 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.hero,
-.panel,
-.status {
-  background: var(--panel);
-  border: 1px solid rgba(255, 255, 255, 0.9);
-  border-radius: 24px;
-  box-shadow: var(--shadow-lg);
-}
-
-.hero {
-  padding: 18px 18px 20px;
-  text-align: center;
-}
-
-.logo {
-  width: 128px;
-  max-width: 55vw;
-  height: auto;
+.header-logo {
+  height: 32px;
+  width: auto;
   object-fit: contain;
-  margin-bottom: 14px;
+  flex-shrink: 0;
 }
 
-.kicker {
-  display: inline-flex;
+.header-status {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-status.ok   { color: #16a34a; }
+.header-status.err  { color: #dc2626; }
+
+.header-logout {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: white;
+  color: var(--muted);
+  border-radius: 20px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+/* ─── Bottom nav ─── */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.nav-btn {
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: var(--brand-soft);
-  color: var(--brand-dark);
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.hero h1 {
-  margin: 12px 0 8px;
-  font-size: 30px;
-  line-height: 1.08;
-  letter-spacing: -0.03em;
-}
-
-.hero p {
-  margin: 0;
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.65;
-}
-
-.status {
-  padding: 12px 14px;
-  font-size: 14px;
-  font-weight: 700;
-  min-width: 0;
-}
-
-.status-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
-}
-
-.logout-button {
-  appearance: none;
-  border: 1px solid #ffd4b0;
-  background: #fff;
-  color: var(--brand-dark);
-  border-radius: 16px;
-  padding: 12px 16px;
+  gap: 3px;
+  padding: 10px 4px;
+  border: none;
+  background: none;
+  color: var(--muted2);
   font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s;
+}
+
+.nav-btn svg { width: 22px; height: 22px; stroke-width: 1.8; }
+.nav-btn span { display: block; }
+
+.nav-btn.active {
+  color: var(--brand);
+}
+
+.nav-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 18px);
+  background: #ef4444;
+  color: white;
+  font-size: 9px;
   font-weight: 800;
+  border-radius: 20px;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+  line-height: 14px;
+}
+
+/* ─── More sheet ─── */
+.more-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: none;
+  background: rgba(0,0,0,0);
+  transition: background 0.25s;
+}
+.more-sheet-overlay.open {
+  display: block;
+  background: rgba(0,0,0,0.35);
+}
+.more-sheet {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--panel);
+  border-radius: 24px 24px 0 0;
+  padding: 8px 0 calc(24px + env(safe-area-inset-bottom));
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.more-sheet-overlay.open .more-sheet {
+  transform: translateY(0);
+}
+.more-sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--line);
+  border-radius: 999px;
+  margin: 8px auto 16px;
+}
+.more-sheet-title {
+  padding: 0 20px 12px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  border-bottom: 1px solid var(--line2);
+}
+.more-sheet-grid {
+  display: grid;
+  padding: 8px 0;
+}
+.more-sheet-btn {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 20px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: right;
+  width: 100%;
+}
+.more-sheet-btn:active { background: var(--line2); }
+.more-sheet-btn svg { color: var(--muted); flex-shrink: 0; }
+
+/* ─── App shell ─── */
+.app-shell {
+  display: grid;
+  gap: 0;
+  padding: 12px;
+}
+
+/* Legacy hero — hide it, replaced by header */
+.hero { display: none; }
+.status-row { display: none; }
+.tabs-shell { display: none; }
+
+/* ─── Cards / panels ─── */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 16px;
   box-shadow: var(--shadow-sm);
 }
 
-.status.success { background: #16a34a; color: white; }
-.status.error { background: #dc2626; color: white; }
-
-.panel {
-  padding: 16px;
-}
-
 .section-title {
-  margin: 0 0 6px;
-  font-size: 24px;
-  line-height: 1.1;
+  margin: 0 0 4px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.2;
 }
 
 .section-copy {
   margin: 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.65;
+  font-size: 13px;
+  line-height: 1.6;
 }
+
+/* .kicker still used in some panels */
+.kicker, .section-kicker {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--brand-soft);
+  color: var(--brand-dark);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+/* Legacy status → slim inline pill */
+.status {
+  display: none;
+}
+#statusBar {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: none;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+}
+#statusBar.success { color: #16a34a; }
+#statusBar.error   { color: #dc2626; }
+
+/* ── legacy status/logout kept for JS compat, visually hidden ── */
+.logout-button { display: none; }
 
 .step-grid,
 .summary-grid,
@@ -151,7 +298,7 @@ body {
 .download-card,
 .progress-wrap,
 .edited-summary {
-  border-radius: 18px;
+  border-radius: var(--radius);
   border: 1px solid var(--line);
   background: white;
   box-shadow: var(--shadow-sm);
@@ -163,70 +310,170 @@ body {
 }
 
 .step-index {
-  width: 30px;
-  height: 30px;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   background: var(--brand-soft);
   color: var(--brand-dark);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 800;
 }
 
 .step-card strong,
 .summary-card strong {
   display: block;
-  margin-top: 10px;
-  font-size: 16px;
+  margin-top: 8px;
+  font-size: 14px;
+  font-weight: 700;
 }
 
 .step-card span,
 .summary-card span {
   display: block;
-  margin-top: 4px;
+  margin-top: 3px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 11px;
   line-height: 1.5;
 }
 
+/* ─── Installations tab ─── */
+.install-summary-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+}
+.install-summary-chip {
+  background: var(--line2);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.install-summary-chip.orange { background: var(--brand-soft); color: var(--brand-dark); }
+
+.install-list { display: grid; gap: 10px; }
+.install-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+.install-card:active { box-shadow: var(--shadow-md); }
+.install-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.install-card-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.install-card-po {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.install-card-meta {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 6px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.install-card-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.install-badge-pending { background: #fef3c7; color: #92400e; }
+.install-badge-scheduled { background: #dbeafe; color: #1e40af; }
+.install-badge-done { background: #dcfce7; color: #166534; }
+.install-badge-new { background: #fde8d8; color: #c2410c; }
+.install-empty {
+  text-align: center;
+  color: var(--muted2);
+  padding: 32px 16px;
+  font-size: 14px;
+}
+
+/* ─── Activity tab ─── */
+.activity-list { display: grid; gap: 1px; background: var(--line); border-radius: var(--radius); overflow: hidden; }
+.activity-row {
+  background: var(--panel);
+  padding: 12px 14px;
+  display: grid;
+  gap: 2px;
+}
+.activity-row:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+.activity-row:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+.activity-row-action {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.activity-row-desc {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.activity-row-meta {
+  font-size: 11px;
+  color: var(--muted2);
+  margin-top: 2px;
+}
+
 .upload-box {
-  margin-top: 14px;
-  border-radius: 20px;
-  border: 1.5px dashed #f2bb91;
-  background:
-    radial-gradient(circle at top right, rgba(255, 125, 18, 0.16), transparent 34%),
-    linear-gradient(180deg, #fffaf6 0%, #fff 100%);
-  padding: 24px 16px;
+  margin-top: 12px;
+  border-radius: var(--radius);
+  border: 1.5px dashed rgba(255,125,18,0.4);
+  background: var(--brand-soft);
+  padding: 22px 16px;
   text-align: center;
   cursor: pointer;
 }
 
 .upload-icon {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 14px;
-  border-radius: 20px;
-  background: linear-gradient(135deg, var(--brand) 0%, #ff9d4c 100%);
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 16px;
+  background: var(--brand);
   color: white;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 28px;
-  box-shadow: 0 14px 30px rgba(255, 125, 18, 0.26);
+  font-size: 24px;
 }
 
 .upload-box strong {
   display: block;
-  font-size: 20px;
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .upload-box p {
-  margin: 8px 0 0;
+  margin: 6px 0 0;
   color: var(--muted);
-  font-size: 14px;
-  line-height: 1.6;
+  font-size: 13px;
+  line-height: 1.55;
 }
 
 .file-name {
@@ -327,10 +574,10 @@ body {
 }
 
 .assistant-panel {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   padding: 16px;
 }
 
@@ -441,10 +688,10 @@ body {
 }
 
 .receipts-panel {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   padding: 16px;
 }
 
@@ -523,10 +770,10 @@ body {
 }
 
 .income-panel {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   padding: 16px;
 }
 
@@ -774,10 +1021,10 @@ body {
 }
 
 .payments-panel {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   padding: 16px;
 }
 
@@ -1622,53 +1869,25 @@ body {
   color: #0f8a42;
 }
 
-.tabs-shell {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.top-tab {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 125, 18, 0.16);
-  background: rgba(255, 255, 255, 0.9);
-  color: var(--muted);
-  border-radius: 999px;
-  padding: 14px 22px;
-  font: inherit;
-  font-weight: 800;
-  box-shadow: var(--shadow-sm);
-  min-width: 0;
-  white-space: normal;
-  line-height: 1.15;
-  min-height: 48px;
-  font-size: 11px;
-  padding: 13px 8px;
-}
-
-.top-tab.active {
-  background: linear-gradient(135deg, var(--brand) 0%, #ff9d4c 100%);
-  color: white;
-  border-color: transparent;
-}
+.tabs-shell { display: none; }
+.top-tab { display: none; }
 
 .tab-panel {
   display: none;
+  padding: 0;
 }
 
 .tab-panel.active {
   display: grid;
-  gap: 14px;
+  gap: 12px;
 }
 
 .inventory-panel {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: var(--shadow-lg);
-  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
 }
 
 .inventory-summary {
@@ -1704,10 +1923,10 @@ body {
 .admin-property-card,
 .admin-doc-card,
 .admin-vehicle-card {
-  border-radius: 24px;
-  border: 1px solid rgba(255, 125, 18, 0.14);
-  background: linear-gradient(160deg, rgba(255,255,255,0.98), rgba(255,250,245,0.94));
-  box-shadow: var(--shadow-md);
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow-sm);
 }
 
 .admin-jump-btn {
@@ -3306,19 +3525,25 @@ input[type="file"] { display: none; }
 button {
   width: 100%;
   border: none;
-  border-radius: 16px;
-  padding: 15px 18px;
-  font-size: 16px;
-  font-weight: 800;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 700;
   background: var(--brand);
   color: white;
-  box-shadow: 0 14px 28px rgba(255, 125, 18, 0.22);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: none;
+  transition: opacity 0.15s, background 0.15s;
 }
 
+button:active { opacity: 0.85; }
+
 button:disabled {
-  opacity: 0.65;
+  opacity: 0.5;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
 .ghost-btn {
@@ -3845,28 +4070,30 @@ button:disabled {
 <body>
 <div id="toastStack" class="toast-stack" aria-live="polite" aria-atomic="true"></div>
 
+<!-- App header (replaces hero) -->
+<header class="app-header">
+  <img class="header-logo" src="/static/logo.png" alt="בן יעקב">
+  <span id="statusBar" class="header-status">מוכן</span>
+  <button type="button" class="header-logout" id="logoutButton">יציאה</button>
+</header>
+
+<!-- legacy hidden elements for JS compat -->
+<div class="status-row" style="display:none">
+  <div class="status" id="statusBarLegacy"></div>
+  <button type="button" class="logout-button" id="logoutButtonLegacy"></button>
+</div>
+
+<div class="tabs-shell" style="display:none">
+  <button type="button" class="top-tab active" data-tab="orders">הזמנות</button>
+  <button type="button" class="top-tab" data-tab="project-managers">מנהלי פרויקטים</button>
+  <button type="button" class="top-tab" data-tab="inventory">מלאי</button>
+  <button type="button" class="top-tab" data-tab="office">משרד</button>
+  <button type="button" class="top-tab" data-tab="payments-transfers">תשלומים והעברות</button>
+  <button type="button" class="top-tab" data-tab="income">הכנסות</button>
+  <button type="button" class="top-tab" data-tab="admin">מנהלה</button>
+</div>
+
 <div class="app-shell">
-  <section class="hero">
-    <img class="logo" src="/static/logo.png" alt="לוגו בן יעקב פתרונות טקסטיל">
-    <div class="kicker">Mobile Workflow</div>
-    <h1>הזמנת רכש מהאייפון</h1>
-    <p>גרסה מותאמת למובייל כדי שתוכל להעלות PDF, לבדוק נתונים, ליצור מסמכים ולהוריד אותם גם כשאתה רחוק מהמחשב.</p>
-  </section>
-
-  <div class="status-row">
-    <div class="status" id="statusBar">מוכן</div>
-    <button type="button" class="logout-button" id="logoutButton">התנתקות</button>
-  </div>
-
-  <div class="tabs-shell">
-    <button type="button" class="top-tab active" data-tab="orders">הזמנות</button>
-    <button type="button" class="top-tab" data-tab="project-managers">מנהלי פרויקטים</button>
-    <button type="button" class="top-tab" data-tab="inventory">מלאי</button>
-    <button type="button" class="top-tab" data-tab="office">משרד</button>
-    <button type="button" class="top-tab" data-tab="payments-transfers">תשלומים והעברות</button>
-    <button type="button" class="top-tab" data-tab="income">הכנסות</button>
-    <button type="button" class="top-tab" data-tab="admin">מנהלה</button>
-  </div>
 
   <button type="button" id="supportCenterFab" class="support-fab" aria-label="פתח מרכז תמיכה">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -5748,6 +5975,91 @@ button:disabled {
       </div>
     </section>
   </section>
+
+  <!-- ─── התקנות ─── -->
+  <section class="tab-panel" data-tab-panel="installations">
+    <section class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h2 class="section-title" style="margin:0;">התקנות</h2>
+        <button type="button" id="installationsMobileRefresh" class="ghost-btn" style="padding:8px 14px;font-size:13px;">רענן</button>
+      </div>
+      <div id="installationsMobileSummary" class="install-summary-bar"></div>
+      <div id="installationsMobileList" class="install-list">
+        <div class="install-empty">טוען...</div>
+      </div>
+    </section>
+  </section>
+
+  <!-- ─── פעולות ─── -->
+  <section class="tab-panel" data-tab-panel="activity">
+    <section class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <h2 class="section-title" style="margin:0;">יומן פעולות</h2>
+        <button type="button" id="activityMobileRefresh" class="ghost-btn" style="padding:8px 14px;font-size:13px;">רענן</button>
+      </div>
+      <div id="activityMobileList" class="activity-list">
+        <div class="install-empty">טוען...</div>
+      </div>
+    </section>
+  </section>
+
+</div><!-- /app-shell -->
+
+<!-- ─── Bottom navigation ─── -->
+<nav class="bottom-nav" id="bottomNav">
+  <button type="button" class="nav-btn active" data-nav-tab="orders">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+    <span>הזמנות</span>
+  </button>
+  <button type="button" class="nav-btn" data-nav-tab="payments-transfers">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    <span>תשלומים</span>
+  </button>
+  <button type="button" class="nav-btn" data-nav-tab="installations">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+    <span>התקנות</span>
+  </button>
+  <button type="button" class="nav-btn" data-nav-tab="activity">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    <span>פעולות</span>
+  </button>
+  <button type="button" class="nav-btn" id="moreNavBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="1" fill="currentColor"/><circle cx="12" cy="12" r="1" fill="currentColor"/><circle cx="12" cy="19" r="1" fill="currentColor"/></svg>
+    <span>עוד</span>
+  </button>
+</nav>
+
+<!-- ─── "עוד" bottom sheet ─── -->
+<div class="more-sheet-overlay" id="moreSheetOverlay">
+  <div class="more-sheet">
+    <div class="more-sheet-handle"></div>
+    <div class="more-sheet-title">עוד</div>
+    <div class="more-sheet-grid">
+      <button type="button" class="more-sheet-btn" data-nav-tab="inventory">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+        מלאי
+      </button>
+      <button type="button" class="more-sheet-btn" data-nav-tab="income">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        הכנסות
+      </button>
+      <button type="button" class="more-sheet-btn" data-nav-tab="project-managers">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        מנהלי פרויקטים
+      </button>
+      <button type="button" class="more-sheet-btn" data-nav-tab="office">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        משרד
+      </button>
+      <button type="button" class="more-sheet-btn" data-nav-tab="admin">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        מנהלה
+      </button>
+    </div>
+    <div style="padding:0 16px;margin-top:8px;border-top:1px solid var(--line2);padding-top:12px;">
+      <button type="button" class="ghost-btn" id="logoutFromMoreSheet" style="width:100%;justify-content:center;">התנתקות</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -6072,6 +6384,132 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   logoutButton?.addEventListener("click", logoutFromApp);
+  document.getElementById("logoutFromMoreSheet")?.addEventListener("click", logoutFromApp);
+  document.getElementById("header-logout-btn")?.addEventListener("click", logoutFromApp);
+  document.querySelector(".header-logout")?.addEventListener("click", logoutFromApp);
+
+  // ─── Bottom nav ───
+  document.querySelectorAll(".nav-btn[data-nav-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      closeMoreSheet();
+      setActiveTab(btn.dataset.navTab);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  const moreNavBtn = document.getElementById("moreNavBtn");
+  const moreSheetOverlay = document.getElementById("moreSheetOverlay");
+
+  function openMoreSheet() {
+    moreSheetOverlay?.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+
+  function closeMoreSheet() {
+    moreSheetOverlay?.classList.remove("open");
+    document.body.style.overflow = "";
+  }
+
+  moreNavBtn?.addEventListener("click", openMoreSheet);
+  moreSheetOverlay?.addEventListener("click", e => {
+    if (e.target === moreSheetOverlay) closeMoreSheet();
+  });
+
+  document.querySelectorAll(".more-sheet-btn[data-nav-tab]").forEach(btn => {
+    btn.addEventListener("click", () => {
+      closeMoreSheet();
+      setActiveTab(btn.dataset.navTab);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+  });
+
+  // ─── Installations tab ───
+  let installationsLoadedAt = 0;
+  async function loadInstallationsMobile(force = false) {
+    if (!force && Date.now() - installationsLoadedAt < 60000) return;
+    const listEl = document.getElementById("installationsMobileList");
+    const summaryEl = document.getElementById("installationsMobileSummary");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="install-empty">טוען...</div>';
+    try {
+      const resp = await fetch("/installations-state");
+      if (!resp.ok) throw new Error(resp.status);
+      const data = await resp.json();
+      installationsLoadedAt = Date.now();
+      const cases = data.cases || [];
+      const summary = data.summary || {};
+      if (summaryEl) {
+        const chips = [
+          { label: `סה"כ: ${summary.count || 0}`, cls: "" },
+          summary.open_count ? { label: `פתוחות: ${summary.open_count}`, cls: "orange" } : null,
+          summary.pending_count ? { label: `ממתינות: ${summary.pending_count}`, cls: "" } : null,
+        ].filter(Boolean);
+        summaryEl.innerHTML = chips.map(c => `<span class="install-summary-chip ${c.cls}">${c.label}</span>`).join("");
+      }
+      if (!cases.length) {
+        listEl.innerHTML = '<div class="install-empty">אין מקרי התקנה</div>';
+        return;
+      }
+      listEl.innerHTML = cases.map(c => {
+        const status = c.status || "ממתין לתיאום";
+        const badgeCls = c.pending_order_creation ? "install-badge-new"
+          : status.includes("הסתיים") ? "install-badge-done"
+          : status.includes("מתוזמן") || status.includes("תיאום") ? "install-badge-scheduled"
+          : "install-badge-pending";
+        const address = [c.address, c.city].filter(Boolean).join(", ");
+        return `<div class="install-card">
+          <div class="install-card-header">
+            <div>
+              <div class="install-card-name">${escapeHtml(c.customer_name || "")}</div>
+              <div class="install-card-po">הזמנה ${escapeHtml(c.po_number || "")}</div>
+            </div>
+            <span class="install-card-badge ${badgeCls}">${escapeHtml(c.pending_order_label || status)}</span>
+          </div>
+          ${address ? `<div class="install-card-meta">${escapeHtml(address)}</div>` : ""}
+        </div>`;
+      }).join("");
+    } catch (err) {
+      listEl.innerHTML = '<div class="install-empty">שגיאה בטעינה</div>';
+    }
+  }
+
+  document.getElementById("installationsMobileRefresh")?.addEventListener("click", () => loadInstallationsMobile(true));
+
+  // ─── Activity tab ───
+  let activityLoadedAt = 0;
+  async function loadActivityMobile(force = false) {
+    if (!force && Date.now() - activityLoadedAt < 60000) return;
+    const listEl = document.getElementById("activityMobileList");
+    if (!listEl) return;
+    listEl.innerHTML = '<div class="install-empty">טוען...</div>';
+    try {
+      const resp = await fetch("/activity-log");
+      if (!resp.ok) throw new Error(resp.status);
+      const data = await resp.json();
+      activityLoadedAt = Date.now();
+      const rows = data.rows || [];
+      if (!rows.length) {
+        listEl.innerHTML = '<div class="install-empty">אין פעולות</div>';
+        return;
+      }
+      const fmtDate = iso => {
+        if (!iso) return "";
+        const d = new Date(iso);
+        return d.toLocaleString("he-IL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+      };
+      listEl.innerHTML = '<div class="activity-list">' + rows.slice(0, 200).map(r => `
+        <div class="activity-row">
+          <div class="activity-row-action">${escapeHtml(r.action || "")}</div>
+          ${r.description ? `<div class="activity-row-desc">${escapeHtml(r.description)}</div>` : ""}
+          <div class="activity-row-meta">${escapeHtml(fmtDate(r.created_at))}${r.tab ? " · " + escapeHtml(r.tab) : ""}${r.user_name ? " · " + escapeHtml(r.user_name) : ""}</div>
+        </div>`).join("") + '</div>';
+    } catch (err) {
+      listEl.innerHTML = '<div class="install-empty">שגיאה בטעינה</div>';
+    }
+  }
+
+  document.getElementById("activityMobileRefresh")?.addEventListener("click", () => loadActivityMobile(true));
+
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   let assistantRecognition = null;
   let assistantRecording = false;
@@ -6263,8 +6701,21 @@ document.addEventListener("DOMContentLoaded", () => {
     topTabs.forEach(button => button.classList.toggle("active", button.dataset.tab === safeTabName));
     tabPanels.forEach(panel => panel.classList.toggle("active", panel.dataset.tabPanel === safeTabName));
     supportCenterFab?.classList.toggle("active", safeTabName === "support-center");
+    // sync bottom nav
+    const primaryTabs = ["orders", "payments-transfers", "installations", "activity"];
+    document.querySelectorAll(".nav-btn[data-nav-tab]").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.navTab === safeTabName);
+    });
+    document.getElementById("moreNavBtn")?.classList.toggle("active",
+      safeTabName !== "support-center" && !primaryTabs.includes(safeTabName));
     if (safeTabName === "payments-transfers") {
       loadPaymentsTransferState();
+    }
+    if (safeTabName === "installations") {
+      loadInstallationsMobile();
+    }
+    if (safeTabName === "activity") {
+      loadActivityMobile();
     }
     try {
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, safeTabName);
@@ -9108,15 +9559,27 @@ document.addEventListener("DOMContentLoaded", () => {
     return deliveryContactRows.find(row => normalizeDeliveryCompanyName(row.company) === key) || null;
   }
 
+  function isDeliveryInternalPrintOnlyCompany(company) {
+    const normalized = normalizeDeliveryCompanyName(company).replace(/[״"]/g, "");
+    return normalized.includes("דניה סיבוס") || normalized.includes("פורמה פרויקטים") || normalized.includes("פורמה פרוייקטים");
+  }
+
+  function deliveryRecipientForRow(row) {
+    if (isDeliveryInternalPrintOnlyCompany(row?.company || "")) {
+      return "asafbeny@gmail.com";
+    }
+    const contact = findDeliveryContactByCompany(row?.company || "");
+    return String(contact?.email || row?.target_email || "").trim();
+  }
+
   function refreshDeliveryConfirmationRecipients() {
     renderDeliveryConfirmationRows();
     if (currentDeliveryConfirmationRow && deliveryMailModal?.classList.contains("visible")) {
       const refreshedRow = deliveryConfirmationRows.find(item => String(item?.po_number || "").trim() === String(currentDeliveryConfirmationRow?.po_number || "").trim());
       if (refreshedRow) {
         currentDeliveryConfirmationRow = refreshedRow;
-        const contact = findDeliveryContactByCompany(refreshedRow.company || "");
         if (deliveryMailRecipients) {
-          deliveryMailRecipients.value = String(contact?.email || refreshedRow?.target_email || "").trim();
+          deliveryMailRecipients.value = deliveryRecipientForRow(refreshedRow);
         }
       }
     }
@@ -9189,14 +9652,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function openDeliveryMailModal(row) {
     if (!deliveryMailModal || !deliveryMailSubject || !deliveryMailMessage || !deliveryMailRecipients) return;
     currentDeliveryConfirmationRow = row || null;
-    const contact = findDeliveryContactByCompany(row?.company || "");
-    const recipients = String(contact?.email || row?.target_email || "").trim();
+    const recipients = deliveryRecipientForRow(row || {});
     const isPlasan = String(row?.company || "").replace(/[״"]/g, "").includes("פלסן סאסא");
+    const isInternalPrintOnly = isDeliveryInternalPrintOnlyCompany(row?.company || "");
     deliveryMailSubject.value = buildDeliveryMailSubject(row || {});
     deliveryMailMessage.value = buildDeliveryMailBody(row || {});
     deliveryMailRecipients.value = recipients;
     deliveryMailMeta.innerHTML = `המייל יישלח עבור <strong>${escapeHtml(row?.company || "לקוח ללא שם")}</strong>, על הזמנה <strong>${escapeHtml(row?.po_number || "—")}</strong> וחשבונית <strong>${escapeHtml(row?.tax_invoice_number || "—")}</strong>.`;
-    deliveryMailAttachments.innerHTML = `
+    deliveryMailAttachments.innerHTML = isInternalPrintOnly
+      ? `
+      <strong>הקובץ שיצורף:</strong>
+      <span>1. קובץ PDF מאוחד להדפסה: אישור מסירה חתום + הזמנת רכש + חשבונית מס</span>
+    `
+      : `
       <strong>הקבצים שיצורפו:</strong>
       <span>1. חשבונית מס ${escapeHtml(row?.tax_invoice_number || "—")}</span>
       <span>2. ${escapeHtml(row?.signed_delivery_name || "ת.משלוח חתומה שטרם הועלתה")}</span>
@@ -9318,7 +9786,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <article class="inventory-card">
           <h3><span class="delivery-confirm-company-line">${company}${sandboxBadge}</span></h3>
-          <div class="delivery-confirm-meta">${formatDeliveryRecipientHtml(findDeliveryContactByCompany(row.company)?.email || row.target_email || "אין עדיין מייל יעד")}</div>
+          <div class="delivery-confirm-meta">${formatDeliveryRecipientHtml(deliveryRecipientForRow(row) || "אין עדיין מייל יעד")}</div>
           <div class="inventory-card-grid">
             <div class="inventory-field"><label>הזמנת רכש</label><input type="text" value="${poNumber}" disabled></div>
             <div class="inventory-field"><label>תאריך הזמנה</label><input type="text" value="${escapeHtml(formatDisplayDate(row.order_date || ""))}" disabled></div>
@@ -10626,7 +11094,7 @@ document.addEventListener("DOMContentLoaded", () => {
       contact_name: "איש קשר", contact_phone: "טלפון איש קשר", payment_terms_label: "תנאי תשלום",
       payment_terms_days: "ימי אשראי", subtotal: "סכום ביניים", vat: "מע״מ", total: "סה״כ",
       item_description: "תיאור מוצר", item_quantity: "כמות", item_unit_price: "מחיר יחידה",
-      item_line_total: "סכום שורה", item_sku: "מק״ט", footer_text: "הערות"
+      item_line_total: "סכום שורה", item_sku: "מק״ט", footer_text: "הערות", requires_installation: "דורש התקנה"
     };
     editedTags.innerHTML = editedKeys.map(key => `<span class="edited-tag">${labels[key] || key}</span>`).join("");
     editedSummary.classList.add("visible");
