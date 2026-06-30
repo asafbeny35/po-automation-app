@@ -1,9 +1,18 @@
 from pathlib import Path
-from bidi.algorithm import get_display
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, features as pil_features
+from PIL.ImageFont import Layout as FontLayout
 import fitz
 from .runtime_paths import PROJECT_ROOT, runtime_root
 
+try:
+    from bidi.algorithm import get_display as _bidi_get_display
+    _HAS_BIDI = True
+except ImportError:
+    _HAS_BIDI = False
+
+_HAS_RAQM = pil_features.check_feature("raqm")
+_FONT_LAYOUT = FontLayout.RAQM if _HAS_RAQM else FontLayout.BASIC
+_RTL_KWARGS = {"direction": "rtl", "language": "he"} if _HAS_RAQM else {}
 
 TEMPLATE_PDF = PROJECT_ROOT / "assets" / "label_template.pdf"
 BUNDLED_FONT = PROJECT_ROOT / "assets" / "NotoSansHebrew-Regular.ttf"
@@ -13,7 +22,12 @@ BG_PNG = CACHE_DIR / "label_template_bg.png"
 
 
 def rtl(text: str) -> str:
-    return get_display(str(text or "").strip())
+    text = str(text or "").strip()
+    if _HAS_RAQM:
+        return text  # RAQM handles RTL shaping and direction natively
+    if _HAS_BIDI:
+        return _bidi_get_display(text)
+    return text
 
 
 def get_font(size: int, bold: bool = False):
@@ -38,7 +52,7 @@ def get_font(size: int, bold: bool = False):
     for path in candidates:
         if Path(path).exists():
             try:
-                return ImageFont.truetype(path, size=size)
+                return ImageFont.truetype(path, size=size, layout_engine=_FONT_LAYOUT)
             except Exception:
                 pass
 
@@ -61,11 +75,12 @@ def ensure_background():
     return BG_PNG
 
 
-def fit_font(draw, text, max_width, start_size=56, min_size=18, bold=False):
+def fit_font(draw, text, max_width, start_size=56, min_size=18, bold=False, rtl_text=False):
     size = start_size
+    kw = _RTL_KWARGS if rtl_text else {}
     while size >= min_size:
         font = get_font(size, bold=bold)
-        bbox = draw.textbbox((0, 0), text, font=font)
+        bbox = draw.textbbox((0, 0), text, font=font, **kw)
         width = bbox[2] - bbox[0]
         if width <= max_width:
             return font
@@ -85,6 +100,21 @@ def draw_centered(draw, box, text, start_size=56, min_size=18, bold=False):
     x = x1 + ((x2 - x1 - tw) / 2)
     y = y1 + ((y2 - y1 - th) / 2) - 2
     draw.text((x, y), text, font=font, fill="black")
+
+
+def draw_rtl(draw, box, text, start_size=56, min_size=18, bold=False):
+    """ציור עברית RTL אמיתי — RAQM כשזמין, bidi כ-fallback."""
+    if not text:
+        return
+    x1, y1, x2, y2 = box
+    max_width = x2 - x1
+    font = fit_font(draw, text, max_width, start_size=start_size, min_size=min_size, bold=bold, rtl_text=True)
+    bbox = draw.textbbox((0, 0), text, font=font, **_RTL_KWARGS)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    x = x2 - tw
+    y = y1 + ((y2 - y1 - th) / 2) - 2
+    draw.text((x, y), text, font=font, fill="black", **_RTL_KWARGS)
 
 
 def split_item(text: str, max_chars=24):
@@ -110,16 +140,15 @@ def generate_label_pdf(data, output="output/label_v2.pdf", debug=False):
     draw = ImageDraw.Draw(img)
 
     # קואורדינטות בפיקסלים על רקע 2x
-    # שמאל = אזור הערכים בלבד
     BOXES = {
-        "customer": (140, 70, 790, 150),
-        "address":  (140, 160, 790, 240),
-        "contact":  (140, 255, 790, 345),
-        "po":       (160, 390, 760, 485),
-        "item1":    (120, 500, 800, 585),
-        "item2":    (120, 555, 800, 625),
-        "qty":      (170, 650, 720, 770),
-        "sku":      (150, 760, 760, 870),
+        "customer": (140, 70,  790, 155),
+        "address":  (140, 162, 790, 242),
+        "contact":  (140, 252, 790, 342),
+        "po":       (160, 392, 760, 472),
+        "item1":    (120, 492, 800, 562),  # שורת פריט — שורה אחת, גופן מתכווץ לפי הצורך
+        "item2":    (120, 492, 800, 562),  # לא בשימוש (מכוסה ע"י item1)
+        "qty":      (140, 564, 680, 630),  # שורת כמות
+        "sku":      (140, 648, 590, 742),  # שורת מק"ט — מעל קו הברקוד
     }
 
     customer = rtl(str(data.get("customer", "")).strip())
@@ -129,24 +158,23 @@ def generate_label_pdf(data, output="output/label_v2.pdf", debug=False):
 
     product_lines = data.get("product_lines") or []
     product_text = " ".join(str(x).strip() for x in product_lines if str(x).strip())
-    item1, item2 = split_item(product_text, max_chars=24)
-    item1 = rtl(item1)
-    item2 = rtl(item2)
+    item1 = rtl(product_text)  # שורה אחת, גופן מתכווץ אוטומטית
+    item2 = ""
 
     qty = str(data.get("quantity", "")).strip()
     qty_text = rtl(f"{qty} יח׳" if qty else "")
 
     sku = str(data.get("sku", "")).strip()
-    sku_text = rtl(f"מק״ט {sku}" if sku else "")
+    sku_text = sku  # מספר — לא צריך bidi
 
-    draw_centered(draw, BOXES["customer"], customer, start_size=34, min_size=20)
-    draw_centered(draw, BOXES["address"], address, start_size=32, min_size=20)
-    draw_centered(draw, BOXES["contact"], contact_line, start_size=30, min_size=18)
-    draw_centered(draw, BOXES["po"], po_number, start_size=42, min_size=24)
-    draw_centered(draw, BOXES["item1"], item1, start_size=34, min_size=20)
-    draw_centered(draw, BOXES["item2"], item2, start_size=26, min_size=18)
-    draw_centered(draw, BOXES["qty"], qty_text, start_size=52, min_size=24)
-    draw_centered(draw, BOXES["sku"], sku_text, start_size=50, min_size=24, bold=True)
+    draw_rtl(draw, BOXES["customer"], customer, start_size=44, min_size=24)
+    draw_rtl(draw, BOXES["address"], address, start_size=42, min_size=24)
+    draw_rtl(draw, BOXES["contact"], contact_line, start_size=38, min_size=22)
+    draw_centered(draw, BOXES["po"], po_number, start_size=48, min_size=28)
+    draw_rtl(draw, BOXES["item1"], item1, start_size=38, min_size=22)
+    draw_rtl(draw, BOXES["item2"], item2, start_size=32, min_size=20)
+    draw_rtl(draw, BOXES["qty"], qty_text, start_size=36, min_size=22)
+    draw_centered(draw, BOXES["sku"], sku_text, start_size=58, min_size=30, bold=True)
 
     if debug:
         for box in BOXES.values():
