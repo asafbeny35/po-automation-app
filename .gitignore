@@ -28,3 +28,4 @@ payments_transfer_cache.json
 *.command
 /ios/
 tmp_ios/
+.env.railway

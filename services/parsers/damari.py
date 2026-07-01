@@ -73,9 +73,32 @@ def _extract_items(lines: list[str], flat: str) -> list[POItem]:
     line_pattern = re.compile(
         r"^([0-9,]+\.\d{2})\s+([0-9,]+\.\d{4})\s+([0-9,]+\.\d{2})\s+([0-9,]+\.\d{2})\s+(?:'חי|יח')\s+(.+?)\s+(\d{4,})$"
     )
+    line_pattern_with_size = re.compile(
+        r"^([0-9,]+\.\d{2})\s+([0-9,]+\.\d{4})\s+([0-9,]+\.\d{2})\s+(\d+(?:\.\d{1,2})?)\s+([0-9.]+\s*/\s*[0-9.]+)\s+(.+?)\s+(\d{4,})$"
+    )
 
     for line in lines:
         if "כ\"הס ינפל" in line or "מ\"עמ" in line or "תורעה" in line:
+            continue
+        sized_match = line_pattern_with_size.match(line)
+        if sized_match:
+            line_total = _amount(sized_match.group(1))
+            unit_price = _amount(sized_match.group(2))
+            quantity = _amount(sized_match.group(4) or sized_match.group(3))
+            size_token = normalize_ws(sized_match.group(5)).replace(" ", "")
+            sku = sized_match.group(7)
+            description_core = _reverse_words(sized_match.group(6)).replace(" -", " - ").strip()
+            description = normalize_ws(f"{description_core} {size_token}".replace(" -מידות", " - מידות")).strip(" -,") or "פריט לא זוהה"
+            items.append(
+                POItem(
+                    sku=sku,
+                    description=description,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    unit="יח'",
+                )
+            )
             continue
         match = line_pattern.match(line)
         if not match:

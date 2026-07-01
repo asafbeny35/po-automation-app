@@ -348,6 +348,35 @@ def list_child_folders(parent_id: str) -> list[dict]:
     return folders
 
 
+def list_folder_files(parent_id: str) -> list[dict]:
+    service = _service()
+    query = (
+        f"'{parent_id}' in parents and mimeType != 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+    result = service.files().list(
+        q=query,
+        spaces="drive",
+        fields="files(id,name,webViewLink,webContentLink,mimeType)",
+        pageSize=1000,
+        includeItemsFromAllDrives=True,
+        supportsAllDrives=True,
+        orderBy="name_natural",
+    ).execute()
+    files: list[dict] = []
+    for item in result.get("files", []) or []:
+        files.append(
+            {
+                "id": str(item.get("id") or "").strip(),
+                "name": str(item.get("name") or "").strip(),
+                "mime_type": str(item.get("mimeType") or "").strip(),
+                "web_view_link": str(item.get("webViewLink") or "").strip(),
+                "web_content_link": str(item.get("webContentLink") or "").strip(),
+            }
+        )
+    return files
+
+
 def upload_file_to_folder(parent_id: str, file_path: str | Path, drive_name: str | None = None) -> dict:
     service = _service()
     file_path = Path(file_path)

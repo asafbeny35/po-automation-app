@@ -73,6 +73,8 @@ class Settings(BaseSettings):
     google_sheets_inactive_customers_tab: str = os.getenv("GOOGLE_SHEETS_INACTIVE_CUSTOMERS_TAB", "לקוחות לא פעילים")
     google_sheets_order_history_tab: str = os.getenv("GOOGLE_SHEETS_ORDER_HISTORY_TAB", "היסטוריה")
     google_sheets_quote_history_tab: str = os.getenv("GOOGLE_SHEETS_QUOTE_HISTORY_TAB", "היסטוריית הצעות מחיר")
+    google_sheets_installation_cases_tab: str = os.getenv("GOOGLE_SHEETS_INSTALLATION_CASES_TAB", "התקנות - תיקים")
+    google_sheets_installation_visits_tab: str = os.getenv("GOOGLE_SHEETS_INSTALLATION_VISITS_TAB", "התקנות - ביקורים")
     google_sheets_pazomat_tab: str = os.getenv("GOOGLE_SHEETS_PAZOMAT_TAB", "פזומט")
     google_sheets_sibus_tab: str = os.getenv("GOOGLE_SHEETS_SIBUS_TAB", "סיבוס")
     google_sheets_working_orders_tab: str = os.getenv("GOOGLE_SHEETS_WORKING_ORDERS_TAB", "הזמנות בעבודה")

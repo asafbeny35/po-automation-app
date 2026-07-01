@@ -13,6 +13,7 @@ import smtplib
 import ssl
 import subprocess
 import time
+from datetime import datetime, timedelta, timezone
 from email.message import EmailMessage
 from email.utils import formataddr
 from pathlib import Path
@@ -407,6 +408,26 @@ def authenticated_user_id(request: Request) -> str | None:
     return user_id or None
 
 
+def authenticated_session_info(request: Request) -> dict[str, Any] | None:
+    debug_user_id = _debug_authenticated_user_id(request)
+    if debug_user_id:
+        now = int(time.time())
+        return {
+            "sub": debug_user_id,
+            "remember": True,
+            "iat": now,
+            "exp": now + (30 * 24 * 60 * 60),
+        }
+    token = request.cookies.get(AUTH_COOKIE_NAME, "")
+    if not token:
+        return None
+    state = load_auth_state()
+    payload = verify_auth_token(token, state["cookie_secret"])
+    if not payload:
+        return None
+    return payload
+
+
 def _debug_private_hostname(value: str) -> bool:
     host = str(value or "").strip().lower()
     if host in {"localhost", "127.0.0.1", "::1"}:
@@ -440,7 +461,9 @@ def auth_cookie_settings(remember_me: bool) -> dict[str, Any]:
         "path": "/",
     }
     if remember_me:
-        settings["max_age"] = 30 * 24 * 60 * 60
+        max_age = 30 * 24 * 60 * 60
+        settings["max_age"] = max_age
+        settings["expires"] = datetime.now(timezone.utc) + timedelta(seconds=max_age)
     return settings
 
 

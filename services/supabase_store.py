@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from typing import Any, Callable
 from urllib import error, parse, request
 
@@ -233,6 +234,10 @@ def _id_inventory_contact(row: JsonDict) -> str:
 
 
 def _map_customer(row: JsonDict, *, active: bool) -> JsonDict:
+    normalized_payload = dict(row or {})
+    normalized_payload["active"] = "TRUE" if active else "FALSE"
+    payment_terms_raw = re.sub(r"[^\d\-]", "", _as_str(row.get("payment_terms_days")))
+    payment_terms_days = int(payment_terms_raw) if payment_terms_raw and re.fullmatch(r"-?\d+", payment_terms_raw) else None
     return {
         "id": _id_customer(row),
         "customer_guid": _as_str(row.get("customer_guid")) or None,
@@ -243,7 +248,7 @@ def _map_customer(row: JsonDict, *, active: bool) -> JsonDict:
         "send": str(row.get("send", "")).strip().lower() in {"1", "true", "yes", "on"},
         "department": _as_str(row.get("department")) or None,
         "accounting_key": _as_str(row.get("accounting_key")) or None,
-        "payment_terms_days": int(_as_str(row.get("payment_terms_days")) or "0") if _as_str(row.get("payment_terms_days")) else None,
+        "payment_terms_days": payment_terms_days,
         "phone": _as_str(row.get("phone")) or None,
         "mobile": _as_str(row.get("mobile")) or None,
         "emails": _json_list(row.get("emails")),
@@ -261,7 +266,7 @@ def _map_customer(row: JsonDict, *, active: bool) -> JsonDict:
         "customer_domain": _as_str(row.get("customer_domain")) or None,
         "bank_details_updated_sent": str(row.get("bank_details_updated_sent", "")).strip().lower() in {"1", "true", "yes", "on"},
         "synced_at": _as_str(row.get("synced_at")) or None,
-        "raw_payload": row,
+        "raw_payload": normalized_payload,
     }
 
 

@@ -24,6 +24,8 @@ _CUSTOMER_ROWS_CACHE: list[dict] = []
 _INACTIVE_CUSTOMER_ROWS_CACHE: list[dict] = []
 _ORDER_HISTORY_ROWS_CACHE: list[dict] = []
 _QUOTE_HISTORY_ROWS_CACHE: list[dict] = []
+_INSTALLATION_CASE_ROWS_CACHE: list[dict] = []
+_INSTALLATION_VISIT_ROWS_CACHE: list[dict] = []
 _PAZOMAT_ROWS_CACHE: list[dict] = []
 _SIBUS_ROWS_CACHE: list[dict] = []
 _WORKING_ORDER_ROWS_CACHE: list[dict] = []
@@ -52,6 +54,8 @@ _CUSTOMER_ROWS_CACHE_TS = 0.0
 _INACTIVE_CUSTOMER_ROWS_CACHE_TS = 0.0
 _ORDER_HISTORY_ROWS_CACHE_TS = 0.0
 _QUOTE_HISTORY_ROWS_CACHE_TS = 0.0
+_INSTALLATION_CASE_ROWS_CACHE_TS = 0.0
+_INSTALLATION_VISIT_ROWS_CACHE_TS = 0.0
 _PAZOMAT_ROWS_CACHE_TS = 0.0
 _SIBUS_ROWS_CACHE_TS = 0.0
 _WORKING_ORDER_ROWS_CACHE_TS = 0.0
@@ -84,6 +88,8 @@ _CUSTOMERS_CACHE_FILE = _CACHE_ROOT / "customers_cache.json"
 _INACTIVE_CUSTOMERS_CACHE_FILE = _CACHE_ROOT / "inactive_customers_cache.json"
 _ORDER_HISTORY_CACHE_FILE = _CACHE_ROOT / "order_history_cache.json"
 _QUOTE_HISTORY_CACHE_FILE = _CACHE_ROOT / "quote_history_cache.json"
+_INSTALLATION_CASES_CACHE_FILE = _CACHE_ROOT / "installation_cases_cache.json"
+_INSTALLATION_VISITS_CACHE_FILE = _CACHE_ROOT / "installation_visits_cache.json"
 _PAZOMAT_CACHE_FILE = _CACHE_ROOT / "pazomat_cache.json"
 _SIBUS_CACHE_FILE = _CACHE_ROOT / "sibus_cache.json"
 _WORKING_ORDER_CACHE_FILE = _CACHE_ROOT / "working_orders_cache.json"
@@ -285,6 +291,7 @@ WORKING_ORDER_HEADERS = [
     "קישור קובץ בדרייב",
     "מזהה תיקיית דרייב",
     "קישור תיקיית דרייב",
+    "כולל התקנה",
     "הערות להזמנה",
     "שם קובץ הערה",
     "נתיב קובץ הערה",
@@ -453,6 +460,7 @@ WORKING_ORDER_FIELDS = [
     "drive_url",
     "drive_folder_id",
     "drive_folder_url",
+    "requires_installation",
     "order_note_text",
     "order_note_file_name",
     "order_note_file_path",
@@ -680,8 +688,133 @@ ORDER_HISTORY_FIELDS = [
     "po_date",
     "items_json",
     "ordered_items_json",
+    "requires_installation",
     "partial_delivery",
     "partial_root_history_id",
+]
+
+INSTALLATION_CASE_HEADERS = [
+    "מזהה התקנה",
+    "מזהה שורש הזמנה",
+    "מזהה היסטוריה נוכחי",
+    "תאריך יצירה",
+    "עודכן לאחרונה",
+    "מקור",
+    "מספר הזמנת רכש",
+    "תאריך הזמנת רכש",
+    "שם לקוח",
+    "ח.פ / ע.מ",
+    "דוא\"ל לקוח",
+    "טלפון לקוח",
+    "כתובת אספקה",
+    "פרויקט",
+    "איש קשר",
+    "טלפון איש קשר",
+    "שוטף + ימים",
+    "תיאור תנאי תשלום",
+    "סטטוס",
+    "סיבת עיכוב",
+    "תאריך ביקור הבא",
+    "תאריך ביקור אחרון",
+    "מספר ביקורים",
+    "הערות",
+    "מזהה תיקיית דרייב",
+    "קישור תיקיית דרייב",
+    "מזהה קובץ הזמנת רכש",
+    "קישור הזמנת רכש",
+    "מספר תעודת משלוח",
+    "מזהה תעודת משלוח",
+    "מספר חשבונית מס",
+    "מזהה חשבונית מס",
+    "מזהה קובץ תעודת משלוח ב-Drive",
+    "מזהה קובץ חשבונית ב-Drive",
+    "מזהה קובץ ממוזג ב-Drive",
+    "מזהה קובץ COC ב-Drive",
+    "קישורי מסמכים",
+    "JSON פריטים להתקנה",
+    "JSON פריטים שהותקנו",
+    "JSON פריטים שנותרו",
+    "סה\"כ כמות בהזמנה",
+    "סה\"כ הותקן",
+    "סה\"כ נותר",
+    "פעיל במקור",
+    "סונכרן לאחרונה",
+]
+
+INSTALLATION_CASE_FIELDS = [
+    "installation_id",
+    "root_history_id",
+    "source_history_id",
+    "created_at",
+    "updated_at",
+    "source_mode",
+    "po_number",
+    "po_date",
+    "customer_name",
+    "customer_id",
+    "customer_email",
+    "customer_phone",
+    "delivery_address",
+    "project",
+    "contact_name",
+    "contact_phone",
+    "payment_terms_days",
+    "payment_terms_label",
+    "status",
+    "delay_reason",
+    "next_visit_date",
+    "last_visit_date",
+    "visit_count",
+    "notes",
+    "order_drive_folder_id",
+    "order_drive_folder_url",
+    "source_po_drive_file_id",
+    "source_po_drive_url",
+    "delivery_document_number",
+    "delivery_document_id",
+    "tax_invoice_number",
+    "tax_invoice_document_id",
+    "delivery_drive_file_id",
+    "invoice_drive_file_id",
+    "merged_drive_file_id",
+    "coc_drive_file_id",
+    "document_links_json",
+    "install_items_json",
+    "installed_items_json",
+    "remaining_items_json",
+    "total_ordered_quantity",
+    "total_installed_quantity",
+    "total_remaining_quantity",
+    "source_active",
+    "last_sync_at",
+]
+
+INSTALLATION_VISIT_HEADERS = [
+    "מזהה ביקור",
+    "מזהה התקנה",
+    "תאריך יצירה",
+    "עודכן לאחרונה",
+    "תאריך ביקור",
+    "תאריך מתוזמן",
+    "סטטוס",
+    "JSON פריטים שהותקנו",
+    "סה\"כ כמות שהותקנה",
+    "הערות",
+    "סיכום קצר",
+]
+
+INSTALLATION_VISIT_FIELDS = [
+    "visit_id",
+    "installation_id",
+    "created_at",
+    "updated_at",
+    "visit_date",
+    "scheduled_date",
+    "status",
+    "installed_items_json",
+    "installed_total_quantity",
+    "notes",
+    "summary_text",
 ]
 
 QUOTE_HISTORY_HEADERS = [
@@ -1850,6 +1983,7 @@ def _payments_transfer_cache_is_fresh() -> bool:
 def warm_local_caches_from_disk() -> dict[str, int]:
     global _CUSTOMER_ROWS_CACHE, _CUSTOMER_ROWS_CACHE_TS, _INACTIVE_CUSTOMER_ROWS_CACHE, _INACTIVE_CUSTOMER_ROWS_CACHE_TS
     global _ORDER_HISTORY_ROWS_CACHE, _ORDER_HISTORY_ROWS_CACHE_TS, _QUOTE_HISTORY_ROWS_CACHE, _QUOTE_HISTORY_ROWS_CACHE_TS
+    global _INSTALLATION_CASE_ROWS_CACHE, _INSTALLATION_CASE_ROWS_CACHE_TS, _INSTALLATION_VISIT_ROWS_CACHE, _INSTALLATION_VISIT_ROWS_CACHE_TS
     global _PAZOMAT_ROWS_CACHE, _PAZOMAT_ROWS_CACHE_TS, _SIBUS_ROWS_CACHE, _SIBUS_ROWS_CACHE_TS
     global _WORKING_ORDER_ROWS_CACHE, _WORKING_ORDER_ROWS_CACHE_TS
     global _SUPPLIER_DELIVERY_NOTE_ROWS_CACHE, _SUPPLIER_DELIVERY_NOTE_ROWS_CACHE_TS
@@ -1903,6 +2037,18 @@ def warm_local_caches_from_disk() -> dict[str, int]:
         _QUOTE_HISTORY_ROWS_CACHE = [dict(row) for row in quote_history_rows]
         _QUOTE_HISTORY_ROWS_CACHE_TS = time.time()
         warmed["quote_history"] = len(quote_history_rows)
+
+    installation_case_rows = _load_installation_cases_disk_cache()
+    if installation_case_rows:
+        _INSTALLATION_CASE_ROWS_CACHE = [dict(row) for row in installation_case_rows]
+        _INSTALLATION_CASE_ROWS_CACHE_TS = time.time()
+        warmed["installation_cases"] = len(installation_case_rows)
+
+    installation_visit_rows = _load_installation_visits_disk_cache()
+    if installation_visit_rows:
+        _INSTALLATION_VISIT_ROWS_CACHE = [dict(row) for row in installation_visit_rows]
+        _INSTALLATION_VISIT_ROWS_CACHE_TS = time.time()
+        warmed["installation_visits"] = len(installation_visit_rows)
 
     pazomat_rows = _load_pazomat_disk_cache()
     if pazomat_rows:
@@ -3415,6 +3561,48 @@ def _ensure_quote_history_sheet(service):
     return title, sheet_id
 
 
+def _installations_tab_name(kind: str) -> str:
+    return (
+        settings.google_sheets_installation_visits_tab
+        if str(kind or "").strip().lower() == "visits"
+        else settings.google_sheets_installation_cases_tab
+    )
+
+
+def _ensure_installations_sheet(service, kind: str):
+    title = _installations_tab_name(kind)
+    headers = INSTALLATION_VISIT_HEADERS if str(kind or "").strip().lower() == "visits" else INSTALLATION_CASE_HEADERS
+    if title in _SHEET_ENSURED_CACHE:
+        sheet_id = _SHEET_ID_CACHE.get(title)
+        return title, sheet_id
+    sheet_id = _sheet_id_by_title(service, title)
+    if sheet_id is None:
+        body = {"requests": [{"addSheet": {"properties": {"title": title}}}]}
+        response = service.spreadsheets().batchUpdate(
+            spreadsheetId=settings.google_sheets_spreadsheet_id,
+            body=body,
+        ).execute()
+        replies = response.get("replies", [])
+        if replies:
+            sheet_id = replies[0].get("addSheet", {}).get("properties", {}).get("sheetId")
+            _SHEET_ID_CACHE[title] = sheet_id
+
+    current = service.spreadsheets().values().get(
+        spreadsheetId=settings.google_sheets_spreadsheet_id,
+        range=f"{title}!1:1",
+    ).execute().get("values", [])
+    first_row = current[0] if current else []
+    if first_row != headers:
+        service.spreadsheets().values().update(
+            spreadsheetId=settings.google_sheets_spreadsheet_id,
+            range=f"{title}!A1",
+            valueInputOption="RAW",
+            body={"values": [headers]},
+        ).execute()
+    _SHEET_ENSURED_CACHE.add(title)
+    return title, sheet_id
+
+
 def _ensure_pazomat_sheet(service):
     title = settings.google_sheets_pazomat_tab
     if title in _SHEET_ENSURED_CACHE:
@@ -3735,6 +3923,15 @@ def _normalize_order_history_sent(value: str) -> str:
     return str(value or "").strip() or "לא"
 
 
+def _normalize_order_history_requires_installation(value: str) -> str:
+    lowered = str(value or "").strip().lower()
+    if lowered in {"1", "true", "yes", "כן"}:
+        return "TRUE"
+    if lowered in {"0", "false", "no", "לא"}:
+        return "FALSE"
+    return ""
+
+
 def _normalize_order_history_document_links(value) -> str:
     if isinstance(value, str):
         raw = value.strip()
@@ -3851,6 +4048,9 @@ def _normalize_order_history_row(row: dict) -> dict:
     normalized["ordered_items_json"] = _normalize_json_array_value(normalized.get("ordered_items_json", "[]"))
     if not normalized["ordered_items_json"].strip("[]") and normalized["items_json"].strip("[]"):
         normalized["ordered_items_json"] = normalized["items_json"]
+    normalized["requires_installation"] = _normalize_order_history_requires_installation(
+        normalized.get("requires_installation", "")
+    )
     partial_delivery_raw = str(normalized.get("partial_delivery") or "").strip().lower()
     normalized["partial_delivery"] = "כן" if partial_delivery_raw in {"כן", "true", "1", "partial", "yes"} else "לא"
     normalized["partial_root_history_id"] = str(normalized.get("partial_root_history_id") or "").strip()
@@ -3888,6 +4088,106 @@ def _is_broken_order_history_row(row: dict) -> bool:
     if any(re.search(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", value) for value in suspicious_values):
         return True
     return False
+
+
+def _normalize_installation_case_status(value) -> str:
+    raw = re.sub(r"\s+", " ", str(value or "").strip())
+    if not raw:
+        return "ממתין לתיאום"
+    normalized_key = raw.replace("-", " ").replace("_", " ").strip().lower()
+    mapping = {
+        "pending": "ממתין לתיאום",
+        "ממתין": "ממתין לתיאום",
+        "ממתין לתאום": "ממתין לתיאום",
+        "ממתין לתיאום": "ממתין לתיאום",
+        "scheduled": "תואם",
+        "תואם": "תואם",
+        "partial": "הותקן חלקית",
+        "partial install": "הותקן חלקית",
+        "הותקן חלקית": "הותקן חלקית",
+        "completed": "הושלם",
+        "הושלם": "הושלם",
+        "on hold": "מושהה",
+        "hold": "מושהה",
+        "מושהה": "מושהה",
+        "cancelled": "בוטל",
+        "canceled": "בוטל",
+        "בוטל": "בוטל",
+    }
+    return mapping.get(normalized_key, raw)
+
+
+def _normalize_installation_case_row(row: dict) -> dict:
+    normalized = {field: str((row or {}).get(field, "") or "") for field in INSTALLATION_CASE_FIELDS}
+    normalized["installation_id"] = str(normalized.get("installation_id") or uuid4()).strip()
+    normalized["root_history_id"] = str(normalized.get("root_history_id") or "").strip()
+    normalized["source_history_id"] = str(normalized.get("source_history_id") or "").strip()
+    normalized["created_at"] = str(normalized.get("created_at") or datetime.now().isoformat(timespec="seconds")).strip()
+    normalized["updated_at"] = str(normalized.get("updated_at") or normalized.get("created_at") or datetime.now().isoformat(timespec="seconds")).strip()
+    normalized["source_mode"] = _normalize_order_history_mode(normalized.get("source_mode", ""))
+    normalized["po_number"] = str(normalized.get("po_number") or "").strip()
+    normalized["po_date"] = str(normalized.get("po_date") or "").strip()
+    normalized["customer_name"] = _canonical_income_customer_name(normalized.get("customer_name", "")) or str(normalized.get("customer_name") or "").strip()
+    normalized["customer_id"] = re.sub(r"\D+", "", str(normalized.get("customer_id") or ""))
+    normalized["customer_email"] = _normalize_customer_emails(normalized.get("customer_email", ""))
+    normalized["customer_phone"] = str(normalized.get("customer_phone") or "").strip()
+    normalized["delivery_address"] = re.sub(r"\s+", " ", str(normalized.get("delivery_address") or "").strip())
+    normalized["project"] = re.sub(r"\s+", " ", str(normalized.get("project") or "").strip())
+    normalized["contact_name"] = re.sub(r"\s+", " ", str(normalized.get("contact_name") or "").strip())
+    normalized["contact_phone"] = str(normalized.get("contact_phone") or "").strip()
+    normalized["payment_terms_days"] = str(normalized.get("payment_terms_days") or "").strip()
+    normalized["payment_terms_label"] = re.sub(r"\s+", " ", str(normalized.get("payment_terms_label") or "").strip())
+    normalized["status"] = _normalize_installation_case_status(normalized.get("status", ""))
+    normalized["delay_reason"] = re.sub(r"\s+", " ", str(normalized.get("delay_reason") or "").strip())
+    normalized["next_visit_date"] = str(normalized.get("next_visit_date") or "").strip()
+    normalized["last_visit_date"] = str(normalized.get("last_visit_date") or "").strip()
+    normalized["visit_count"] = str(int(float(str(normalized.get("visit_count") or "0").strip() or 0)))
+    normalized["notes"] = str(normalized.get("notes") or "").strip()
+    normalized["order_drive_folder_id"] = str(normalized.get("order_drive_folder_id") or "").strip()
+    normalized["order_drive_folder_url"] = str(normalized.get("order_drive_folder_url") or "").strip()
+    normalized["source_po_drive_file_id"] = str(normalized.get("source_po_drive_file_id") or "").strip()
+    normalized["source_po_drive_url"] = str(normalized.get("source_po_drive_url") or "").strip()
+    normalized["delivery_document_number"] = str(normalized.get("delivery_document_number") or "").strip()
+    normalized["delivery_document_id"] = str(normalized.get("delivery_document_id") or "").strip()
+    normalized["tax_invoice_number"] = str(normalized.get("tax_invoice_number") or "").strip()
+    normalized["tax_invoice_document_id"] = str(normalized.get("tax_invoice_document_id") or "").strip()
+    normalized["delivery_drive_file_id"] = str(normalized.get("delivery_drive_file_id") or "").strip()
+    normalized["invoice_drive_file_id"] = str(normalized.get("invoice_drive_file_id") or "").strip()
+    normalized["merged_drive_file_id"] = str(normalized.get("merged_drive_file_id") or "").strip()
+    normalized["coc_drive_file_id"] = str(normalized.get("coc_drive_file_id") or "").strip()
+    normalized["document_links_json"] = _normalize_order_history_document_links(normalized.get("document_links_json", "[]"))
+    normalized["install_items_json"] = _normalize_json_array_value(normalized.get("install_items_json", "[]"))
+    normalized["installed_items_json"] = _normalize_json_array_value(normalized.get("installed_items_json", "[]"))
+    normalized["remaining_items_json"] = _normalize_json_array_value(normalized.get("remaining_items_json", "[]"))
+    for amount_field in ("total_ordered_quantity", "total_installed_quantity", "total_remaining_quantity"):
+        raw = str(normalized.get(amount_field) or "").strip().replace(",", "")
+        try:
+            normalized[amount_field] = f"{float(raw):.2f}" if raw else "0.00"
+        except Exception:
+            normalized[amount_field] = raw or "0.00"
+    normalized["source_active"] = "לא" if str(normalized.get("source_active") or "").strip() in {"לא", "false", "FALSE", "0"} else "כן"
+    normalized["last_sync_at"] = str(normalized.get("last_sync_at") or normalized.get("updated_at") or datetime.now().isoformat(timespec="seconds")).strip()
+    return normalized
+
+
+def _normalize_installation_visit_row(row: dict) -> dict:
+    normalized = {field: str((row or {}).get(field, "") or "") for field in INSTALLATION_VISIT_FIELDS}
+    normalized["visit_id"] = str(normalized.get("visit_id") or uuid4()).strip()
+    normalized["installation_id"] = str(normalized.get("installation_id") or "").strip()
+    normalized["created_at"] = str(normalized.get("created_at") or datetime.now().isoformat(timespec="seconds")).strip()
+    normalized["updated_at"] = str(normalized.get("updated_at") or normalized.get("created_at") or datetime.now().isoformat(timespec="seconds")).strip()
+    normalized["visit_date"] = str(normalized.get("visit_date") or "").strip()
+    normalized["scheduled_date"] = str(normalized.get("scheduled_date") or "").strip()
+    normalized["status"] = _normalize_installation_case_status(normalized.get("status", ""))
+    normalized["installed_items_json"] = _normalize_json_array_value(normalized.get("installed_items_json", "[]"))
+    raw_total = str(normalized.get("installed_total_quantity") or "").strip().replace(",", "")
+    try:
+        normalized["installed_total_quantity"] = f"{float(raw_total):.2f}" if raw_total else "0.00"
+    except Exception:
+        normalized["installed_total_quantity"] = raw_total or "0.00"
+    normalized["notes"] = str(normalized.get("notes") or "").strip()
+    normalized["summary_text"] = re.sub(r"\s+", " ", str(normalized.get("summary_text") or "").strip())
+    return normalized
 
 
 def _normalize_quote_history_row(row: dict) -> dict:
@@ -4043,6 +4343,13 @@ def _normalize_working_order_row(row: dict) -> dict:
     normalized["po_date"] = str(normalized.get("po_date") or "").strip()
     normalized["item_description"] = str(normalized.get("item_description") or "").strip()
     normalized["item_unit"] = str(normalized.get("item_unit") or "ללא").strip() or "ללא"
+    requires_installation = str(normalized.get("requires_installation") or "").strip().lower()
+    if requires_installation in {"1", "true", "yes", "כן"}:
+        normalized["requires_installation"] = "TRUE"
+    elif requires_installation in {"0", "false", "no", "לא"}:
+        normalized["requires_installation"] = "FALSE"
+    else:
+        normalized["requires_installation"] = ""
     normalized["order_note_text"] = str(normalized.get("order_note_text") or "").strip()
     normalized["order_note_file_name"] = str(normalized.get("order_note_file_name") or "").strip()
     normalized["order_note_file_path"] = str(normalized.get("order_note_file_path") or "").strip()
@@ -4656,6 +4963,32 @@ def _load_quote_history_disk_cache() -> list[dict]:
         return []
 
 
+def _load_installation_cases_disk_cache() -> list[dict]:
+    try:
+        if not _INSTALLATION_CASES_CACHE_FILE.exists():
+            return []
+        payload = json.loads(_INSTALLATION_CASES_CACHE_FILE.read_text(encoding="utf-8"))
+        rows = payload.get("rows") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list):
+            return []
+        return [_normalize_installation_case_row(row) for row in rows if isinstance(row, dict)]
+    except Exception:
+        return []
+
+
+def _load_installation_visits_disk_cache() -> list[dict]:
+    try:
+        if not _INSTALLATION_VISITS_CACHE_FILE.exists():
+            return []
+        payload = json.loads(_INSTALLATION_VISITS_CACHE_FILE.read_text(encoding="utf-8"))
+        rows = payload.get("rows") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list):
+            return []
+        return [_normalize_installation_visit_row(row) for row in rows if isinstance(row, dict)]
+    except Exception:
+        return []
+
+
 def _load_pazomat_disk_cache() -> list[dict]:
     try:
         if not _PAZOMAT_CACHE_FILE.exists():
@@ -4771,6 +5104,40 @@ def _save_quote_history_disk_cache(rows: list[dict]) -> None:
                 {
                     "saved_at": datetime.now().isoformat(timespec="seconds"),
                     "rows": [_normalize_quote_history_row(row) for row in (rows or [])],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+
+
+def _save_installation_cases_disk_cache(rows: list[dict]) -> None:
+    try:
+        _INSTALLATION_CASES_CACHE_FILE.write_text(
+            json.dumps(
+                {
+                    "saved_at": datetime.now().isoformat(timespec="seconds"),
+                    "rows": [_normalize_installation_case_row(row) for row in (rows or [])],
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+    except Exception:
+        pass
+
+
+def _save_installation_visits_disk_cache(rows: list[dict]) -> None:
+    try:
+        _INSTALLATION_VISITS_CACHE_FILE.write_text(
+            json.dumps(
+                {
+                    "saved_at": datetime.now().isoformat(timespec="seconds"),
+                    "rows": [_normalize_installation_visit_row(row) for row in (rows or [])],
                 },
                 ensure_ascii=False,
                 indent=2,
@@ -5319,6 +5686,98 @@ def load_quote_history_rows(force_refresh: bool = False) -> list[dict]:
     return rows
 
 
+def load_installation_case_rows(force_refresh: bool = False) -> list[dict]:
+    global _INSTALLATION_CASE_ROWS_CACHE, _INSTALLATION_CASE_ROWS_CACHE_TS
+    if (
+        not force_refresh
+        and _INSTALLATION_CASE_ROWS_CACHE
+        and (time.time() - _INSTALLATION_CASE_ROWS_CACHE_TS) <= _GENERIC_SHEET_CACHE_TTL_SECONDS
+    ):
+        return [dict(row) for row in _INSTALLATION_CASE_ROWS_CACHE]
+    service = _service()
+    try:
+        title, _ = _ensure_installations_sheet(service, "cases")
+    except Exception as exc:
+        if _is_rate_limit_error(exc):
+            if _INSTALLATION_CASE_ROWS_CACHE:
+                return [dict(row) for row in _INSTALLATION_CASE_ROWS_CACHE]
+            disk_rows = _load_installation_cases_disk_cache()
+            if disk_rows:
+                return disk_rows
+        raise
+    try:
+        result = service.spreadsheets().values().get(
+            spreadsheetId=settings.google_sheets_spreadsheet_id,
+            range=f"{title}!A2:AZ",
+        ).execute()
+    except HttpError as exc:
+        if _is_rate_limit_error(exc):
+            if _INSTALLATION_CASE_ROWS_CACHE:
+                return [dict(row) for row in _INSTALLATION_CASE_ROWS_CACHE]
+            disk_rows = _load_installation_cases_disk_cache()
+            if disk_rows:
+                return disk_rows
+        raise
+    values = result.get("values", [])
+    rows: list[dict] = []
+    for raw in values:
+        padded = raw + [""] * max(0, len(INSTALLATION_CASE_FIELDS) - len(raw))
+        row = {field: str(padded[index] or "") for index, field in enumerate(INSTALLATION_CASE_FIELDS)}
+        if any(str(value).strip() for value in row.values()):
+            rows.append(_normalize_installation_case_row(row))
+    rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+    _INSTALLATION_CASE_ROWS_CACHE = [dict(row) for row in rows]
+    _INSTALLATION_CASE_ROWS_CACHE_TS = time.time()
+    _save_installation_cases_disk_cache(rows)
+    return rows
+
+
+def load_installation_visit_rows(force_refresh: bool = False) -> list[dict]:
+    global _INSTALLATION_VISIT_ROWS_CACHE, _INSTALLATION_VISIT_ROWS_CACHE_TS
+    if (
+        not force_refresh
+        and _INSTALLATION_VISIT_ROWS_CACHE
+        and (time.time() - _INSTALLATION_VISIT_ROWS_CACHE_TS) <= _GENERIC_SHEET_CACHE_TTL_SECONDS
+    ):
+        return [dict(row) for row in _INSTALLATION_VISIT_ROWS_CACHE]
+    service = _service()
+    try:
+        title, _ = _ensure_installations_sheet(service, "visits")
+    except Exception as exc:
+        if _is_rate_limit_error(exc):
+            if _INSTALLATION_VISIT_ROWS_CACHE:
+                return [dict(row) for row in _INSTALLATION_VISIT_ROWS_CACHE]
+            disk_rows = _load_installation_visits_disk_cache()
+            if disk_rows:
+                return disk_rows
+        raise
+    try:
+        result = service.spreadsheets().values().get(
+            spreadsheetId=settings.google_sheets_spreadsheet_id,
+            range=f"{title}!A2:AZ",
+        ).execute()
+    except HttpError as exc:
+        if _is_rate_limit_error(exc):
+            if _INSTALLATION_VISIT_ROWS_CACHE:
+                return [dict(row) for row in _INSTALLATION_VISIT_ROWS_CACHE]
+            disk_rows = _load_installation_visits_disk_cache()
+            if disk_rows:
+                return disk_rows
+        raise
+    values = result.get("values", [])
+    rows: list[dict] = []
+    for raw in values:
+        padded = raw + [""] * max(0, len(INSTALLATION_VISIT_FIELDS) - len(raw))
+        row = {field: str(padded[index] or "") for index, field in enumerate(INSTALLATION_VISIT_FIELDS)}
+        if any(str(value).strip() for value in row.values()):
+            rows.append(_normalize_installation_visit_row(row))
+    rows.sort(key=lambda row: (str(row.get("visit_date") or ""), str(row.get("created_at") or "")), reverse=True)
+    _INSTALLATION_VISIT_ROWS_CACHE = [dict(row) for row in rows]
+    _INSTALLATION_VISIT_ROWS_CACHE_TS = time.time()
+    _save_installation_visits_disk_cache(rows)
+    return rows
+
+
 def load_pazomat_rows(force_refresh: bool = False) -> list[dict]:
     global _PAZOMAT_ROWS_CACHE, _PAZOMAT_ROWS_CACHE_TS
     if (
@@ -5828,6 +6287,70 @@ def save_quote_history_rows(rows: list[dict]) -> dict:
     return {"sheet": title, "rows_saved": len(normalized_rows)}
 
 
+def save_installation_case_rows(rows: list[dict]) -> dict:
+    global _INSTALLATION_CASE_ROWS_CACHE, _INSTALLATION_CASE_ROWS_CACHE_TS
+    normalized_rows = [_normalize_installation_case_row(row) for row in (rows or [])]
+    normalized_rows.sort(key=lambda row: str(row.get("created_at") or ""), reverse=True)
+    if json.dumps(normalized_rows, ensure_ascii=False, sort_keys=True) == json.dumps(
+        _INSTALLATION_CASE_ROWS_CACHE, ensure_ascii=False, sort_keys=True
+    ):
+        return {"sheet": settings.google_sheets_installation_cases_tab, "rows_saved": len(normalized_rows), "skipped": True}
+
+    service = _service()
+    title, _ = _ensure_installations_sheet(service, "cases")
+    values = [INSTALLATION_CASE_HEADERS] + [
+        [row.get(field, "") for field in INSTALLATION_CASE_FIELDS]
+        for row in normalized_rows
+    ]
+    service.spreadsheets().values().clear(
+        spreadsheetId=settings.google_sheets_spreadsheet_id,
+        range=f"{title}!A1:AZ",
+        body={},
+    ).execute()
+    service.spreadsheets().values().update(
+        spreadsheetId=settings.google_sheets_spreadsheet_id,
+        range=f"{title}!A1",
+        valueInputOption="RAW",
+        body={"values": values},
+    ).execute()
+    _INSTALLATION_CASE_ROWS_CACHE = [dict(row) for row in normalized_rows]
+    _INSTALLATION_CASE_ROWS_CACHE_TS = time.time()
+    _save_installation_cases_disk_cache(normalized_rows)
+    return {"sheet": title, "rows_saved": len(normalized_rows)}
+
+
+def save_installation_visit_rows(rows: list[dict]) -> dict:
+    global _INSTALLATION_VISIT_ROWS_CACHE, _INSTALLATION_VISIT_ROWS_CACHE_TS
+    normalized_rows = [_normalize_installation_visit_row(row) for row in (rows or [])]
+    normalized_rows.sort(key=lambda row: (str(row.get("visit_date") or ""), str(row.get("created_at") or "")), reverse=True)
+    if json.dumps(normalized_rows, ensure_ascii=False, sort_keys=True) == json.dumps(
+        _INSTALLATION_VISIT_ROWS_CACHE, ensure_ascii=False, sort_keys=True
+    ):
+        return {"sheet": settings.google_sheets_installation_visits_tab, "rows_saved": len(normalized_rows), "skipped": True}
+
+    service = _service()
+    title, _ = _ensure_installations_sheet(service, "visits")
+    values = [INSTALLATION_VISIT_HEADERS] + [
+        [row.get(field, "") for field in INSTALLATION_VISIT_FIELDS]
+        for row in normalized_rows
+    ]
+    service.spreadsheets().values().clear(
+        spreadsheetId=settings.google_sheets_spreadsheet_id,
+        range=f"{title}!A1:AZ",
+        body={},
+    ).execute()
+    service.spreadsheets().values().update(
+        spreadsheetId=settings.google_sheets_spreadsheet_id,
+        range=f"{title}!A1",
+        valueInputOption="RAW",
+        body={"values": values},
+    ).execute()
+    _INSTALLATION_VISIT_ROWS_CACHE = [dict(row) for row in normalized_rows]
+    _INSTALLATION_VISIT_ROWS_CACHE_TS = time.time()
+    _save_installation_visits_disk_cache(normalized_rows)
+    return {"sheet": title, "rows_saved": len(normalized_rows)}
+
+
 def save_pazomat_rows(rows: list[dict]) -> dict:
     global _PAZOMAT_ROWS_CACHE, _PAZOMAT_ROWS_CACHE_TS
     normalized_rows = [_normalize_pazomat_row(row) for row in (rows or [])]
@@ -6020,7 +6543,7 @@ def save_working_order_rows(rows: list[dict]) -> dict:
     ]
     service.spreadsheets().values().clear(
         spreadsheetId=settings.google_sheets_spreadsheet_id,
-        range=f"{title}!A1:AK",
+        range=f"{title}!A1:AL",
         body={},
     ).execute()
     service.spreadsheets().values().update(
@@ -6108,6 +6631,18 @@ def get_cached_quote_history_rows() -> list[dict]:
     return _load_quote_history_disk_cache()
 
 
+def get_cached_installation_case_rows() -> list[dict]:
+    if _INSTALLATION_CASE_ROWS_CACHE:
+        return [dict(row) for row in _INSTALLATION_CASE_ROWS_CACHE]
+    return _load_installation_cases_disk_cache()
+
+
+def get_cached_installation_visit_rows() -> list[dict]:
+    if _INSTALLATION_VISIT_ROWS_CACHE:
+        return [dict(row) for row in _INSTALLATION_VISIT_ROWS_CACHE]
+    return _load_installation_visits_disk_cache()
+
+
 def get_cached_pazomat_rows() -> list[dict]:
     if _PAZOMAT_ROWS_CACHE:
         return [dict(row) for row in _PAZOMAT_ROWS_CACHE]
@@ -6169,6 +6704,40 @@ def upsert_order_history_row(entry: dict) -> dict:
     if not updated:
         rows.insert(0, normalized)
     save_result = save_order_history_rows(rows)
+    return {"status": "ok", "row": normalized, "rows": rows, "updated": updated, "save_result": save_result}
+
+
+def upsert_installation_case_row(entry: dict) -> dict:
+    rows = load_installation_case_rows()
+    normalized = _normalize_installation_case_row(entry)
+    normalized["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    updated = False
+    for index, row in enumerate(rows):
+        if str(row.get("installation_id") or "").strip() != normalized["installation_id"]:
+            continue
+        rows[index] = normalized
+        updated = True
+        break
+    if not updated:
+        rows.insert(0, normalized)
+    save_result = save_installation_case_rows(rows)
+    return {"status": "ok", "row": normalized, "rows": rows, "updated": updated, "save_result": save_result}
+
+
+def upsert_installation_visit_row(entry: dict) -> dict:
+    rows = load_installation_visit_rows()
+    normalized = _normalize_installation_visit_row(entry)
+    normalized["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    updated = False
+    for index, row in enumerate(rows):
+        if str(row.get("visit_id") or "").strip() != normalized["visit_id"]:
+            continue
+        rows[index] = normalized
+        updated = True
+        break
+    if not updated:
+        rows.insert(0, normalized)
+    save_result = save_installation_visit_rows(rows)
     return {"status": "ok", "row": normalized, "rows": rows, "updated": updated, "save_result": save_result}
 
 
