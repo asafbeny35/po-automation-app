@@ -91,19 +91,36 @@ def _extract_delivery_address(lines: list[str], project: str) -> str:
     return ""
 
 
+_PHONE_RE = re.compile(r"0\d{2}-\d{7}|0\d{9}")
+_HEBREW_RE = re.compile(r"[א-ת]+")
+
+
 def _extract_contacts(lines: list[str]) -> tuple[str, str, str, str]:
     """Return (primary_name, primary_phone, secondary_name, secondary_phone)."""
-    phone_line = next((line for line in lines if line.startswith("052") or line.startswith("050") or ":לט" in line), "")
+    # Prefer the explicit "טל:" line (contains multiple contacts); fall back to any phone line
+    phone_line = (
+        next((line for line in lines if ":לט" in line and _PHONE_RE.search(line)), "")
+        or next((line for line in lines if _PHONE_RE.search(line)), "")
+    )
     if not phone_line:
         return "", "", "", ""
 
     contacts: list[tuple[str, str]] = []
-    first_match = re.search(r"(0\d{9})\s+([^\s,]+)", phone_line)
-    if first_match:
-        contacts.append((_reverse_text(first_match.group(2)), _normalize_phone(first_match.group(1))))
-    second_match = re.search(r",(0\d{2}-\d{7}),([^,\s:]+)", phone_line)
-    if second_match:
-        contacts.append((_reverse_text(second_match.group(2)), _normalize_phone(second_match.group(1))))
+    for m in _PHONE_RE.finditer(phone_line):
+        phone_raw = m.group()
+        # Name immediately after phone (no separator)
+        after = phone_line[m.end():]
+        after_name = _HEBREW_RE.match(after)
+        if after_name and len(after_name.group()) > 1:
+            contacts.append((_reverse_text(after_name.group()), _normalize_phone(phone_raw)))
+            continue
+        # Name immediately before phone (comma-separated)
+        before = phone_line[:m.start()]
+        before_name = re.search(r"(?:^|,)([א-ת]{2,}),?$", before)
+        if before_name:
+            contacts.append((_reverse_text(before_name.group(1)), _normalize_phone(phone_raw)))
+            continue
+        contacts.append(("", _normalize_phone(phone_raw)))
 
     deduped: list[tuple[str, str]] = []
     for name, phone in reversed(contacts):
@@ -111,7 +128,6 @@ def _extract_contacts(lines: list[str]) -> tuple[str, str, str, str]:
             continue
         deduped.append((name, phone))
 
-    # Only keep contacts that have a phone number
     valid = [(n, p) for n, p in deduped if p]
     if not valid:
         return "", "", "", ""
