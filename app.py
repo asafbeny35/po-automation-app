@@ -2606,6 +2606,21 @@ def _normalize_finance_invoice_row_app(row: dict) -> dict:
             normalized[key] = f"{float(raw):.2f}" if raw else ""
         except Exception:
             normalized[key] = raw
+    # Sanity: if vat > subtotal (and subtotal > 0), the vat field captured the
+    # total-with-VAT instead of the VAT amount — a common parser mistake when the
+    # label "כולל מע\"מ" is matched as a VAT label.
+    _sub = float(normalized.get("subtotal") or 0)
+    _vat = float(normalized.get("vat") or 0)
+    _tot = float(normalized.get("total") or 0)
+    if _sub > 0 and _vat > _sub:
+        if _tot <= 0:
+            # vat is clearly the total; derive real vat from subtotal
+            normalized["total"] = f"{_vat:.2f}"
+            normalized["vat"] = f"{max(0.0, round(_vat - _sub, 2)):.2f}"
+        elif _vat > _tot and _tot > _sub:
+            # both vat and total are present but vat > total > subtotal — vat captured the total
+            normalized["total"] = f"{_vat:.2f}"
+            normalized["vat"] = f"{max(0.0, round(_vat - _sub, 2)):.2f}"
     report_due_date = _finance_due_date_display(normalized.get("report_due_date"))
     normalized["report_due_date"] = report_due_date or _finance_due_date_display(normalized.get("invoice_date"))
     override_values = _finance_normalize_due_dates(
@@ -4355,9 +4370,11 @@ def _finance_guess_invoice_totals(text: str) -> tuple[str, str, str]:
     vat = _finance_first_amount_after_label(
         text,
         [
-            r"מע[\"״]מ",
-            r"vat",
-            r"tax",
+            # Negative lookbehind: skip "כולל מע"מ", "לפני מע"מ", "ללא מע"מ"
+            # (those are total/subtotal labels, not the VAT-amount label)
+            r"(?<!כולל )(?<!לפני )(?<!ללא )מע[\"״]מ(?!\s*כולל)",
+            r"(?<!\w)vat(?!\s+exempt|\s+inclusive|\s+incl)",
+            r"(?<!\w)tax(?!\s+inclusive|\s+incl|\s+exempt)",
         ],
         max_gap=80,
     )
