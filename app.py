@@ -2609,9 +2609,9 @@ def _normalize_finance_invoice_row_app(row: dict) -> dict:
     # Sanity: if vat > subtotal (and subtotal > 0), the vat field captured the
     # total-with-VAT instead of the VAT amount — a common parser mistake when the
     # label "כולל מע\"מ" is matched as a VAT label.
-    _sub = float(normalized.get("subtotal") or 0)
-    _vat = float(normalized.get("vat") or 0)
-    _tot = float(normalized.get("total") or 0)
+    _sub = _finance_parse_number(normalized.get("subtotal"))
+    _vat = _finance_parse_number(normalized.get("vat"))
+    _tot = _finance_parse_number(normalized.get("total"))
     if _sub > 0 and _vat > _sub:
         if _tot <= 0:
             # vat is clearly the total; derive real vat from subtotal
