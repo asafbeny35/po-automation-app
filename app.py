@@ -2562,7 +2562,25 @@ def _normalize_finance_invoice_row_app(row: dict) -> dict:
         "source_mode": str((row or {}).get("source_mode") or "PROD").strip().upper() or "PROD",
         "updated_at": str((row or {}).get("updated_at") or datetime.now().isoformat(timespec="seconds")).strip(),
     }
-    if (
+    if str(normalized.get("vat") or "").strip().startswith("/"):
+        # Legacy 3-column shift: allocation_number/currency_code/service_or_product were inserted
+        # at positions 5-7 after reference_number, but old rows didn't have those columns.
+        # Result: old subtotal→allocation_number, old vat→currency_code,
+        #         old total→service_or_product, old source_file_name→subtotal,
+        #         old source_file_path→vat (starts with "/").
+        legacy = dict(normalized)
+        normalized["allocation_number"] = ""
+        normalized["currency_code"] = "ILS"
+        normalized["service_or_product"] = ""
+        normalized["subtotal"] = str(legacy.get("allocation_number") or "").strip()
+        normalized["vat"] = str(legacy.get("currency_code") or "").strip()
+        normalized["total"] = str(legacy.get("service_or_product") or "").strip()
+        normalized["source_file_name"] = str(legacy.get("subtotal") or "").strip()
+        normalized["source_file_path"] = str(legacy.get("vat") or "").strip()
+        candidate_drive_url = str(legacy.get("drive_url") or "").strip()
+        if not candidate_drive_url.startswith("http"):
+            normalized["drive_url"] = ""
+    elif (
         str(normalized.get("source_file_name") or "").strip().count("/") == 2
         and str(normalized.get("total") or "").strip().startswith("/")
     ):
