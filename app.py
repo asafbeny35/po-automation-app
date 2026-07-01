@@ -15140,6 +15140,11 @@ def _project_manager_entries_from_po(po: PurchaseOrderData) -> list[dict]:
     ):
         register_contact(name, phone)
 
+    sec_name = str(extra.get("secondary_contact_name") or "").strip()
+    sec_phone = str(extra.get("secondary_contact_phone") or "").strip()
+    if sec_phone:
+        register_contact(sec_name, sec_phone)
+
     for name, phone in _extract_additional_contacts(
         "\n".join(filter(None, [po.raw_text or "", extra.get("footer_text", ""), site_address])),
         excluded_numbers=excluded_numbers,
@@ -23759,6 +23764,8 @@ def _build_process_payload_from_po(po: PurchaseOrderData, mode: str, source_file
         "project": (po.extra or {}).get("project", ""),
         "contact_name": (po.extra or {}).get("contact_name", ""),
         "contact_phone": (po.extra or {}).get("contact_phone", ""),
+        "secondary_contact_name": (po.extra or {}).get("secondary_contact_name", ""),
+        "secondary_contact_phone": (po.extra or {}).get("secondary_contact_phone", ""),
         "payment_terms_days": po.payment_terms_days or "",
         "payment_terms_label": po.payment_terms_label or "",
         "subtotal": po.subtotal or 0,
@@ -25422,6 +25429,8 @@ async def finalize_quote(request: Request):
                     "project": str((po.extra or {}).get("project") or "").strip(),
                     "contact_name": str((po.extra or {}).get("contact_name") or "").strip(),
                     "contact_phone": str((po.extra or {}).get("contact_phone") or "").strip(),
+                    "secondary_contact_name": str((po.extra or {}).get("secondary_contact_name") or "").strip(),
+                    "secondary_contact_phone": str((po.extra or {}).get("secondary_contact_phone") or "").strip(),
                     "payment_terms_days": po.payment_terms_days if po.payment_terms_days is not None else "",
                     "payment_terms_label": po.payment_terms_label or "",
                     "item_description": po.items[0].description if po.items else "",

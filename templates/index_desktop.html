@@ -5105,6 +5105,26 @@ body.panel-only .shell {
   line-height: 1.7;
 }
 
+.secondary-contact-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #1d4ed8;
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 6px;
+  margin-bottom: 8px;
+  transition: background 0.15s;
+}
+.secondary-contact-chip:hover {
+  background: #dbeafe;
+}
+
 .finance-export-modal-card .confirm-modal-actions {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -19248,6 +19268,17 @@ input:focus {
     <div class="confirm-modal-actions">
       <button type="button" class="ghost-btn" id="paymentPaidConfirmCancel">ביטול</button>
       <button type="button" class="primary-btn" id="paymentPaidConfirmConfirm">אישור</button>
+    </div>
+  </div>
+</div>
+
+<div id="secondaryContactModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card" style="max-width:340px;">
+    <h3>איש קשר נוסף באתר</h3>
+    <p id="secondaryContactName" style="font-weight:700; font-size:16px; margin:8px 0 4px;"></p>
+    <p id="secondaryContactPhone" style="direction:ltr; text-align:left; font-size:15px; color:#334155;"></p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="ghost-btn" id="secondaryContactClose">סגור</button>
     </div>
   </div>
 </div>
@@ -40124,6 +40155,19 @@ document.addEventListener("DOMContentLoaded", () => {
     closePartialDeliveryConfirmModal(true);
   });
 
+  const secondaryContactModal = document.getElementById("secondaryContactModal");
+  const secondaryContactClose = document.getElementById("secondaryContactClose");
+  secondaryContactClose?.addEventListener("click", () => {
+    secondaryContactModal?.classList.remove("visible");
+    secondaryContactModal?.setAttribute("aria-hidden", "true");
+  });
+  secondaryContactModal?.addEventListener("click", event => {
+    if (event.target === secondaryContactModal) {
+      secondaryContactModal.classList.remove("visible");
+      secondaryContactModal.setAttribute("aria-hidden", "true");
+    }
+  });
+
   workingOrderDeleteClose?.addEventListener("click", () => {
     closeWorkingOrderDeleteModal();
   });
@@ -44943,7 +44987,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.fieldRegistry = {};
 
   Object.entries(data).forEach(([key, value]) => {
-    if (key === "transport_label_path" || key === "transport_label_name" || key === "send_to_dad" || key === "label_split_rows" || key === "label_per_item" || key === "item_generate_label" || key === "manual_entry" || key === "source_file" || key === "source_file_path" || key === "mode" || key === "items" || key === "ordered_items" || key === "partial_delivery" || key === "partial_root_history_id" || key === "quote_history_id" || key === "quote_document_id" || key === "order_drive_folder_id" || key === "order_drive_folder_url") return;
+    if (key === "transport_label_path" || key === "transport_label_name" || key === "send_to_dad" || key === "label_split_rows" || key === "label_per_item" || key === "item_generate_label" || key === "manual_entry" || key === "source_file" || key === "source_file_path" || key === "mode" || key === "items" || key === "ordered_items" || key === "partial_delivery" || key === "partial_root_history_id" || key === "quote_history_id" || key === "quote_document_id" || key === "order_drive_folder_id" || key === "order_drive_folder_url" || key === "secondary_contact_name" || key === "secondary_contact_phone") return;
     if (!value) return;
 
     const card = document.createElement("div");
@@ -45108,6 +45152,23 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     fields.appendChild(card);
+
+    if (key === "contact_name" && (data.secondary_contact_name || data.secondary_contact_phone)) {
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "secondary-contact-chip";
+      chip.textContent = "✶ קיים איש קשר נוסף באתר הלקוח";
+      chip.addEventListener("click", () => {
+        const modal = document.getElementById("secondaryContactModal");
+        const nameEl = document.getElementById("secondaryContactName");
+        const phoneEl = document.getElementById("secondaryContactPhone");
+        if (nameEl) nameEl.textContent = data.secondary_contact_name || "";
+        if (phoneEl) phoneEl.textContent = data.secondary_contact_phone || "";
+        modal?.classList.add("visible");
+        modal?.setAttribute("aria-hidden", "false");
+      });
+      fields.appendChild(chip);
+    }
 
     window.fieldRegistry[key] = { card, input, toggle, editedBadge, errorEl, labelSplitButton, labelPerItemToggle, partialDeliveryToggle };
     updateEditedState(key, input, card, editedBadge, errorEl);

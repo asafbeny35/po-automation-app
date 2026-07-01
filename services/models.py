@@ -25,6 +25,8 @@ class PurchaseOrderData(BaseModel):
 
     contact_name: str = ""
     contact_phone: str = ""
+    secondary_contact_name: str = ""
+    secondary_contact_phone: str = ""
 
     subtotal: float = 0
     vat: float = 0

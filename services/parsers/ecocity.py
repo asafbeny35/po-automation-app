@@ -91,10 +91,11 @@ def _extract_delivery_address(lines: list[str], project: str) -> str:
     return ""
 
 
-def _extract_contacts(lines: list[str]) -> tuple[str, str]:
+def _extract_contacts(lines: list[str]) -> tuple[str, str, str, str]:
+    """Return (primary_name, primary_phone, secondary_name, secondary_phone)."""
     phone_line = next((line for line in lines if line.startswith("052") or line.startswith("050") or ":לט" in line), "")
     if not phone_line:
-        return "", ""
+        return "", "", "", ""
 
     contacts: list[tuple[str, str]] = []
     first_match = re.search(r"(0\d{9})\s+([^\s,]+)", phone_line)
@@ -110,9 +111,16 @@ def _extract_contacts(lines: list[str]) -> tuple[str, str]:
             continue
         deduped.append((name, phone))
 
-    contact_names = " / ".join(name for name, _ in deduped if name)
-    contact_phones = " / ".join(phone for _, phone in deduped if phone)
-    return sanitize_contact_pair(contact_names, contact_phones)
+    # Only keep contacts that have a phone number
+    valid = [(n, p) for n, p in deduped if p]
+    if not valid:
+        return "", "", "", ""
+    p1_name, p1_phone = sanitize_contact_pair(valid[0][0], valid[0][1])
+    if len(valid) >= 2:
+        p2_name, p2_phone = sanitize_contact_pair(valid[1][0], valid[1][1])
+    else:
+        p2_name, p2_phone = "", ""
+    return p1_name, p1_phone, p2_name, p2_phone
 
 
 def _extract_item(lines: list[str]) -> POItem:
@@ -167,7 +175,7 @@ def parse(text: str):
     project = _extract_project(flat)
     customer_name = _extract_customer_name(flat)
     delivery_address = _extract_delivery_address(lines, project)
-    contact_name, contact_phone = _extract_contacts(lines)
+    contact_name, contact_phone, secondary_contact_name, secondary_contact_phone = _extract_contacts(lines)
     item = _extract_item(lines)
 
     payment_match = re.search(r"([0-9]+)\+ףטוש", flat)
@@ -192,6 +200,8 @@ def parse(text: str):
         "delivery_address": delivery_address,
         "contact_name": contact_name,
         "contact_phone": contact_phone,
+        "secondary_contact_name": secondary_contact_name,
+        "secondary_contact_phone": secondary_contact_phone,
         "customer_phone": "",
     }
 
