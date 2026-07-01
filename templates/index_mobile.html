@@ -3546,11 +3546,26 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.ghost-btn {
+.ghost-btn, label.delivery-upload-label {
   background: white;
   color: var(--ink);
   border: 1px solid var(--line);
   box-shadow: none;
+}
+
+label.delivery-upload-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  border-radius: 14px;
+  padding: 14px 18px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: opacity 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .ghost-btn.delivery-confirm-filter-btn.active,
@@ -9796,17 +9811,17 @@ document.addEventListener("DOMContentLoaded", () => {
             <div class="inventory-field"><label>סטטוס</label><input type="text" value="${sentText}" disabled></div>
           </div>
           <div class="action-grid" style="margin-top:12px;">
-            <button type="button" class="ghost-btn" data-delivery-upload="${poNumber}" ${uploadState?.active ? "disabled" : ""}>העלה אישור מסירה</button>
+            <label class="ghost-btn delivery-upload-label" for="deliveryConfirmationUploadInput" data-delivery-upload="${poNumber}" ${uploadState?.active ? 'aria-disabled="true"' : ''} style="${uploadState?.active ? 'opacity:0.5;pointer-events:none;cursor:not-allowed;' : ''}">העלה אישור מסירה</label>
             <button type="button" class="assistant-submit" data-delivery-send="${poNumber}" ${(row.signed_delivery_name && !uploadState?.active) ? "" : "disabled"}>שלח</button>
           </div>
         </article>
       `;
     }).join("");
 
-    deliveryConfirmRowsHost.querySelectorAll("[data-delivery-upload]").forEach(button => {
-      button.addEventListener("click", () => {
-        pendingDeliveryUploadPoNumber = String(button.dataset.deliveryUpload || "").trim();
-        deliveryConfirmationUploadInput?.click();
+    deliveryConfirmRowsHost.querySelectorAll("[data-delivery-upload]").forEach(label => {
+      label.addEventListener("click", () => {
+        pendingDeliveryUploadPoNumber = String(label.dataset.deliveryUpload || "").trim();
+        // label's native `for` attribute opens the file picker — no .click() needed
       });
     });
     deliveryConfirmRowsHost.querySelectorAll("[data-delivery-send]").forEach(button => {
