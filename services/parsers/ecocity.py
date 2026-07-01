@@ -13,7 +13,10 @@ def _clean(value: str) -> str:
 
 
 def _reverse_text(value: str) -> str:
-    return _clean((value or "")[::-1])
+    # PDF extractors keep digit runs in logical (LTR) order even inside RTL text.
+    # Reversing the full string therefore reverses numbers — fix them back.
+    reversed_str = _clean((value or "")[::-1])
+    return re.sub(r"\d+", lambda m: m.group()[::-1], reversed_str)
 
 
 def _normalize_phone(value: str) -> str:
