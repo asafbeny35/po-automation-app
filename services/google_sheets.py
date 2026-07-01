@@ -8388,6 +8388,17 @@ def build_delivery_contact_rows_for_active_orders(confirmations: list[dict], exi
         active_companies.add(company)
     active_companies = {company for company in active_companies if company}
 
+    # Keep companies that already have an email set — remember permanently
+    for company, existing in by_company.items():
+        if company and str(existing.get("email") or "").strip():
+            active_companies.add(company)
+
+    # Migration: pull emails from past sent rows so they appear in the contact table
+    for row in confirmations:
+        company = _canonicalize_project_manager_company(row.get("company", ""))
+        if company and str(row.get("target_email") or "").strip():
+            active_companies.add(company)
+
     rows: list[dict] = []
     for company in sorted(active_companies):
         existing = dict(by_company.get(company) or {})

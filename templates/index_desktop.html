@@ -19152,10 +19152,13 @@ input:focus {
         <input type="checkbox" id="deliveryMailEditable">
         אפשר לערוך את גוף המייל לפני השליחה
       </label>
-      <label class="reminder-edit-toggle" for="deliveryMailSendNewBankDetails">
+      <label class="reminder-edit-toggle" id="deliveryMailBankNewContainer" for="deliveryMailSendNewBankDetails">
         <input type="checkbox" id="deliveryMailSendNewBankDetails">
         שלח פרטי חשבון בנק חדשים
       </label>
+      <div id="deliveryMailBankAlreadySentNote" class="finance-export-note" hidden>
+        פרטי חשבון בנק החדשים כבר נשלחו ללקוח זה בעבר
+      </div>
       <div id="deliveryMailBankUpdatePreview" class="finance-export-note" hidden>
         <strong><u>שימו לב, חשבון הבנק התעדכן</u></strong><br>
         מצורף אישור ניהול החשבון החדש. תודה
@@ -19879,6 +19882,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const deliveryMailEditable = document.getElementById("deliveryMailEditable");
   const deliveryMailSendNewBankDetails = document.getElementById("deliveryMailSendNewBankDetails");
   const deliveryMailBankUpdatePreview = document.getElementById("deliveryMailBankUpdatePreview");
+  const deliveryMailBankNewContainer = document.getElementById("deliveryMailBankNewContainer");
+  const deliveryMailBankAlreadySentNote = document.getElementById("deliveryMailBankAlreadySentNote");
   const deliveryMailMessage = document.getElementById("deliveryMailMessage");
   const deliveryMailRecipients = document.getElementById("deliveryMailRecipients");
   const deliveryMailAttachments = document.getElementById("deliveryMailAttachments");
@@ -36080,8 +36085,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (deliveryMailMeta) deliveryMailMeta.textContent = "";
     if (deliveryMailSubject) deliveryMailSubject.value = "";
     if (deliveryMailMessage) deliveryMailMessage.value = "";
-    if (deliveryMailSendNewBankDetails) deliveryMailSendNewBankDetails.checked = false;
+    if (deliveryMailSendNewBankDetails) { deliveryMailSendNewBankDetails.checked = false; deliveryMailSendNewBankDetails.disabled = false; }
     if (deliveryMailBankUpdatePreview) deliveryMailBankUpdatePreview.hidden = true;
+    if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = false;
+    if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = true;
     if (deliveryMailRecipients) deliveryMailRecipients.value = "";
     if (deliveryMailAttachments) deliveryMailAttachments.innerHTML = "";
     if (deliveryMailExtraAttachments) deliveryMailExtraAttachments.value = "";
@@ -36168,7 +36175,10 @@ document.addEventListener("DOMContentLoaded", () => {
     deliveryMailSubject.value = buildDeliveryMailSubject(row || {});
     deliveryMailRecipients.value = recipients;
     deliveryMailMeta.innerHTML = `המייל יישלח עבור <strong>${escapeHtml(row?.company || "לקוח ללא שם")}</strong>, על הזמנה <strong>${escapeHtml(row?.po_number || "—")}</strong> וחשבונית <strong>${escapeHtml(row?.tax_invoice_number || "—")}</strong>.`;
-    if (deliveryMailSendNewBankDetails) deliveryMailSendNewBankDetails.checked = false;
+    if (deliveryMailSendNewBankDetails) { deliveryMailSendNewBankDetails.checked = false; deliveryMailSendNewBankDetails.disabled = false; }
+    const bankAlreadySent = String(row?.bank_details_updated_sent || "").toUpperCase() === "TRUE";
+    if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = bankAlreadySent;
+    if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = !bankAlreadySent;
     renderDeliveryMailComposeState();
     setDeliveryMailEditableState(false);
     if (deliveryMailExtraAttachments) deliveryMailExtraAttachments.value = "";

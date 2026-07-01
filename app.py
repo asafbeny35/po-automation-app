@@ -22516,6 +22516,18 @@ def _build_delivery_confirmation_payload() -> dict:
         except Exception as exc:
             log_handled_error("delivery confirmation contact email sync save failed during payload build", exc)
         confirmations = [dict(row) for row in confirmations]
+    try:
+        all_customer_rows = load_customer_rows() + load_inactive_customer_rows()
+        bank_sent_by_company = {
+            _normalize_company_name(str(r.get("customer_name") or "").strip()): True
+            for r in all_customer_rows
+            if str(r.get("bank_details_updated_sent") or "").strip().upper() == "TRUE"
+        }
+        for row in filtered_confirmations:
+            company_key = _normalize_company_name(str(row.get("company") or "").strip())
+            row["bank_details_updated_sent"] = "TRUE" if bank_sent_by_company.get(company_key) else ""
+    except Exception as exc:
+        log_handled_error("delivery confirmation bank_details_updated_sent enrichment failed", exc)
     sent_rows = [row for row in filtered_confirmations if str(row.get("sent", "")).strip().upper() == "TRUE"]
     unsent_rows = [row for row in filtered_confirmations if str(row.get("sent", "")).strip().upper() != "TRUE"]
     return {

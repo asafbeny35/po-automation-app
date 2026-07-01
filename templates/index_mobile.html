@@ -3415,6 +3415,16 @@ button.delivery-confirm-filter-btn.active * {
   color: var(--muted);
 }
 
+.delivery-bank-already-sent-note {
+  font-size: 13px;
+  color: #166534;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-top: 4px;
+}
+
 .delivery-mail-subject,
 .delivery-mail-recipients {
   width: 100%;
@@ -6301,6 +6311,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const deliveryMailCancel = document.getElementById("deliveryMailCancel");
   const deliveryMailSendTest = document.getElementById("deliveryMailSendTest");
   const deliveryMailSend = document.getElementById("deliveryMailSend");
+  const deliveryMailSendNewBankDetails = document.getElementById("deliveryMailSendNewBankDetails");
+  const deliveryMailBankNewContainer = document.getElementById("deliveryMailBankNewContainer");
+  const deliveryMailBankAlreadySentNote = document.getElementById("deliveryMailBankAlreadySentNote");
   const customersScrollTopButton = document.getElementById("customersScrollTopButton");
   const officeVatModeNetMobile = document.getElementById("officeVatModeNetMobile");
   const officeVatModeGrossMobile = document.getElementById("officeVatModeGrossMobile");
@@ -9661,6 +9674,9 @@ document.addEventListener("DOMContentLoaded", () => {
       deliveryMailSendTest.textContent = "שלח טסט";
     }
     if (deliveryMailCancel) deliveryMailCancel.disabled = false;
+    if (deliveryMailSendNewBankDetails) { deliveryMailSendNewBankDetails.checked = false; deliveryMailSendNewBankDetails.disabled = false; }
+    if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = false;
+    if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = true;
     setDeliveryMailEditableState(false);
   }
 
@@ -9670,6 +9686,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const recipients = deliveryRecipientForRow(row || {});
     const isPlasan = String(row?.company || "").replace(/[״"]/g, "").includes("פלסן סאסא");
     const isInternalPrintOnly = isDeliveryInternalPrintOnlyCompany(row?.company || "");
+    const bankAlreadySent = String(row?.bank_details_updated_sent || "").toUpperCase() === "TRUE";
+    if (deliveryMailSendNewBankDetails) { deliveryMailSendNewBankDetails.checked = false; deliveryMailSendNewBankDetails.disabled = false; }
+    if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = bankAlreadySent;
+    if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = !bankAlreadySent;
     deliveryMailSubject.value = buildDeliveryMailSubject(row || {});
     deliveryMailMessage.value = buildDeliveryMailBody(row || {});
     deliveryMailRecipients.value = recipients;
@@ -11951,7 +11971,8 @@ document.addEventListener("DOMContentLoaded", () => {
           subject,
           message,
           recipients,
-          test_send: testSend
+          test_send: testSend,
+          send_new_bank_details: !!deliveryMailSendNewBankDetails?.checked
         })
       });
       const payload = await response.json();
@@ -12428,6 +12449,13 @@ document.addEventListener("DOMContentLoaded", () => {
         <input type="checkbox" id="deliveryMailEditable">
         אפשר לערוך את גוף המייל לפני השליחה
       </label>
+      <label class="reminder-edit-toggle" id="deliveryMailBankNewContainer" for="deliveryMailSendNewBankDetails">
+        <input type="checkbox" id="deliveryMailSendNewBankDetails">
+        שלח פרטי חשבון בנק חדשים
+      </label>
+      <div id="deliveryMailBankAlreadySentNote" class="delivery-bank-already-sent-note" hidden>
+        פרטי חשבון בנק החדשים כבר נשלחו ללקוח זה בעבר
+      </div>
       <textarea id="deliveryMailMessage" class="reminder-textarea" readonly></textarea>
       <div class="reminder-phone-wrap">
         <label for="deliveryMailRecipients">כתובת דוא״ל לשליחה</label>
