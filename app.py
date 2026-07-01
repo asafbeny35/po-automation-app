@@ -2606,21 +2606,29 @@ def _normalize_finance_invoice_row_app(row: dict) -> dict:
             normalized[key] = f"{float(raw):.2f}" if raw else ""
         except Exception:
             normalized[key] = raw
-    # Sanity: if vat > subtotal (and subtotal > 0), the vat field captured the
-    # total-with-VAT instead of the VAT amount — a common parser mistake when the
-    # label "כולל מע\"מ" is matched as a VAT label.
+    # Sanity checks for common parser mistakes with vat/subtotal/total fields.
     _sub = _finance_parse_number(normalized.get("subtotal"))
     _vat = _finance_parse_number(normalized.get("vat"))
     _tot = _finance_parse_number(normalized.get("total"))
     if _sub > 0 and _vat > _sub:
         if _tot <= 0:
-            # vat is clearly the total; derive real vat from subtotal
+            # vat captured total-with-VAT; total is missing — derive real vat
             normalized["total"] = f"{_vat:.2f}"
             normalized["vat"] = f"{max(0.0, round(_vat - _sub, 2)):.2f}"
         elif _vat > _tot and _tot > _sub:
-            # both vat and total are present but vat > total > subtotal — vat captured the total
+            # vat > total > subtotal — vat captured the grand total
             normalized["total"] = f"{_vat:.2f}"
             normalized["vat"] = f"{max(0.0, round(_vat - _sub, 2)):.2f}"
+        elif _tot > 0 and abs((_sub + _vat) - _tot) < 0.02:
+            # sub + vat = total but vat > sub — impossible at 18% VAT, fields are swapped
+            normalized["subtotal"] = f"{_vat:.2f}"
+            normalized["vat"] = f"{_sub:.2f}"
+    # vat present but subtotal=0 and total=0: vat is likely the total
+    elif _vat > 0 and _sub <= 0 and _tot <= 0:
+        computed_sub = round(_vat / 1.18, 2)
+        normalized["total"] = f"{_vat:.2f}"
+        normalized["subtotal"] = f"{computed_sub:.2f}"
+        normalized["vat"] = f"{max(0.0, round(_vat - computed_sub, 2)):.2f}"
     report_due_date = _finance_due_date_display(normalized.get("report_due_date"))
     normalized["report_due_date"] = report_due_date or _finance_due_date_display(normalized.get("invoice_date"))
     override_values = _finance_normalize_due_dates(
