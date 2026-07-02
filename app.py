@@ -17816,7 +17816,7 @@ async function refresh() {
 }
 
 refresh();
-setInterval(refresh, 20000);
+setInterval(refresh, 3600000);
 </script>
 </body>
 </html>
