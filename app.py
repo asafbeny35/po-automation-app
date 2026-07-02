@@ -7076,26 +7076,54 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         import httpx
 
         suffix = file_path.suffix.lower()
-        media_type = "image/png"
+        image_blocks: list[dict] = []
         if suffix == ".pdf":
             pdf = fitz.open(str(file_path))
             page = pdf.load_page(0)
             pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
             img_bytes = pixmap.tobytes("png")
+            b64_full = base64.standard_b64encode(img_bytes).decode("utf-8")
+            image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_full}})
+            # Long, narrow thermal receipts render at very low effective resolution when
+            # downscaled by the vision API (max ~1568px on the long edge), making small
+            # print near the bottom (totals) hard to read. Send an extra zoomed-in crop
+            # of the bottom third at higher DPI so totals stay legible.
+            page_rect = page.rect
+            if page_rect.width > 0 and (page_rect.height / page_rect.width) > 2.0:
+                crop_rect = fitz.Rect(
+                    page_rect.x0,
+                    page_rect.y0 + page_rect.height * 0.6,
+                    page_rect.x1,
+                    page_rect.y1,
+                )
+                crop_pixmap = page.get_pixmap(matrix=fitz.Matrix(4.0, 4.0), clip=crop_rect, alpha=False)
+                crop_bytes = crop_pixmap.tobytes("png")
+                b64_crop = base64.standard_b64encode(crop_bytes).decode("utf-8")
+                image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_crop}})
             pdf.close()
         elif suffix in {".jpg", ".jpeg"}:
             img_bytes = file_path.read_bytes()
             media_type = "image/jpeg"
+            b64_image = base64.standard_b64encode(img_bytes).decode("utf-8")
+            image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64_image}})
         elif suffix in {".png", ".bmp", ".tif", ".tiff", ".webp"}:
             img_bytes = file_path.read_bytes()
             media_type = "image/png" if suffix == ".png" else "image/webp" if suffix == ".webp" else "image/png"
+            b64_image = base64.standard_b64encode(img_bytes).decode("utf-8")
+            image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64_image}})
         else:
             return None
 
-        b64_image = base64.standard_b64encode(img_bytes).decode("utf-8")
+        multi_image_note = (
+            "The second image (if present) is a zoomed-in crop of the bottom portion of the same "
+            "receipt, showing the totals section at higher resolution — use it to confirm the total.\n"
+            if len(image_blocks) > 1
+            else ""
+        )
         prompt = (
             "This is an image of an Israeli Hebrew invoice/receipt. Hebrew text reads right-to-left.\n"
-            "Extract the following fields and return ONLY a JSON object, no explanation:\n"
+            + multi_image_note
+            + "Extract the following fields and return ONLY a JSON object, no explanation:\n"
             "{\n"
             '  "supplier_name": "Business/supplier name — the PRINTED name at the top of the document (NOT handwritten). Read Hebrew right-to-left.",\n'
             '  "invoice_date": "Invoice date in DD/MM/YYYY format. If year is 2 digits (e.g. 26) add 2000.",\n'
@@ -7121,10 +7149,7 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
                 "messages": [
                     {
                         "role": "user",
-                        "content": [
-                            {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": b64_image}},
-                            {"type": "text", "text": prompt},
-                        ],
+                        "content": [*image_blocks, {"type": "text", "text": prompt}],
                     }
                 ],
             },
