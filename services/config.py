@@ -127,6 +127,7 @@ class Settings(BaseSettings):
     greeninvoice_assistant_months_back: int = int(os.getenv("GREENINVOICE_ASSISTANT_MONTHS_BACK", "36"))
     greeninvoice_assistant_page_size: int = int(os.getenv("GREENINVOICE_ASSISTANT_PAGE_SIZE", "100"))
     greeninvoice_assistant_max_pages: int = int(os.getenv("GREENINVOICE_ASSISTANT_MAX_PAGES", "12"))
+    installer_link_token: str = _env_or_fallback("INSTALLER_LINK_TOKEN", "")
 
 
 settings = Settings()

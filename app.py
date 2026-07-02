@@ -13899,7 +13899,7 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
-AUTH_PUBLIC_PREFIXES = ("/static/", "/auth", "/gmail-oauth/", "/google-drive/oauth/")
+AUTH_PUBLIC_PREFIXES = ("/static/", "/auth", "/gmail-oauth/", "/google-drive/oauth/", "/installer/")
 AUTH_PUBLIC_PATHS = {"/", "/mobile/bootstrap", "/mobile/auth/bootstrap"}
 
 
@@ -17678,6 +17678,158 @@ async def installations_visit_delete(request: Request):
     except Exception as exc:
         log_handled_error("installations_visit_delete failed", exc)
         return JSONResponse({"error": f"לא הצלחתי למחוק את ביקור ההתקנה: {exc}"}, status_code=500)
+
+
+_INSTALLER_VIEW_HTML = """<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>התקנות</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; padding: 0; background: #faf3ea; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; color: #2c2620; }
+  header { position: sticky; top: 0; z-index: 5; background: #faf3ea; padding: 18px 16px 10px; border-bottom: 1px solid #e8dcc9; }
+  header h1 { margin: 0; font-size: 22px; font-weight: 700; color: #3a2f22; }
+  #status-line { font-size: 13px; color: #9a8b73; margin-top: 4px; }
+  #list { padding: 14px; display: flex; flex-direction: column; gap: 14px; }
+  .card { background: #ffffff; border: 1px solid #eee0cc; border-radius: 18px; padding: 18px 20px; min-height: 22vh; display: flex; flex-direction: column; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(60,45,20,0.06); }
+  .card:active { background: #fff6e9; }
+  .card .name { font-size: 26px; font-weight: 700; color: #2c2620; }
+  .card .meta { font-size: 20px; color: #6b5c42; display: flex; gap: 10px; flex-wrap: wrap; }
+  .card .meta b { color: #c9761a; font-weight: 700; }
+  .empty { text-align: center; color: #9a8b73; font-size: 20px; padding: 60px 20px; }
+  #overlay { position: fixed; inset: 0; background: rgba(30,22,10,0.5); display: none; align-items: flex-end; z-index: 20; }
+  #overlay.open { display: flex; }
+  #sheet { background: #faf3ea; width: 100%; max-height: 92vh; overflow-y: auto; border-radius: 22px 22px 0 0; padding: 20px 20px 34px; }
+  #sheet .close-btn { display: block; margin: 0 0 14px auto; background: #eee0cc; border: none; border-radius: 999px; width: 40px; height: 40px; font-size: 20px; color: #6b5c42; }
+  #sheet .row { margin-bottom: 14px; }
+  #sheet .label { font-size: 14px; color: #9a8b73; margin-bottom: 2px; }
+  #sheet .value { font-size: 19px; font-weight: 600; color: #2c2620; }
+  #sheet .value.big { font-size: 24px; color: #c9761a; font-weight: 800; }
+  #sheet .waze-btn { display: block; width: 100%; padding: 18px; margin: 18px 0; background: #33ccff; color: #fff; text-align: center; border-radius: 14px; font-size: 20px; font-weight: 700; text-decoration: none; }
+  #sheet .contact-block { background: #ffffff; border: 1px solid #eee0cc; border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; }
+  #sheet .contact-name { font-size: 19px; font-weight: 700; margin-bottom: 10px; }
+  #sheet .contact-actions { display: flex; gap: 10px; }
+  #sheet .contact-actions a { flex: 1; text-align: center; padding: 14px 8px; border-radius: 12px; font-size: 17px; font-weight: 700; text-decoration: none; }
+  #sheet .wa-btn { background: #25D366; color: #fff; }
+  #sheet .call-btn { background: #ff9f2e; color: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>התקנות</h1>
+  <div id="status-line">טוען...</div>
+</header>
+<div id="list"></div>
+
+<div id="overlay">
+  <div id="sheet">
+    <button class="close-btn" onclick="closeSheet()">×</button>
+    <div id="sheet-content"></div>
+  </div>
+</div>
+
+<script>
+const TOKEN = "__TOKEN__";
+let rowsById = {};
+
+function esc(s) {
+  return String(s || "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function renderList(rows) {
+  const list = document.getElementById("list");
+  if (!rows.length) {
+    list.innerHTML = '<div class="empty">אין כרגע התקנות פתוחות 🎉</div>';
+    return;
+  }
+  list.innerHTML = rows.map(r => `
+    <div class="card" onclick="openSheet('${esc(r.installation_id)}')">
+      <div class="name">${esc(r.customer_name)}</div>
+      <div class="meta"><b>${esc(r.doors_count)}</b> דלתות &nbsp;•&nbsp; ${esc(r.city)}</div>
+    </div>
+  `).join("");
+}
+
+function openSheet(id) {
+  const r = rowsById[id];
+  if (!r) return;
+  let contactsHtml = "";
+  (r.contacts || []).forEach(c => {
+    contactsHtml += `
+      <div class="contact-block">
+        <div class="contact-name">${esc(c.name)}</div>
+        <div class="contact-actions">
+          ${c.phone_wa ? `<a class="wa-btn" href="https://wa.me/${esc(c.phone_wa)}" target="_blank">שלח ווטסאפ</a>` : ""}
+          ${c.phone ? `<a class="call-btn" href="tel:${esc(c.phone)}">התקשר</a>` : ""}
+        </div>
+      </div>
+    `;
+  });
+  document.getElementById("sheet-content").innerHTML = `
+    <div class="row"><div class="label">שם הלקוח</div><div class="value">${esc(r.customer_name)}</div></div>
+    <div class="row"><div class="label">תאריך הזמנה</div><div class="value">${esc(r.po_date)}</div></div>
+    <div class="row"><div class="label">מספר הזמנה</div><div class="value">${esc(r.po_number)}</div></div>
+    <div class="row"><div class="label">כמות מגני דלתות</div><div class="value big">${esc(r.doors_count)}</div></div>
+    <div class="row"><div class="label">כתובת התקנה</div><div class="value big">${esc(r.delivery_address)}</div></div>
+    ${r.waze_url ? `<a class="waze-btn" href="${esc(r.waze_url)}" target="_blank">פתח בוויז</a>` : ""}
+    ${contactsHtml}
+  `;
+  document.getElementById("overlay").classList.add("open");
+}
+
+function closeSheet() {
+  document.getElementById("overlay").classList.remove("open");
+}
+
+async function refresh() {
+  try {
+    const res = await fetch(`/installer/${TOKEN}/data`, { cache: "no-store" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || "שגיאה");
+    const rows = data.rows || [];
+    rowsById = {};
+    rows.forEach(r => rowsById[r.installation_id] = r);
+    renderList(rows);
+    document.getElementById("status-line").textContent = "עודכן " + new Date().toLocaleTimeString("he-IL", {hour: "2-digit", minute: "2-digit"});
+  } catch (e) {
+    document.getElementById("status-line").textContent = "בעיה בעדכון, מנסה שוב...";
+  }
+}
+
+refresh();
+setInterval(refresh, 20000);
+</script>
+</body>
+</html>
+"""
+
+
+def _installer_view_token_valid(token: str) -> bool:
+    expected = str(settings.installer_link_token or "").strip()
+    if not expected:
+        return False
+    return secrets.compare_digest(str(token or "").strip(), expected)
+
+
+@app.get("/installer/{token}/data")
+async def installer_view_data(token: str):
+    if not _installer_view_token_valid(token):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    try:
+        rows = _build_installer_view_rows()
+        return JSONResponse({"status": "ok", "rows": rows})
+    except Exception as exc:
+        log_handled_error("installer_view_data failed", exc)
+        return JSONResponse({"error": "טעינת הנתונים נכשלה זמנית, ננסה שוב אוטומטית."}, status_code=500)
+
+
+@app.get("/installer/{token}", response_class=HTMLResponse)
+async def installer_view_page(token: str):
+    if not _installer_view_token_valid(token):
+        return HTMLResponse("<h1>הדף לא נמצא</h1>", status_code=404)
+    return HTMLResponse(_INSTALLER_VIEW_HTML.replace("__TOKEN__", token))
 
 
 @app.get("/quote-history-state")
@@ -23508,6 +23660,89 @@ def _build_installations_payload(case_rows: list[dict] | None = None, visit_rows
         "status_options": INSTALLATION_STATUS_OPTIONS,
         "delay_reason_options": INSTALLATION_DELAY_REASON_OPTIONS,
     }
+
+
+INSTALLER_VIEW_CLOSED_STATUSES = {"הושלם", "בוטל"}
+
+
+def _installer_view_city_from_address(delivery_address: str) -> str:
+    address = str(delivery_address or "").strip()
+    if not address:
+        return ""
+    parts = [part.strip() for part in address.split(",") if part.strip()]
+    if not parts:
+        return address
+    city = parts[-1]
+    city = re.sub(r"\d+", "", city).strip(" ,-")
+    return city or parts[-1]
+
+
+def _installer_view_phone_for_wa(phone: str) -> str:
+    digits = re.sub(r"\D", "", str(phone or ""))
+    if not digits:
+        return ""
+    if digits.startswith("0"):
+        digits = "972" + digits[1:]
+    elif not digits.startswith("972"):
+        digits = "972" + digits
+    return digits
+
+
+def _installer_view_split_contacts(name_field: str, phone_field: str, fallback_label: str) -> list[dict]:
+    # Some legacy rows pack multiple people into one field, e.g. "דניאל / ביבי / מיכאל"
+    # with phones "054-1111111 / 052-2222222 / 050-3333333" — split them into separate
+    # contact entries instead of concatenating all digits into one broken link.
+    names = [part.strip() for part in re.split(r"\s*/\s*", str(name_field or "").strip()) if part.strip()]
+    phones = [part.strip() for part in re.split(r"\s*/\s*", str(phone_field or "").strip()) if part.strip()]
+    count = max(len(names), len(phones))
+    if count == 0:
+        return []
+    contacts = []
+    for index in range(count):
+        name = names[index] if index < len(names) else (fallback_label if count == 1 else f"{fallback_label} {index + 1}")
+        phone = phones[index] if index < len(phones) else ""
+        contacts.append({
+            "name": name or fallback_label,
+            "phone": phone,
+            "phone_wa": _installer_view_phone_for_wa(phone),
+        })
+    return contacts
+
+
+def _installer_view_row(case: dict) -> dict:
+    install_items = case.get("install_items") or []
+    remaining_items = case.get("remaining_items") or []
+    total_ordered = _installation_number(case.get("total_ordered_quantity"))
+    total_remaining = _installation_number(case.get("total_remaining_quantity"))
+    doors_count = total_remaining if total_remaining > 0 else total_ordered
+    if doors_count <= 0:
+        doors_count = sum(_installation_number(item.get("ordered_quantity")) for item in install_items)
+    contacts = _installer_view_split_contacts(case.get("contact_name"), case.get("contact_phone"), "איש קשר")
+    contacts.extend(
+        _installer_view_split_contacts(case.get("secondary_contact_name"), case.get("secondary_contact_phone"), "איש קשר נוסף")
+    )
+    delivery_address = str(case.get("delivery_address") or "").strip()
+    return {
+        "installation_id": str(case.get("installation_id") or "").strip(),
+        "customer_name": str(case.get("customer_name") or "").strip(),
+        "city": _installer_view_city_from_address(delivery_address),
+        "doors_count": round(doors_count, 2) if doors_count % 1 else int(doors_count),
+        "po_number": str(case.get("po_number") or "").strip(),
+        "po_date": str(case.get("po_date") or "").strip(),
+        "delivery_address": delivery_address,
+        "status": str(case.get("status") or "").strip(),
+        "waze_url": f"https://waze.com/ul?q={quote(delivery_address)}&navigate=yes" if delivery_address else "",
+        "contacts": contacts,
+    }
+
+
+def _build_installer_view_rows() -> list[dict]:
+    payload = _build_installations_payload()
+    open_cases = [
+        case for case in (payload.get("rows") or [])
+        if str(case.get("status") or "").strip() not in INSTALLER_VIEW_CLOSED_STATUSES
+    ]
+    return [_installer_view_row(case) for case in open_cases]
 
 
 def _sync_installation_cases_from_order_history(force_refresh: bool = False, persist: bool = True) -> dict:
