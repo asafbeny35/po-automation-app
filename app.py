@@ -2955,7 +2955,6 @@ def _finance_should_impute_vat_from_total(row: dict, source_text: str) -> bool:
     normalized_text = fix_hebrew_text(source_text or "")
     lowered = normalized_text.lower()
     supplier_name = str((row or {}).get("supplier_name") or "").strip().lower()
-    service_name = str((row or {}).get("service_or_product") or "").strip().lower()
     if not lowered:
         return False
     if any(
@@ -2986,24 +2985,10 @@ def _finance_should_impute_vat_from_total(row: dict, source_text: str) -> bool:
         return False
     if re.search(r"מע[\"״']?מ\s*(?:0|0\.0|0\.00|אפס)", normalized_text):
         return False
-    if "טיב טעם" in supplier_name:
-        return True
-    invoice_markers = (
-        "חשבונית מס",
-        "חשבונית",
-        "חשבווית",
-        "השבונית",
-        "חשבונית/קבלה",
-        "חשבונית מס קבלה",
-        "חשבון תקופתי",
-        "העברנית",
-        "תינרבעה",
-    )
-    if any(marker in normalized_text for marker in invoice_markers):
-        return True
-    if "מע" in normalized_text and ("קבלה" in normalized_text or "לתשלום" in normalized_text):
-        return True
-    return False
+    # Default: any Israeli receipt/invoice with a total and no extracted VAT gets VAT
+    # imputed at the standard 18% rate, unless explicitly excluded above (foreign
+    # suppliers, VAT-exempt documents, or explicit VAT=0).
+    return True
 
 
 def _finance_impute_vat_from_total_if_needed(row: dict, text_cache: dict[str, str] | None = None) -> dict:
