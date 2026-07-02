@@ -192,7 +192,13 @@ def parse(text: str):
         raw_contact_line = contact_line_match.group(1)
         address_match = re.search(r":רוזיא\s+(.+?)\s*:תבותכ", raw_contact_line)
         if address_match:
-            header["delivery_address"] = _reverse_words(address_match.group(1)).replace(" -", "-").strip()
+            street = _reverse_words(address_match.group(1)).replace(" -", "-").strip()
+            # The area/city label (":רוזיא") value is stored as the raw-text prefix
+            # BEFORE the ":רוזיא" marker (visual RTL order puts it there), not between
+            # the two markers — without it, delivery_address was missing the city.
+            area_prefix = raw_contact_line.split(":רוזיא", 1)[0].strip()
+            area = _reverse_words(area_prefix) if area_prefix else ""
+            header["delivery_address"] = f"{street}, {area}" if area else street
         contact_name = raw_contact_line.split(":רוזיא", 1)[0].strip()
         header["contact_name"] = _reverse_words(contact_name)
 
@@ -211,9 +217,11 @@ def parse(text: str):
         break
 
     if not header["delivery_address"]:
-        address_line_match = re.search(r":רוזיא\s+([^\n]+?)\s*:תבותכ", flat)
+        address_line_match = re.search(r"([^\n]*?):רוזיא\s+([^\n]+?)\s*:תבותכ", flat)
         if address_line_match:
-            header["delivery_address"] = _reverse_words(address_line_match.group(1)).replace(" -", "-").strip()
+            street = _reverse_words(address_line_match.group(2)).replace(" -", "-").strip()
+            area = _reverse_words(address_line_match.group(1).strip()) if address_line_match.group(1).strip() else ""
+            header["delivery_address"] = f"{street}, {area}" if area else street
 
     items = _extract_items(lines, flat)
     item = items[0] if items else POItem(description="פריט לא זוהה", quantity=1, unit_price=0, line_total=0, sku="", unit="")
