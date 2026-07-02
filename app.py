@@ -2955,8 +2955,9 @@ def _finance_should_impute_vat_from_total(row: dict, source_text: str) -> bool:
     normalized_text = fix_hebrew_text(source_text or "")
     lowered = normalized_text.lower()
     supplier_name = str((row or {}).get("supplier_name") or "").strip().lower()
-    if not lowered:
-        return False
+    # No source text (e.g. OCR unavailable, or a scanned image with no extractable
+    # text) is not itself a reason to skip imputation — the exclusion checks below
+    # rely on supplier_name (from the row) and only fall back to text when present.
     if any(
         token in lowered
         for token in (
