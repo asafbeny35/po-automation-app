@@ -21818,27 +21818,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderTransportLabelState() {
-    const hasTransportLabel = !!(window.currentData && window.currentData.transport_label_path);
+    const hasTransportLabel = !!(window.currentData && (window.currentData.transport_label_base64 || window.currentData.transport_label_path));
     transportLabelPanel.classList.toggle("visible", hasTransportLabel);
 
     if (!hasTransportLabel) {
       transportLabelName.textContent = "";
-      transportLabelMeta.textContent = "הקובץ יתווסף אוטומטית ל־merge ולמסמך ה־WhatsApp בכל לחיצה על יצירה עם משלוח.";
+      transportLabelMeta.textContent = "הקובץ יתווסף אוטומטית ל־merge ולמסמך ה־WhatsApp בהזמנה הנוכחית עם משלוח.";
       return;
     }
 
     transportLabelName.textContent = window.currentData.transport_label_name || "transport-label.pdf";
-    transportLabelMeta.textContent = "ה־PDF הזה יישלח אוטומטית בכל יצירה עם משלוח עד שתחליף אותו או תאפס את המסך.";
+    transportLabelMeta.textContent = "ה־PDF הזה יישלח אוטומטית בהזמנה הנוכחית עם משלוח עד שתחליף אותו או תאפס את המסך.";
     applyPlayfulTooltips(transportLabelPanel);
   }
 
   function clearTransportLabel(sync = true) {
     if (window.currentData) {
       delete window.currentData.transport_label_path;
+      delete window.currentData.transport_label_base64;
       delete window.currentData.transport_label_name;
     }
     if (window.originalData) {
       delete window.originalData.transport_label_path;
+      delete window.originalData.transport_label_base64;
       delete window.originalData.transport_label_name;
     }
     if (transportLabelInput) {
@@ -37332,28 +37334,30 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function uploadTransportLabelFile(file) {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    updateStatus("מעלה PDF משלוח...", null);
-
+    updateStatus("קורא PDF משלוח...", null);
     try {
-      const response = await fetch("/upload-transport-label", { method: "POST", body: formData });
-      if (!response.ok) {
-        throw new Error("לא הצלחנו להעלות את קובץ המשלוח.");
-      }
-
-      const result = await response.json();
+      // Read the file inline (base64) rather than uploading it ahead of time and
+      // referencing it by a server-side path later: on Vercel, a later /finalize
+      // request can land on a different serverless instance with its own empty
+      // /tmp, so a path from an earlier request is not reliably readable there.
+      const base64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+        reader.onerror = () => reject(new Error("קריאת קובץ ה-PDF נכשלה."));
+        reader.readAsDataURL(file);
+      });
       window.currentData = window.currentData || {};
-      window.currentData.transport_label_path = result.transport_label_path;
-      window.currentData.transport_label_name = result.transport_label_name;
+      window.currentData.transport_label_base64 = base64;
+      window.currentData.transport_label_name = file.name || "transport-label.pdf";
+      delete window.currentData.transport_label_path;
       renderTransportLabelState();
-      syncDraftStorage();
-      showToast("success", "PDF משלוח נשמר", "הקובץ יצורף אוטומטית בכל יצירה עם משלוח.");
+      // Intentionally NOT persisted to draft storage — the transport PDF is
+      // single-use per order and shouldn't carry over to the next one.
+      showToast("success", "PDF משלוח נטען", "הקובץ יצורף אוטומטית ליצירה הנוכחית עם משלוח.");
       return true;
     } catch (error) {
-      updateStatus(error.message || "שגיאה בהעלאת PDF משלוח", "error");
-      showToast("error", "שגיאה בהעלאת PDF משלוח", error.message || "לא הצלחנו לשמור את הקובץ.");
+      updateStatus(error.message || "שגיאה בטעינת PDF משלוח", "error");
+      showToast("error", "שגיאה בטעינת PDF משלוח", error.message || "לא הצלחנו לקרוא את הקובץ.");
       return false;
     }
   }
@@ -40012,9 +40016,10 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function loadManualDataIntoScreen(data, summaryText, toastTitle, toastBody) {
-    const existingTransportLabel = window.currentData && window.currentData.transport_label_path
+    const existingTransportLabel = window.currentData && (window.currentData.transport_label_base64 || window.currentData.transport_label_path)
       ? {
           transport_label_path: window.currentData.transport_label_path,
+          transport_label_base64: window.currentData.transport_label_base64,
           transport_label_name: window.currentData.transport_label_name,
         }
       : {};
@@ -41051,9 +41056,10 @@ document.addEventListener("DOMContentLoaded", () => {
       updateStatus("מחלץ את הנתונים מה-PDF...", null);
       const data = await response.json();
       updateStatus("טוען את הנתונים למסך...", null);
-      const existingTransportLabel = window.currentData && window.currentData.transport_label_path
+      const existingTransportLabel = window.currentData && (window.currentData.transport_label_base64 || window.currentData.transport_label_path)
         ? {
             transport_label_path: window.currentData.transport_label_path,
+            transport_label_base64: window.currentData.transport_label_base64,
             transport_label_name: window.currentData.transport_label_name,
           }
         : {};
@@ -41095,9 +41101,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    if (!isQuoteFlow && normalizedDocumentMode !== "invoice_only" && isTransportMode(mode) && !window.currentData.transport_label_path) {
+    if (!isQuoteFlow && normalizedDocumentMode !== "invoice_only" && isTransportMode(mode) && !window.currentData.transport_label_base64 && !window.currentData.transport_label_path) {
       const selected = await openTransportLabelPicker();
-      if (!selected || !window.currentData.transport_label_path) {
+      if (!selected || (!window.currentData.transport_label_base64 && !window.currentData.transport_label_path)) {
         updateStatus("יצירה עם משלוח בוטלה", null);
         showToast("info", "חסר PDF משלוח", "כדי להמשיך עם יצירה + משלוח צריך לבחור קובץ PDF של מדבקות משלוח.");
         return;
@@ -41151,6 +41157,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setProgress(100, isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "התהליך הושלם.");
       updateStatus(isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "success");
       renderDownloadLinks(result);
+      if (!isQuoteFlow && isTransportMode(mode)) {
+        // The transport label PDF is single-use per order — don't carry it into the next one.
+        clearTransportLabel(false);
+      }
       if (!isQuoteFlow && result?.history_result?.row) {
         mergeOrderHistoryRow(result.history_result.row);
         orderHistoryLoaded = true;
@@ -44987,7 +44997,7 @@ document.addEventListener("DOMContentLoaded", () => {
   window.fieldRegistry = {};
 
   Object.entries(data).forEach(([key, value]) => {
-    if (key === "transport_label_path" || key === "transport_label_name" || key === "send_to_dad" || key === "label_split_rows" || key === "label_per_item" || key === "item_generate_label" || key === "manual_entry" || key === "source_file" || key === "source_file_path" || key === "mode" || key === "items" || key === "ordered_items" || key === "partial_delivery" || key === "partial_root_history_id" || key === "quote_history_id" || key === "quote_document_id" || key === "order_drive_folder_id" || key === "order_drive_folder_url" || key === "secondary_contact_name" || key === "secondary_contact_phone") return;
+    if (key === "transport_label_path" || key === "transport_label_base64" || key === "transport_label_name" || key === "send_to_dad" || key === "label_split_rows" || key === "label_per_item" || key === "item_generate_label" || key === "manual_entry" || key === "source_file" || key === "source_file_path" || key === "mode" || key === "items" || key === "ordered_items" || key === "partial_delivery" || key === "partial_root_history_id" || key === "quote_history_id" || key === "quote_document_id" || key === "order_drive_folder_id" || key === "order_drive_folder_url" || key === "secondary_contact_name" || key === "secondary_contact_phone") return;
     if (!value) return;
 
     const card = document.createElement("div");

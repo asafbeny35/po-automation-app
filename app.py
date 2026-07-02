@@ -11,6 +11,7 @@ import logging
 import json
 import time
 import secrets
+import base64
 import uuid
 import smtplib
 import ssl
@@ -25898,10 +25899,26 @@ async def finalize(request: Request):
     source_file_name = (data.get("source_file") or "").strip()
     transport_label_path_raw = (data.get("transport_label_path") or "").strip()
     transport_label_name = (data.get("transport_label_name") or "").strip()
+    transport_label_base64 = str(data.get("transport_label_base64") or "").strip()
+    if transport_label_base64:
+        # The transport label PDF is sent inline (base64) instead of relying on a
+        # path from an earlier /upload-transport-label call — on Vercel each HTTP
+        # request can land on a different serverless instance with its own /tmp,
+        # so a path from a previous request is not reliably readable here. Decoding
+        # it inline guarantees the bytes exist in THIS invocation.
+        try:
+            transport_bytes = base64.b64decode(transport_label_base64)
+            inline_transport_path = TRANSPORT_UPLOADS_DIR / f"{uuid.uuid4().hex}_{_sanitize_upload_filename(transport_label_name or 'transport-label.pdf', 'transport-label.pdf')}"
+            inline_transport_path.parent.mkdir(parents=True, exist_ok=True)
+            inline_transport_path.write_bytes(transport_bytes)
+            transport_label_path_raw = str(inline_transport_path)
+        except Exception as exc:
+            log_handled_error("finalize inline transport label decode failed", exc)
     send_to_dad = bool(data.get("send_to_dad"))
     manual_entry = bool(data.get("manual_entry"))
     finalize_log_context["normalized_mode"] = str(mode or "").strip()
     finalize_log_context["include_transport_label"] = include_transport_label
+    finalize_log_context["transport_label_via_base64"] = bool(transport_label_base64)
     finalize_log_context["transport_label_exists"] = bool(
         transport_label_path_raw and Path(transport_label_path_raw).exists()
     )
