@@ -23737,7 +23737,8 @@ def _installer_view_row(case: dict) -> dict:
 
 
 def _build_installer_view_rows() -> list[dict]:
-    payload = _build_installations_payload()
+    sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+    payload = _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))
     open_cases = [
         case for case in (payload.get("rows") or [])
         if str(case.get("status") or "").strip() not in INSTALLER_VIEW_CLOSED_STATUSES
