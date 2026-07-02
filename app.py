@@ -17714,6 +17714,7 @@ _INSTALLER_VIEW_HTML = """<!DOCTYPE html>
   #sheet .contact-actions a { flex: 1; text-align: center; padding: 14px 8px; border-radius: 12px; font-size: 17px; font-weight: 700; text-decoration: none; }
   #sheet .wa-btn { background: #25D366; color: #fff; }
   #sheet .call-btn { background: #ff9f2e; color: #fff; }
+  #sheet .share-btn { display: block; width: 100%; padding: 18px; margin: 8px 0 0; background: #4a3f2f; color: #fff; text-align: center; border: none; border-radius: 14px; font-size: 19px; font-weight: 700; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -17775,8 +17776,24 @@ function openSheet(id) {
     <div class="row"><div class="label">כתובת התקנה</div><div class="value big">${esc(r.delivery_address)}</div></div>
     ${r.waze_url ? `<a class="waze-btn" href="${esc(r.waze_url)}" target="_blank">פתח בוויז</a>` : ""}
     ${contactsHtml}
+    <button class="share-btn" onclick="shareInstallation('${esc(r.installation_id)}')">שתף פרטי התקנה</button>
   `;
   document.getElementById("overlay").classList.add("open");
+}
+
+function shareInstallation(id) {
+  const r = rowsById[id];
+  if (!r) return;
+  const contactPhone = (r.contacts && r.contacts[0] && r.contacts[0].phone) || "";
+  const lines = [
+    "פרטי התקנה:",
+    `כתובת התקנה: ${r.delivery_address || ""}`,
+    `מספר דלתות להתקנה: ${r.doors_count}`,
+    `טלפון איש קשר: ${contactPhone}`,
+  ];
+  if (r.waze_url) lines.push(`פתח בוויז: ${r.waze_url}`);
+  const text = encodeURIComponent(lines.join("\\n"));
+  window.open(`https://wa.me/972532473135?text=${text}`, "_blank");
 }
 
 function closeSheet() {
