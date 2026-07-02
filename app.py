@@ -536,17 +536,23 @@ def _ensure_admin_drive_asset(asset_key: str) -> dict:
     spec = ADMIN_DRIVE_ASSETS.get(asset_key)
     if not spec:
         raise FileNotFoundError("מסמך מנהלה לא הוגדר.")
-    local_path = Path(spec["local_path"])
-    if not local_path.exists():
-        raise FileNotFoundError(f"מסמך מנהלה לא נמצא מקומית: {local_path.name}")
+    _load_admin_drive_asset_cache_once()
     cached = ADMIN_DRIVE_ASSET_CACHE.get(asset_key)
     if cached and str(cached.get("id") or "").strip():
         return cached
+    # No cached Drive upload yet — this can only be uploaded from a machine that
+    # has the local file (e.g. personal documents outside the git repo, which are
+    # never bundled with the production deployment). Once uploaded once, the
+    # persisted cache above serves every future request from any environment.
+    local_path = Path(spec["local_path"])
+    if not local_path.exists():
+        raise FileNotFoundError(f"מסמך מנהלה לא נמצא מקומית: {local_path.name}")
     parent_id = _ensure_admin_drive_root_folder()
     for folder_name in spec.get("folders", ()):
         parent_id = ensure_child_folder(parent_id, str(folder_name))
     uploaded = ensure_file_in_folder(parent_id, local_path, drive_name=str(spec.get("drive_name") or local_path.name))
     ADMIN_DRIVE_ASSET_CACHE[asset_key] = uploaded
+    _persist_admin_drive_asset_cache()
     return uploaded
 
 
@@ -557,9 +563,16 @@ def _admin_drive_asset_local_path(asset_key: str) -> Path:
     if not spec:
         raise FileNotFoundError("מסמך מנהלה לא הוגדר.")
     local_path = Path(spec["local_path"])
-    if not local_path.exists():
+    if local_path.exists():
+        return local_path
+    _load_admin_drive_asset_cache_once()
+    cached = ADMIN_DRIVE_ASSET_CACHE.get(asset_key)
+    cached_id = str((cached or {}).get("id") or "").strip()
+    if not cached_id:
         raise FileNotFoundError(f"מסמך מנהלה לא נמצא מקומית: {local_path.name}")
-    return local_path
+    downloaded_path = runtime_root() / "admin_drive_asset_downloads" / f"{asset_key}{local_path.suffix or '.pdf'}"
+    downloaded_path.parent.mkdir(parents=True, exist_ok=True)
+    return download_drive_file(cached_id, downloaded_path)
 
 
 def _force_refresh_admin_drive_asset(asset_key: str) -> dict:
@@ -590,6 +603,7 @@ def _force_refresh_admin_drive_asset(asset_key: str) -> dict:
             pass
     uploaded = upload_file_to_folder(parent_id, local_path, drive_name=target_name)
     ADMIN_DRIVE_ASSET_CACHE[asset_key] = uploaded
+    _persist_admin_drive_asset_cache()
     return uploaded
 
 
@@ -12161,7 +12175,37 @@ ADMIN_DRIVE_ASSETS = {
     },
 }
 ADMIN_DRIVE_ASSET_CACHE: dict[str, dict] = {}
+ADMIN_DRIVE_ASSET_CACHE_LOADED = False
 ADMIN_DRIVE_ASSET_LOCK = asyncio.Lock()
+
+
+def _admin_drive_asset_cache_persistence_enabled() -> bool:
+    return supabase_store.is_enabled() and supabase_store.supports_domain("app_admin_drive_asset_cache")
+
+
+def _load_admin_drive_asset_cache_once() -> None:
+    global ADMIN_DRIVE_ASSET_CACHE_LOADED
+    if ADMIN_DRIVE_ASSET_CACHE_LOADED or not _admin_drive_asset_cache_persistence_enabled():
+        ADMIN_DRIVE_ASSET_CACHE_LOADED = True
+        return
+    try:
+        rows = supabase_store.fetch_domain_rows("app_admin_drive_asset_cache")
+        assets = dict((rows[0] or {}).get("assets") or {}) if rows else {}
+        for key, value in assets.items():
+            if isinstance(value, dict) and str(value.get("id") or "").strip():
+                ADMIN_DRIVE_ASSET_CACHE[key] = value
+    except Exception as exc:
+        log_handled_error("admin drive asset cache load failed", exc)
+    ADMIN_DRIVE_ASSET_CACHE_LOADED = True
+
+
+def _persist_admin_drive_asset_cache() -> None:
+    if not _admin_drive_asset_cache_persistence_enabled():
+        return
+    try:
+        supabase_store.replace_domain_rows("app_admin_drive_asset_cache", [{"assets": dict(ADMIN_DRIVE_ASSET_CACHE)}])
+    except Exception as exc:
+        log_handled_error("admin drive asset cache persist failed", exc)
 
 
 logger = logging.getLogger("po_automation")
