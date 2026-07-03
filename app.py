@@ -12165,14 +12165,14 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "דיסקונט - משכנתא - פירוט יתרה לסילוק.pdf",
     },
     "mortgage-mizrahi-summary": {
-        "local_path": ADMIN_LOANS_DIR / "file (2).pdf",
-        "folders": ("הלוואות ומשכנתאות", "מזרחי טפחות", "משכנתא"),
-        "drive_name": "מזרחי טפחות - משכנתא - מצב חשבון.pdf",
+        "local_path": ADMIN_LOANS_DIR / "מזרחי טפחות - לוח תשלומים אחרי מיחזור 2026.pdf",
+        "folders": ("הלוואות ומשכנתאות", "מזרחי טפחות", "משכנתא", "רוטשילד 8א׳, חיפה"),
+        "drive_name": "מזרחי טפחות - משכנתא - לוח תשלומים (אחרי מיחזור 2026).pdf",
     },
     "mortgage-mizrahi-payoff": {
-        "local_path": ADMIN_LOANS_DIR / "file (3).pdf",
-        "folders": ("הלוואות ומשכנתאות", "מזרחי טפחות", "משכנתא"),
-        "drive_name": "מזרחי טפחות - משכנתא - נתונים לסילוק.pdf",
+        "local_path": ADMIN_LOANS_DIR / "מזרחי טפחות - נתונים לסילוק אחרי מיחזור 2026.pdf",
+        "folders": ("הלוואות ומשכנתאות", "מזרחי טפחות", "משכנתא", "רוטשילד 8א׳, חיפה"),
+        "drive_name": "מזרחי טפחות - משכנתא - נתונים לסילוק (אחרי מיחזור 2026).pdf",
     },
 }
 ADMIN_DRIVE_ASSET_CACHE: dict[str, dict] = {}
