@@ -26777,16 +26777,22 @@ WEB_MENTIONS_DEFAULT_KEYWORDS = [
     "הגנה על דלתות בשיפוץ",
     "הגנת מדרגות באתר בניה",
     "שמרצף",
-    "soundproof drain pipe",
-    "pipe noise apartment wall",
-    "floor protection during renovation",
-    "door protection during construction",
+]
+
+# קבוצות פייסבוק רלוונטיות — אין דרך חוקית לסרוק אותן אוטומטית (אין API, הכל מאחורי
+# התחברות), אז העמוד מציג קישורי חיפוש-בתוך-קבוצה בלחיצה אחת לסיבוב ידני מהיר.
+WEB_MENTIONS_DEFAULT_FACEBOOK_GROUPS = [
+    {"name": "שיפוצים - עשה זאת בעצמך", "url": "https://www.facebook.com/groups/193741307731426"},
+    {"name": "D.I.Y - עשה זאת בעצמך | פורום שיפוצים", "url": "https://www.facebook.com/groups/ariav"},
+    {"name": "עשה זאת בעצמך - הקהילה", "url": "https://www.facebook.com/groups/982437322107778"},
+    {"name": "עשה זאת בעצמך לבית ולגינה", "url": "https://www.facebook.com/groups/diy4homgarden"},
+    {"name": "אינסטלציה - עשה זאת בעצמך", "url": "https://www.facebook.com/groups/1224989147631006"},
 ]
 
 WEB_MENTIONS_DEFAULT_SETTINGS = {
     "keywords": list(WEB_MENTIONS_DEFAULT_KEYWORDS),
     "feeds": [],
-    "reddit_enabled": True,
+    "facebook_groups": [dict(group) for group in WEB_MENTIONS_DEFAULT_FACEBOOK_GROUPS],
     "min_score": 60,
     "digest_hour": 8,
     "scan_interval_hours": 6,
@@ -26911,7 +26917,6 @@ def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, 
     }
 
 
-# רדיט חוסם קריאות JSON עם UA לא-דפדפני, אבל נקודת הקצה search.rss עובדת עם UA של דפדפן.
 _WEB_MENTIONS_BROWSER_UA = (
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
 )
@@ -26951,22 +26956,16 @@ def _web_mentions_parse_feed_content(content: bytes, *, source_label: str, keywo
     return items
 
 
-def _web_mentions_fetch_reddit(keyword: str) -> list[dict]:
-    response = None
-    for attempt in range(3):
-        if attempt:
-            time.sleep(12 * attempt)
-        response = httpx.get(
-            "https://www.reddit.com/search.rss",
-            params={"q": keyword, "sort": "new", "t": "month", "limit": 25},
-            headers={"User-Agent": _WEB_MENTIONS_BROWSER_UA},
-            timeout=20.0,
-            follow_redirects=True,
-        )
-        if response.status_code != 429:
-            break
+def _web_mentions_fetch_google_news(keyword: str) -> list[dict]:
+    response = httpx.get(
+        "https://news.google.com/rss/search",
+        params={"q": keyword, "hl": "he", "gl": "IL", "ceid": "IL:he"},
+        headers={"User-Agent": _WEB_MENTIONS_BROWSER_UA},
+        timeout=20.0,
+        follow_redirects=True,
+    )
     response.raise_for_status()
-    return _web_mentions_parse_feed_content(response.content, source_label="reddit", keyword=keyword)
+    return _web_mentions_parse_feed_content(response.content, source_label="google-news", keyword=keyword)
 
 
 def _web_mentions_fetch_feed(feed_url: str) -> list[dict]:
@@ -27085,16 +27084,13 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
 
     collected: list[dict] = []
     errors: list[str] = []
-    if settings_row.get("reddit_enabled", True):
-        # ברדיט אין כמעט תוכן בעברית — חיפוש עברי שם מחזיר רק רעש, אז סורקים רק מילות מפתח באנגלית
-        reddit_keywords = [k for k in keywords if re.search(r"[a-zA-Z]", k)]
-        for index, keyword in enumerate(reddit_keywords):
-            if index:
-                time.sleep(4)  # רדיט מחזיר 429 על קריאות רצופות מהירות
-            try:
-                collected.extend(_web_mentions_fetch_reddit(keyword))
-            except Exception as exc:
-                errors.append(f"Reddit ({keyword}): {exc}")
+    for index, keyword in enumerate(keywords):
+        if index:
+            time.sleep(1)
+        try:
+            collected.extend(_web_mentions_fetch_google_news(keyword))
+        except Exception as exc:
+            errors.append(f"Google News ({keyword}): {exc}")
     for feed_url in feeds:
         try:
             collected.extend(_web_mentions_fetch_feed(feed_url))
@@ -27292,9 +27288,17 @@ async def web_mentions_settings_save(request: Request):
                         settings_row[key] = max(low, min(high, int(payload[key])))
                     except Exception:
                         pass
-            for key in ("reddit_enabled", "digest_enabled"):
-                if isinstance(payload.get(key), bool):
-                    settings_row[key] = payload[key]
+            if isinstance(payload.get("digest_enabled"), bool):
+                settings_row["digest_enabled"] = payload["digest_enabled"]
+            if isinstance(payload.get("facebook_groups"), list):
+                groups = []
+                for row in payload["facebook_groups"][:30]:
+                    if not isinstance(row, dict):
+                        continue
+                    url = str(row.get("url") or "").strip().rstrip("/")
+                    if re.match(r"^https://(www\.)?facebook\.com/groups/[\w.\-]+$", url):
+                        groups.append({"name": str(row.get("name") or "").strip() or url, "url": url})
+                settings_row["facebook_groups"] = groups
             state["settings"] = settings_row
             _save_web_mentions_state(state)
         return JSONResponse({"status": "ok", "settings": settings_row})
@@ -27420,8 +27424,8 @@ _WEB_MENTIONS_PAGE_HTML = """<!DOCTYPE html>
 <body>
 <div class="wrap">
   <h1>🔎 מאתר שיחות ברשת</h1>
-  <div class="sub">איתור שיחות רלוונטיות למוצרי ben-yacov.com + טיוטת תגובה מקצועית. הפרסום נעשה ידנית על ידך — מהחשבון האישי שלך ובשקיפות.</div>
-  <div class="notice">💡 מומלץ להוסיף בהגדרות פידים של Google Alerts (צור התראה ב-google.com/alerts, בחר "עדכון RSS" והדבק כאן את כתובת הפיד) — זה המקור הכי טוב לשיחות בעברית.</div>
+  <div class="sub">איתור שיחות בעברית הרלוונטיות למוצרי ben-yacov.com + טיוטת תגובה מקצועית. הפרסום נעשה ידנית על ידך — מהחשבון האישי שלך ובשקיפות.</div>
+  <div class="notice">💡 נסרק אוטומטית: Google News בעברית + פידים של Google Alerts (צור התראות ב-google.com/alerts → "עדכון RSS" → הדבק את הכתובות בהגדרות — כך נתפסים גם פורומים ואתרי תוכן ישראליים). קבוצות פייסבוק אי אפשר לסרוק אוטומטית — בשביל זה לוח הסריקה המהירה למטה.</div>
   <div class="toolbar">
     <button class="primary" id="scanBtn" onclick="runScan()">🔄 סרוק עכשיו</button>
     <button onclick="sendDigest(this)">📲 שלח סיכום לוואטסאפ</button>
@@ -27441,9 +27445,16 @@ _WEB_MENTIONS_PAGE_HTML = """<!DOCTYPE html>
       <div><label>שעת סיכום יומי</label><input class="settings" id="setDigestHour" type="number" min="0" max="23"></div>
       <div><label>תדירות סריקה (שעות)</label><input class="settings" id="setInterval" type="number" min="1" max="48"></div>
     </div>
-    <label><input type="checkbox" id="setReddit"> לסרוק גם ב-Reddit</label>
+    <label>קבוצות פייסבוק ללוח הסריקה המהירה (שורה לכל קבוצה: שם | קישור לקבוצה)</label>
+    <textarea class="settings" id="setFbGroups" rows="6" placeholder="שיפוצים - עשה זאת בעצמך | https://www.facebook.com/groups/193741307731426"></textarea>
     <label><input type="checkbox" id="setDigest"> לשלוח סיכום יומי לוואטסאפ</label>
     <div class="row-actions"><button class="primary" onclick="saveSettings(this)">שמור הגדרות</button></div>
+  </div>
+
+  <div class="card" id="fbPanel">
+    <h3>📘 סריקה מהירה בקבוצות פייסבוק</h3>
+    <div class="meta" style="margin-bottom:10px;">פייסבוק לא מאפשר סריקה אוטומטית של קבוצות — לחיצה על מילת מפתח פותחת את החיפוש שלה בתוך הקבוצה (צריך להיות מחובר לפייסבוק). סיבוב יומי: 2 דקות.</div>
+    <div id="fbGroupsList"></div>
   </div>
 
   <div class="tabs">
@@ -27517,11 +27528,27 @@ function fillSettings() {
   const s = STATE.settings || {};
   document.getElementById('setKeywords').value = (s.keywords || []).join('\\n');
   document.getElementById('setFeeds').value = (s.feeds || []).join('\\n');
+  document.getElementById('setFbGroups').value = (s.facebook_groups || []).map(g => g.name + ' | ' + g.url).join('\\n');
   document.getElementById('setMinScore').value = s.min_score ?? 60;
   document.getElementById('setDigestHour').value = s.digest_hour ?? 8;
   document.getElementById('setInterval').value = s.scan_interval_hours ?? 6;
-  document.getElementById('setReddit').checked = s.reddit_enabled !== false;
   document.getElementById('setDigest').checked = s.digest_enabled !== false;
+}
+
+function renderFbPanel() {
+  const s = STATE.settings || {};
+  const groups = s.facebook_groups || [];
+  const keywords = (s.keywords || []).slice(0, 6);
+  const panel = document.getElementById('fbPanel');
+  if (!groups.length) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+  document.getElementById('fbGroupsList').innerHTML = groups.map(g => `
+    <div style="padding:8px 0; border-top:1px solid var(--line);">
+      <a href="${esc(g.url)}" target="_blank" rel="noopener" style="font-weight:600; color:var(--ink); text-decoration:none;">${esc(g.name)}</a>
+      <div class="row-actions" style="margin-top:6px;">
+        ${keywords.map(k => `<a class="btn" style="font-size:12.5px; padding:4px 10px;" target="_blank" rel="noopener" href="${esc(g.url)}/search/?q=${encodeURIComponent(k)}">🔍 ${esc(k)}</a>`).join('')}
+      </div>
+    </div>`).join('');
 }
 
 async function load() {
@@ -27529,6 +27556,7 @@ async function load() {
     const data = await api('/web-mentions-state');
     STATE = data;
     fillSettings();
+    renderFbPanel();
     const newCount = (data.items || []).filter(i => (i.status || 'new') === 'new').length;
     let line = `${newCount} שיחות ממתינות · סריקה אחרונה: ${data.last_scan_at ? data.last_scan_at.replace('T',' ') : 'עדיין לא'}`;
     if (!data.anthropic_key_configured) line += '\\n⚠️ מפתח Anthropic לא מוגדר — הדירוג והטיוטות לא יעבדו עד שיוגדר anthropic_api_key.';
@@ -27567,10 +27595,14 @@ async function saveSettings(btn) {
     await api('/web-mentions-settings-save', {
       keywords: document.getElementById('setKeywords').value.split('\\n').map(s => s.trim()).filter(Boolean),
       feeds: document.getElementById('setFeeds').value.split('\\n').map(s => s.trim()).filter(Boolean),
+      facebook_groups: document.getElementById('setFbGroups').value.split('\\n').map(line => {
+        const sep = line.indexOf('|');
+        if (sep === -1) return { name: '', url: line.trim() };
+        return { name: line.slice(0, sep).trim(), url: line.slice(sep + 1).trim() };
+      }).filter(g => g.url),
       min_score: +document.getElementById('setMinScore').value,
       digest_hour: +document.getElementById('setDigestHour').value,
       scan_interval_hours: +document.getElementById('setInterval').value,
-      reddit_enabled: document.getElementById('setReddit').checked,
       digest_enabled: document.getElementById('setDigest').checked,
     });
     toast('ההגדרות נשמרו ✅'); await load();
