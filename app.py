@@ -27086,7 +27086,9 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
     collected: list[dict] = []
     errors: list[str] = []
     if settings_row.get("reddit_enabled", True):
-        for index, keyword in enumerate(keywords):
+        # ברדיט אין כמעט תוכן בעברית — חיפוש עברי שם מחזיר רק רעש, אז סורקים רק מילות מפתח באנגלית
+        reddit_keywords = [k for k in keywords if re.search(r"[a-zA-Z]", k)]
+        for index, keyword in enumerate(reddit_keywords):
             if index:
                 time.sleep(4)  # רדיט מחזיר 429 על קריאות רצופות מהירות
             try:
@@ -27127,6 +27129,9 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
                         item["score"] = result["score"]
                         item["score_reason"] = result["reason"]
                         scored_count += 1
+                        # פריט לא רלוונטי לא צריך לחכות בתור — עובר אוטומטית ל"נדחו"
+                        if result["score"] < min_score and item.get("status") == "new":
+                            item["status"] = "dismissed"
         except Exception as exc:
             errors.append(f"דירוג: {exc}")
         relevant = sorted(
