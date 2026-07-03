@@ -13945,7 +13945,7 @@ async def add_security_headers(request: Request, call_next):
 
 
 AUTH_PUBLIC_PREFIXES = ("/static/", "/auth", "/gmail-oauth/", "/google-drive/oauth/", "/installer/")
-AUTH_PUBLIC_PATHS = {"/", "/mobile/bootstrap", "/mobile/auth/bootstrap"}
+AUTH_PUBLIC_PATHS = {"/", "/mobile/bootstrap", "/mobile/auth/bootstrap", "/web-mentions"}
 
 
 @app.middleware("http")
@@ -26751,3 +26751,855 @@ async def finalize(request: Request):
             "working_order_cleanup_result": working_order_cleanup_result,
         }
     )
+
+
+# ============================================================================
+# מאתר שיחות ברשת (Web Mentions Finder) — ben-yacov.com
+# סורק מקורות ציבוריים (Reddit, פידים של Google Alerts/RSS) לפי מילות מפתח,
+# מדרג רלוונטיות עם Claude ומנסח טיוטת תגובה מקצועית ושקופה.
+# הפרסום עצמו נעשה ידנית ע"י אסף — הכלי לא מפרסם שום דבר בעצמו.
+# ============================================================================
+
+WEB_MENTIONS_CACHE_PATH = BASE_DIR / "web_mentions_cache.json"
+WEB_MENTIONS_LOCK = asyncio.Lock()
+WEB_MENTIONS_TASK: asyncio.Task | None = None
+WEB_MENTIONS_STATE: dict | None = None
+WEB_MENTIONS_MAX_ITEMS = 400
+WEB_MENTIONS_MAX_DRAFTS_PER_SCAN = 10
+WEB_MENTIONS_SITE_URL = "https://www.ben-yacov.com"
+
+WEB_MENTIONS_DEFAULT_KEYWORDS = [
+    "בידוד אקוסטי לצנרת",
+    "רעש צנרת ביוב",
+    "השתקת צינור ביוב",
+    "הגנה על רצפה בשיפוץ",
+    "כיסוי רצפה בזמן שיפוצים",
+    "הגנה על דלתות בשיפוץ",
+    "הגנת מדרגות באתר בניה",
+    "שמרצף",
+    "soundproof drain pipe",
+    "pipe noise apartment wall",
+    "floor protection during renovation",
+    "door protection during construction",
+]
+
+WEB_MENTIONS_DEFAULT_SETTINGS = {
+    "keywords": list(WEB_MENTIONS_DEFAULT_KEYWORDS),
+    "feeds": [],
+    "reddit_enabled": True,
+    "min_score": 60,
+    "digest_hour": 8,
+    "scan_interval_hours": 6,
+    "digest_enabled": True,
+}
+
+WEB_MENTIONS_BUSINESS_CONTEXT = (
+    "העסק: בן יעקב טקסטיל (ben-yacov.com) — מפעל ישראלי ותיק (35+ שנה) לעיבוד טקסטיל תעשייתי.\n"
+    "מוצרי מדף:\n"
+    "- QuietPipe — עטיפת בידוד אקוסטי לצנרת: משתיקה רעשי מים וביוב בצנרת בבניינים ובדירות.\n"
+    "- ProDoor — כיסוי הגנה לדלתות בזמן שיפוץ ובנייה.\n"
+    "- שמרצף — יריעות הגנה לרצפות בזמן שיפוצים (ספיגת מכות, נוזלים ולכלוך).\n"
+    "- StepPro — הגנת קצוות מדרגות באתרי בנייה.\n"
+    "שירותי תעשייה: למינציה של בדים (פלזמה / דבק חם / סרט דבק), תרמופורמינג והבלטה בתבניות "
+    "אלומיניום, חיתוך מדויק בסכינים, הדבקה דו-צדדית roll-to-roll.\n"
+    "קהל היעד: קבלנים, מנהלי פרויקטים, שיפוצניקים, יועצי אקוסטיקה, מפעלי תעשייה ואנשים פרטיים בשיפוץ.\n"
+    f"האתר: {WEB_MENTIONS_SITE_URL}"
+)
+
+
+def _web_mentions_default_state() -> dict:
+    return {
+        "settings": copy.deepcopy(WEB_MENTIONS_DEFAULT_SETTINGS),
+        "items": {},
+        "last_scan_at": "",
+        "last_digest_date": "",
+    }
+
+
+def _web_mentions_normalize_state(payload: dict | None) -> dict:
+    state = _web_mentions_default_state()
+    if not isinstance(payload, dict):
+        return state
+    incoming_settings = payload.get("settings")
+    if isinstance(incoming_settings, dict):
+        for key in state["settings"]:
+            if key in incoming_settings:
+                state["settings"][key] = incoming_settings[key]
+    items = payload.get("items")
+    if isinstance(items, dict):
+        state["items"] = {str(k): dict(v) for k, v in items.items() if isinstance(v, dict)}
+    state["last_scan_at"] = str(payload.get("last_scan_at") or "")
+    state["last_digest_date"] = str(payload.get("last_digest_date") or "")
+    return state
+
+
+def _load_web_mentions_state() -> dict:
+    global WEB_MENTIONS_STATE
+    if WEB_MENTIONS_STATE is not None:
+        return WEB_MENTIONS_STATE
+    supabase_payload = _load_supabase_app_state("app_web_mentions")
+    if isinstance(supabase_payload, dict) and supabase_payload.get("items") is not None:
+        WEB_MENTIONS_STATE = _web_mentions_normalize_state(supabase_payload)
+        return WEB_MENTIONS_STATE
+    try:
+        if WEB_MENTIONS_CACHE_PATH.exists():
+            WEB_MENTIONS_STATE = _web_mentions_normalize_state(
+                json.loads(WEB_MENTIONS_CACHE_PATH.read_text(encoding="utf-8"))
+            )
+            return WEB_MENTIONS_STATE
+    except Exception as exc:
+        log_handled_error("web mentions cache load failed", exc)
+    WEB_MENTIONS_STATE = _web_mentions_default_state()
+    return WEB_MENTIONS_STATE
+
+
+def _save_web_mentions_state(state: dict) -> None:
+    global WEB_MENTIONS_STATE
+    WEB_MENTIONS_STATE = state
+    try:
+        WEB_MENTIONS_CACHE_PATH.write_text(
+            json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        log_handled_error("web mentions cache save failed", exc)
+    _save_supabase_app_state("app_web_mentions", state)
+
+
+def _web_mentions_strip_html(text: str) -> str:
+    cleaned = re.sub(r"<[^>]+>", " ", str(text or ""))
+    cleaned = html.unescape(cleaned)
+    return re.sub(r"\s+", " ", cleaned).strip()
+
+
+def _web_mentions_unwrap_google_link(href: str) -> str:
+    href = str(href or "").strip()
+    if "google.com/url" not in href:
+        return href
+    try:
+        params = parse_qs(urlparse(href).query)
+        for key in ("url", "q"):
+            values = params.get(key) or []
+            if values and str(values[0]).startswith("http"):
+                return str(values[0])
+    except Exception:
+        pass
+    return href
+
+
+def _web_mentions_item_id(url: str) -> str:
+    return hashlib.sha1(str(url or "").strip().lower().encode("utf-8")).hexdigest()[:16]
+
+
+def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, snippet: str, published_at: str) -> dict | None:
+    url = str(url or "").strip()
+    title = _web_mentions_strip_html(title)
+    if not url or not title:
+        return None
+    return {
+        "id": _web_mentions_item_id(url),
+        "source": source,
+        "keyword": keyword,
+        "title": title[:300],
+        "url": url,
+        "snippet": _web_mentions_strip_html(snippet)[:600],
+        "published_at": str(published_at or ""),
+        "found_at": datetime.now().isoformat(timespec="seconds"),
+        "status": "new",
+        "score": None,
+        "score_reason": "",
+        "draft": "",
+    }
+
+
+# רדיט חוסם קריאות JSON עם UA לא-דפדפני, אבל נקודת הקצה search.rss עובדת עם UA של דפדפן.
+_WEB_MENTIONS_BROWSER_UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+)
+
+
+def _web_mentions_parse_feed_content(content: bytes, *, source_label: str, keyword: str = "") -> list[dict]:
+    import xml.etree.ElementTree as ET
+
+    root = ET.fromstring(content)
+    entries = [el for el in root.iter() if el.tag.split("}")[-1] in {"item", "entry"}]
+    items: list[dict] = []
+    for entry in entries[:25]:
+        title = ""
+        link = ""
+        snippet = ""
+        published = ""
+        for child in entry:
+            tag = child.tag.split("}")[-1]
+            if tag == "title":
+                title = "".join(child.itertext()).strip()
+            elif tag == "link":
+                link = str(child.get("href") or "").strip() or "".join(child.itertext()).strip()
+            elif tag in {"description", "summary", "content"} and not snippet:
+                snippet = "".join(child.itertext()).strip()
+            elif tag in {"pubDate", "published", "updated"} and not published:
+                published = "".join(child.itertext()).strip()
+        item = _web_mentions_make_item(
+            source=source_label,
+            keyword=keyword,
+            title=title,
+            url=_web_mentions_unwrap_google_link(link),
+            snippet=snippet,
+            published_at=published,
+        )
+        if item:
+            items.append(item)
+    return items
+
+
+def _web_mentions_fetch_reddit(keyword: str) -> list[dict]:
+    response = None
+    for attempt in range(3):
+        if attempt:
+            time.sleep(12 * attempt)
+        response = httpx.get(
+            "https://www.reddit.com/search.rss",
+            params={"q": keyword, "sort": "new", "t": "month", "limit": 25},
+            headers={"User-Agent": _WEB_MENTIONS_BROWSER_UA},
+            timeout=20.0,
+            follow_redirects=True,
+        )
+        if response.status_code != 429:
+            break
+    response.raise_for_status()
+    return _web_mentions_parse_feed_content(response.content, source_label="reddit", keyword=keyword)
+
+
+def _web_mentions_fetch_feed(feed_url: str) -> list[dict]:
+    response = httpx.get(
+        feed_url,
+        headers={"User-Agent": _WEB_MENTIONS_BROWSER_UA},
+        timeout=20.0,
+        follow_redirects=True,
+    )
+    response.raise_for_status()
+    feed_label = urlparse(feed_url).netloc or "rss"
+    return _web_mentions_parse_feed_content(response.content, source_label=f"feed/{feed_label}")
+
+
+def _web_mentions_claude_text(prompt: str, *, max_tokens: int = 1200) -> str:
+    api_key = str(settings.anthropic_api_key or "").strip()
+    if not api_key:
+        raise RuntimeError("חסר מפתח Anthropic API (anthropic_api_key) בהגדרות האפליקציה")
+    response = httpx.post(
+        "https://api.anthropic.com/v1/messages",
+        headers={
+            "x-api-key": api_key,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+        },
+        json={
+            "model": "claude-sonnet-4-6",
+            "max_tokens": max_tokens,
+            "messages": [{"role": "user", "content": prompt}],
+        },
+        timeout=60.0,
+    )
+    response.raise_for_status()
+    content = response.json().get("content") or []
+    return "".join(block.get("text") or "" for block in content if isinstance(block, dict)).strip()
+
+
+def _web_mentions_extract_json(text: str):
+    text = str(text or "").strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```[a-z]*\s*|\s*```$", "", text).strip()
+    for opener, closer in (("[", "]"), ("{", "}")):
+        start = text.find(opener)
+        end = text.rfind(closer)
+        if start != -1 and end > start:
+            try:
+                return json.loads(text[start : end + 1])
+            except Exception:
+                continue
+    raise ValueError("לא הצלחתי לפענח JSON מתשובת המודל")
+
+
+def _web_mentions_score_batch(items: list[dict]) -> dict[str, dict]:
+    if not items:
+        return {}
+    compact = [
+        {
+            "id": item["id"],
+            "title": item["title"],
+            "snippet": item["snippet"][:300],
+            "source": item["source"],
+            "keyword": item.get("keyword") or "",
+        }
+        for item in items
+    ]
+    prompt = (
+        f"{WEB_MENTIONS_BUSINESS_CONTEXT}\n\n"
+        "לפניך רשימת פוסטים/שיחות שנמצאו ברשת לפי מילות מפתח. עבור כל פריט, דרג מ-0 עד 100 "
+        "עד כמה שווה לבעל העסק להגיב שם באופן אישי: ציון גבוה = מישהו שואל שאלה או מחפש פתרון "
+        "שהמוצרים/השירותים שלנו באמת פותרים, והשיחה פעילה וציבורית. ציון נמוך = כתבה, פרסומת, "
+        "מתחרה, או סתם אזכור לא רלוונטי.\n\n"
+        f"{json.dumps(compact, ensure_ascii=False)}\n\n"
+        'החזר אך ורק JSON תקין: [{"id": "...", "score": 0-100, "reason": "נימוק קצר בעברית"}]'
+    )
+    parsed = _web_mentions_extract_json(_web_mentions_claude_text(prompt, max_tokens=2000))
+    results: dict[str, dict] = {}
+    if isinstance(parsed, list):
+        for row in parsed:
+            if not isinstance(row, dict):
+                continue
+            item_id = str(row.get("id") or "").strip()
+            try:
+                score = max(0, min(100, int(row.get("score"))))
+            except Exception:
+                continue
+            if item_id:
+                results[item_id] = {"score": score, "reason": str(row.get("reason") or "").strip()}
+    return results
+
+
+def _web_mentions_generate_draft(item: dict) -> str:
+    prompt = (
+        f"{WEB_MENTIONS_BUSINESS_CONTEXT}\n\n"
+        "כתוב טיוטת תגובה שאסף (בעל העסק) יפרסם בעצמו בשיחה הבאה:\n"
+        f"מקור: {item.get('source')}\n"
+        f"כותרת: {item.get('title')}\n"
+        f"תוכן: {item.get('snippet') or '(אין תוכן — רק כותרת)'}\n\n"
+        "כללים מחייבים:\n"
+        "1. קודם כל לענות לעניין על השאלה עם ערך אמיתי וטיפים מעשיים, גם כאלה שלא קשורים למוצר שלנו.\n"
+        "2. שקיפות מלאה: לציין בטבעיות שאני מייצרן/מפעל בתחום (למשל: \"גילוי נאות — אני מהתחום, יש לנו מפעל שמייצר בדיוק את זה\").\n"
+        "3. להזכיר את המוצר הרלוונטי ואת האתר www.ben-yacov.com רק אם זה באמת עוזר לשואל — בלי דחיפה.\n"
+        "4. לכתוב באותה שפה של הפוסט (עברית לפוסט בעברית, אנגלית לפוסט באנגלית).\n"
+        "5. טון של איש מקצוע עוזר, לא איש מכירות. 3-7 משפטים. בלי סופרלטיבים ובלי הבטחות מוגזמות.\n\n"
+        "החזר את טקסט התגובה בלבד, בלי הקדמות."
+    )
+    return _web_mentions_claude_text(prompt, max_tokens=800)
+
+
+def _web_mentions_run_scan_sync(state: dict) -> dict:
+    """סריקה מלאה (רצה ב-thread): איסוף מכל המקורות, דירוג וניסוח טיוטות. מחזירה סיכום."""
+    settings_row = state.get("settings") or {}
+    keywords = [str(k).strip() for k in (settings_row.get("keywords") or []) if str(k).strip()]
+    feeds = [str(f).strip() for f in (settings_row.get("feeds") or []) if str(f).strip()]
+    min_score = int(settings_row.get("min_score") or 60)
+    existing_items: dict = state.get("items") or {}
+
+    collected: list[dict] = []
+    errors: list[str] = []
+    if settings_row.get("reddit_enabled", True):
+        for index, keyword in enumerate(keywords):
+            if index:
+                time.sleep(4)  # רדיט מחזיר 429 על קריאות רצופות מהירות
+            try:
+                collected.extend(_web_mentions_fetch_reddit(keyword))
+            except Exception as exc:
+                errors.append(f"Reddit ({keyword}): {exc}")
+    for feed_url in feeds:
+        try:
+            collected.extend(_web_mentions_fetch_feed(feed_url))
+        except Exception as exc:
+            errors.append(f"Feed ({feed_url}): {exc}")
+
+    new_items: list[dict] = []
+    seen_in_batch: set[str] = set()
+    for item in collected:
+        if item["id"] in existing_items or item["id"] in seen_in_batch:
+            continue
+        seen_in_batch.add(item["id"])
+        new_items.append(item)
+
+    scored_count = 0
+    drafted_count = 0
+    if new_items:
+        try:
+            for chunk_start in range(0, len(new_items), 20):
+                chunk = new_items[chunk_start : chunk_start + 20]
+                scores = _web_mentions_score_batch(chunk)
+                for item in chunk:
+                    result = scores.get(item["id"])
+                    if result:
+                        item["score"] = result["score"]
+                        item["score_reason"] = result["reason"]
+                        scored_count += 1
+        except Exception as exc:
+            errors.append(f"דירוג: {exc}")
+        relevant = sorted(
+            [item for item in new_items if (item.get("score") or 0) >= min_score],
+            key=lambda item: -(item.get("score") or 0),
+        )
+        for item in relevant[:WEB_MENTIONS_MAX_DRAFTS_PER_SCAN]:
+            try:
+                item["draft"] = _web_mentions_generate_draft(item)
+                drafted_count += 1
+            except Exception as exc:
+                errors.append(f"טיוטה ({item['title'][:40]}): {exc}")
+                break
+
+    for item in new_items:
+        existing_items[item["id"]] = item
+    if len(existing_items) > WEB_MENTIONS_MAX_ITEMS:
+        ordered = sorted(existing_items.values(), key=lambda row: str(row.get("found_at") or ""), reverse=True)
+        keep = ordered[:WEB_MENTIONS_MAX_ITEMS]
+        state["items"] = {row["id"]: row for row in keep}
+    else:
+        state["items"] = existing_items
+    state["last_scan_at"] = datetime.now().isoformat(timespec="seconds")
+
+    return {
+        "found_total": len(collected),
+        "new_items": len(new_items),
+        "scored": scored_count,
+        "drafted": drafted_count,
+        "relevant_new": len([item for item in new_items if (item.get("score") or 0) >= min_score]),
+        "errors": errors,
+    }
+
+
+async def _web_mentions_scan_and_save() -> dict:
+    async with WEB_MENTIONS_LOCK:
+        state = _load_web_mentions_state()
+        summary = await asyncio.to_thread(_web_mentions_run_scan_sync, state)
+        _save_web_mentions_state(state)
+        return summary
+
+
+def _web_mentions_digest_message(state: dict) -> str | None:
+    settings_row = state.get("settings") or {}
+    min_score = int(settings_row.get("min_score") or 60)
+    candidates = sorted(
+        [
+            item
+            for item in (state.get("items") or {}).values()
+            if item.get("status") == "new" and (item.get("score") or 0) >= min_score
+        ],
+        key=lambda item: -(item.get("score") or 0),
+    )
+    if not candidates:
+        return None
+    lines = [f"🔎 מאתר שיחות ברשת — {len(candidates)} שיחות רלוונטיות ממתינות לתגובה", ""]
+    for index, item in enumerate(candidates[:5], start=1):
+        lines.append(f"{index}. ({item.get('score')}) {item.get('title')}")
+        lines.append(f"   {item.get('url')}")
+    if len(candidates) > 5:
+        lines.append(f"...ועוד {len(candidates) - 5} נוספות")
+    lines.extend(["", "טיוטות תגובה מוכנות לאישור בעמוד: /web-mentions באפליקציה"])
+    return "\n".join(lines)
+
+
+async def _web_mentions_send_digest(*, force: bool = False) -> dict:
+    state = _load_web_mentions_state()
+    message = _web_mentions_digest_message(state)
+    if not message:
+        return {"sent": False, "reason": "אין שיחות רלוונטיות חדשות"}
+    await send_files_via_whatsapp(phone=MARKETING_REMINDER_TARGET_PHONE, message=message, file_paths=[])
+    async with WEB_MENTIONS_LOCK:
+        state = _load_web_mentions_state()
+        state["last_digest_date"] = date.today().isoformat()
+        _save_web_mentions_state(state)
+    return {"sent": True}
+
+
+async def _web_mentions_background_loop() -> None:
+    await asyncio.sleep(20)
+    while True:
+        try:
+            state = _load_web_mentions_state()
+            settings_row = state.get("settings") or {}
+            interval_hours = max(1, int(settings_row.get("scan_interval_hours") or 6))
+            last_scan = _parse_iso_datetime_safe(state.get("last_scan_at") or "")
+            if not last_scan or (datetime.now() - last_scan) >= timedelta(hours=interval_hours):
+                await _web_mentions_scan_and_save()
+                state = _load_web_mentions_state()
+            if settings_row.get("digest_enabled", True):
+                digest_hour = int(settings_row.get("digest_hour") or 8)
+                today = date.today().isoformat()
+                if datetime.now().hour >= digest_hour and state.get("last_digest_date") != today:
+                    await _web_mentions_send_digest()
+        except Exception as exc:
+            log_handled_error("web mentions background loop failed", exc)
+        await asyncio.sleep(900)
+
+
+@app.on_event("startup")
+async def _web_mentions_startup() -> None:
+    global WEB_MENTIONS_TASK
+    if WEB_MENTIONS_TASK is None or WEB_MENTIONS_TASK.done():
+        WEB_MENTIONS_TASK = asyncio.create_task(_web_mentions_background_loop())
+
+
+@app.get("/web-mentions-state")
+async def web_mentions_state():
+    try:
+        state = _load_web_mentions_state()
+        items = sorted(
+            (state.get("items") or {}).values(),
+            key=lambda item: (-(item.get("score") or 0), str(item.get("found_at") or "")),
+        )
+        return JSONResponse(
+            {
+                "status": "ok",
+                "settings": state.get("settings") or {},
+                "items": items,
+                "last_scan_at": state.get("last_scan_at") or "",
+                "last_digest_date": state.get("last_digest_date") or "",
+                "anthropic_key_configured": bool(str(settings.anthropic_api_key or "").strip()),
+            }
+        )
+    except Exception as exc:
+        log_handled_error("web_mentions_state failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לטעון את מצב מאתר השיחות: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-scan")
+async def web_mentions_scan():
+    try:
+        summary = await _web_mentions_scan_and_save()
+        return JSONResponse({"status": "ok", "summary": summary})
+    except Exception as exc:
+        log_handled_error("web_mentions_scan failed", exc)
+        return JSONResponse({"error": f"הסריקה נכשלה: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-settings-save")
+async def web_mentions_settings_save(request: Request):
+    try:
+        payload = await request.json()
+        async with WEB_MENTIONS_LOCK:
+            state = _load_web_mentions_state()
+            settings_row = state.get("settings") or {}
+            if isinstance(payload.get("keywords"), list):
+                settings_row["keywords"] = [str(k).strip() for k in payload["keywords"] if str(k).strip()][:40]
+            if isinstance(payload.get("feeds"), list):
+                settings_row["feeds"] = [str(f).strip() for f in payload["feeds"] if str(f).strip().startswith("http")][:20]
+            for key, low, high in (("min_score", 0, 100), ("digest_hour", 0, 23), ("scan_interval_hours", 1, 48)):
+                if payload.get(key) is not None:
+                    try:
+                        settings_row[key] = max(low, min(high, int(payload[key])))
+                    except Exception:
+                        pass
+            for key in ("reddit_enabled", "digest_enabled"):
+                if isinstance(payload.get(key), bool):
+                    settings_row[key] = payload[key]
+            state["settings"] = settings_row
+            _save_web_mentions_state(state)
+        return JSONResponse({"status": "ok", "settings": settings_row})
+    except Exception as exc:
+        log_handled_error("web_mentions_settings_save failed", exc)
+        return JSONResponse({"error": f"שמירת ההגדרות נכשלה: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-item-status")
+async def web_mentions_item_status(request: Request):
+    try:
+        payload = await request.json()
+        item_id = str(payload.get("id") or "").strip()
+        status = str(payload.get("status") or "").strip()
+        if status not in {"new", "posted", "dismissed"}:
+            return JSONResponse({"error": "סטטוס לא מוכר"}, status_code=400)
+        async with WEB_MENTIONS_LOCK:
+            state = _load_web_mentions_state()
+            item = (state.get("items") or {}).get(item_id)
+            if not item:
+                return JSONResponse({"error": "הפריט לא נמצא"}, status_code=404)
+            item["status"] = status
+            if status == "posted":
+                item["posted_at"] = datetime.now().isoformat(timespec="seconds")
+            _save_web_mentions_state(state)
+        return JSONResponse({"status": "ok", "item": item})
+    except Exception as exc:
+        log_handled_error("web_mentions_item_status failed", exc)
+        return JSONResponse({"error": f"עדכון הסטטוס נכשל: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-item-draft-save")
+async def web_mentions_item_draft_save(request: Request):
+    try:
+        payload = await request.json()
+        item_id = str(payload.get("id") or "").strip()
+        async with WEB_MENTIONS_LOCK:
+            state = _load_web_mentions_state()
+            item = (state.get("items") or {}).get(item_id)
+            if not item:
+                return JSONResponse({"error": "הפריט לא נמצא"}, status_code=404)
+            item["draft"] = str(payload.get("draft") or "").strip()
+            _save_web_mentions_state(state)
+        return JSONResponse({"status": "ok"})
+    except Exception as exc:
+        log_handled_error("web_mentions_item_draft_save failed", exc)
+        return JSONResponse({"error": f"שמירת הטיוטה נכשלה: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-item-redraft")
+async def web_mentions_item_redraft(request: Request):
+    try:
+        payload = await request.json()
+        item_id = str(payload.get("id") or "").strip()
+        state = _load_web_mentions_state()
+        item = (state.get("items") or {}).get(item_id)
+        if not item:
+            return JSONResponse({"error": "הפריט לא נמצא"}, status_code=404)
+        draft = await asyncio.to_thread(_web_mentions_generate_draft, item)
+        async with WEB_MENTIONS_LOCK:
+            state = _load_web_mentions_state()
+            item = (state.get("items") or {}).get(item_id)
+            if item is not None:
+                item["draft"] = draft
+                _save_web_mentions_state(state)
+        return JSONResponse({"status": "ok", "draft": draft})
+    except Exception as exc:
+        log_handled_error("web_mentions_item_redraft failed", exc)
+        return JSONResponse({"error": f"ניסוח מחדש נכשל: {exc}"}, status_code=500)
+
+
+@app.post("/web-mentions-send-digest")
+async def web_mentions_send_digest():
+    try:
+        result = await _web_mentions_send_digest(force=True)
+        return JSONResponse({"status": "ok", **result})
+    except Exception as exc:
+        log_handled_error("web_mentions_send_digest failed", exc)
+        return JSONResponse({"error": f"שליחת הסיכום נכשלה: {exc}"}, status_code=500)
+
+
+_WEB_MENTIONS_PAGE_HTML = """<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>מאתר שיחות ברשת — ben-yacov.com</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#ffffff; --ink:#17213c; --muted:#5f6b8a; --accent:#1f5eff; --ok:#0f9d58; --warn:#c62828; --line:#dfe5f1; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:"Segoe UI",Arial,sans-serif; }
+  .wrap { max-width:1000px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:24px; margin:0 0 4px; }
+  .sub { color:var(--muted); font-size:13px; margin-bottom:16px; }
+  .toolbar { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  button, .btn { border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:9px; padding:8px 14px; font-size:14px; cursor:pointer; text-decoration:none; }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+  button:disabled { opacity:.55; cursor:wait; }
+  .status-line { font-size:13px; color:var(--muted); margin-bottom:14px; white-space:pre-line; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button.active { background:var(--ink); color:#fff; border-color:var(--ink); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px 16px; margin-bottom:12px; }
+  .card h3 { margin:0 0 6px; font-size:16px; }
+  .card h3 a { color:var(--ink); text-decoration:none; }
+  .card h3 a:hover { color:var(--accent); }
+  .meta { font-size:12px; color:var(--muted); margin-bottom:8px; display:flex; gap:10px; flex-wrap:wrap; }
+  .score { display:inline-block; min-width:38px; text-align:center; border-radius:8px; padding:2px 8px; font-weight:700; font-size:13px; color:#fff; background:#9aa3ba; }
+  .score.hi { background:var(--ok); } .score.mid { background:#f39c12; }
+  .snippet { font-size:13px; color:#39435f; margin-bottom:10px; }
+  textarea.draft { width:100%; min-height:110px; border:1px solid var(--line); border-radius:9px; padding:10px; font-size:14px; font-family:inherit; resize:vertical; }
+  .row-actions { display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .empty { text-align:center; color:var(--muted); padding:40px 0; }
+  #settingsPanel { display:none; }
+  #settingsPanel.open { display:block; }
+  label { display:block; font-size:13px; color:var(--muted); margin:10px 0 4px; }
+  textarea.settings, input.settings { width:100%; border:1px solid var(--line); border-radius:9px; padding:8px; font-size:13px; font-family:inherit; }
+  .settings-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; }
+  .notice { background:#fff8e1; border:1px solid #f4dfa0; border-radius:9px; padding:8px 12px; font-size:12.5px; color:#7a5c00; margin-bottom:14px; }
+  .toast { position:fixed; bottom:18px; right:18px; background:var(--ink); color:#fff; padding:10px 18px; border-radius:9px; font-size:13.5px; opacity:0; transition:opacity .25s; pointer-events:none; }
+  .toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🔎 מאתר שיחות ברשת</h1>
+  <div class="sub">איתור שיחות רלוונטיות למוצרי ben-yacov.com + טיוטת תגובה מקצועית. הפרסום נעשה ידנית על ידך — מהחשבון האישי שלך ובשקיפות.</div>
+  <div class="notice">💡 מומלץ להוסיף בהגדרות פידים של Google Alerts (צור התראה ב-google.com/alerts, בחר "עדכון RSS" והדבק כאן את כתובת הפיד) — זה המקור הכי טוב לשיחות בעברית.</div>
+  <div class="toolbar">
+    <button class="primary" id="scanBtn" onclick="runScan()">🔄 סרוק עכשיו</button>
+    <button onclick="sendDigest(this)">📲 שלח סיכום לוואטסאפ</button>
+    <button onclick="toggleSettings()">⚙️ הגדרות</button>
+    <a class="btn" href="/">⬅ חזרה לאפליקציה</a>
+  </div>
+  <div class="status-line" id="statusLine">טוען...</div>
+
+  <div class="card" id="settingsPanel">
+    <h3>הגדרות</h3>
+    <label>מילות מפתח (אחת בכל שורה)</label>
+    <textarea class="settings" id="setKeywords" rows="8"></textarea>
+    <label>פידים של Google Alerts / RSS (כתובת אחת בכל שורה)</label>
+    <textarea class="settings" id="setFeeds" rows="4" placeholder="https://www.google.com/alerts/feeds/..."></textarea>
+    <div class="settings-grid">
+      <div><label>ציון מינימלי (0-100)</label><input class="settings" id="setMinScore" type="number" min="0" max="100"></div>
+      <div><label>שעת סיכום יומי</label><input class="settings" id="setDigestHour" type="number" min="0" max="23"></div>
+      <div><label>תדירות סריקה (שעות)</label><input class="settings" id="setInterval" type="number" min="1" max="48"></div>
+    </div>
+    <label><input type="checkbox" id="setReddit"> לסרוק גם ב-Reddit</label>
+    <label><input type="checkbox" id="setDigest"> לשלוח סיכום יומי לוואטסאפ</label>
+    <div class="row-actions"><button class="primary" onclick="saveSettings(this)">שמור הגדרות</button></div>
+  </div>
+
+  <div class="tabs">
+    <button id="tab-new" class="active" onclick="setTab('new')">ממתינות</button>
+    <button id="tab-posted" onclick="setTab('posted')">פורסמו</button>
+    <button id="tab-dismissed" onclick="setTab('dismissed')">נדחו</button>
+  </div>
+  <div id="itemsList"></div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let STATE = { items: [], settings: {} };
+let TAB = 'new';
+
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+async function api(path, body) {
+  const res = await fetch(path, body ? { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) } : undefined);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) throw new Error(data.error || ('שגיאה ' + res.status));
+  return data;
+}
+
+function esc(s) { const d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+function render() {
+  const minScore = STATE.settings.min_score ?? 60;
+  const items = STATE.items.filter(i => (i.status || 'new') === TAB);
+  const list = document.getElementById('itemsList');
+  if (!items.length) {
+    list.innerHTML = '<div class="empty">אין פריטים בלשונית הזו. לחץ "סרוק עכשיו" כדי לחפש שיחות חדשות.</div>';
+    return;
+  }
+  list.innerHTML = items.map(i => {
+    const score = i.score ?? '-';
+    const cls = i.score >= minScore ? 'hi' : (i.score >= 40 ? 'mid' : '');
+    return `<div class="card" data-id="${i.id}">
+      <h3><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></h3>
+      <div class="meta">
+        <span class="score ${cls}">${score}</span>
+        <span>${esc(i.source)}</span>
+        ${i.keyword ? '<span>🔑 ' + esc(i.keyword) + '</span>' : ''}
+        ${i.score_reason ? '<span>💬 ' + esc(i.score_reason) + '</span>' : ''}
+      </div>
+      ${i.snippet ? '<div class="snippet">' + esc(i.snippet) + '</div>' : ''}
+      <textarea class="draft" placeholder="אין עדיין טיוטה — לחץ ✨ לניסוח">${esc(i.draft || '')}</textarea>
+      <div class="row-actions">
+        <button onclick="copyDraft(this)">📋 העתק</button>
+        <button onclick="redraft(this, '${i.id}')">✨ נסח מחדש</button>
+        <button onclick="saveDraft(this, '${i.id}')">💾 שמור טיוטה</button>
+        <a class="btn" href="${esc(i.url)}" target="_blank" rel="noopener">↗ פתח את הפוסט</a>
+        ${TAB !== 'posted' ? `<button onclick="setStatus('${i.id}','posted')">✅ פורסם</button>` : ''}
+        ${TAB !== 'dismissed' ? `<button onclick="setStatus('${i.id}','dismissed')">🗑 דחה</button>` : `<button onclick="setStatus('${i.id}','new')">↩ החזר</button>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setTab(tab) {
+  TAB = tab;
+  document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  render();
+}
+
+function fillSettings() {
+  const s = STATE.settings || {};
+  document.getElementById('setKeywords').value = (s.keywords || []).join('\\n');
+  document.getElementById('setFeeds').value = (s.feeds || []).join('\\n');
+  document.getElementById('setMinScore').value = s.min_score ?? 60;
+  document.getElementById('setDigestHour').value = s.digest_hour ?? 8;
+  document.getElementById('setInterval').value = s.scan_interval_hours ?? 6;
+  document.getElementById('setReddit').checked = s.reddit_enabled !== false;
+  document.getElementById('setDigest').checked = s.digest_enabled !== false;
+}
+
+async function load() {
+  try {
+    const data = await api('/web-mentions-state');
+    STATE = data;
+    fillSettings();
+    const newCount = (data.items || []).filter(i => (i.status || 'new') === 'new').length;
+    let line = `${newCount} שיחות ממתינות · סריקה אחרונה: ${data.last_scan_at ? data.last_scan_at.replace('T',' ') : 'עדיין לא'}`;
+    if (!data.anthropic_key_configured) line += '\\n⚠️ מפתח Anthropic לא מוגדר — הדירוג והטיוטות לא יעבדו עד שיוגדר anthropic_api_key.';
+    document.getElementById('statusLine').textContent = line;
+    render();
+  } catch (e) { document.getElementById('statusLine').textContent = '⚠️ ' + e.message; }
+}
+
+async function runScan() {
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true; btn.textContent = '⏳ סורק... (זה יכול לקחת דקה-שתיים)';
+  try {
+    const data = await api('/web-mentions-scan', {});
+    const s = data.summary || {};
+    toast(`נמצאו ${s.new_items} חדשות, ${s.relevant_new} רלוונטיות, ${s.drafted} טיוטות`);
+    if ((s.errors || []).length) console.warn('scan errors:', s.errors);
+    await load();
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false; btn.textContent = '🔄 סרוק עכשיו';
+}
+
+async function sendDigest(btn) {
+  btn.disabled = true;
+  try {
+    const data = await api('/web-mentions-send-digest', {});
+    toast(data.sent ? 'הסיכום נשלח לוואטסאפ ✅' : (data.reason || 'אין מה לשלוח'));
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false;
+}
+
+function toggleSettings() { document.getElementById('settingsPanel').classList.toggle('open'); }
+
+async function saveSettings(btn) {
+  btn.disabled = true;
+  try {
+    await api('/web-mentions-settings-save', {
+      keywords: document.getElementById('setKeywords').value.split('\\n').map(s => s.trim()).filter(Boolean),
+      feeds: document.getElementById('setFeeds').value.split('\\n').map(s => s.trim()).filter(Boolean),
+      min_score: +document.getElementById('setMinScore').value,
+      digest_hour: +document.getElementById('setDigestHour').value,
+      scan_interval_hours: +document.getElementById('setInterval').value,
+      reddit_enabled: document.getElementById('setReddit').checked,
+      digest_enabled: document.getElementById('setDigest').checked,
+    });
+    toast('ההגדרות נשמרו ✅'); await load();
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false;
+}
+
+async function setStatus(id, status) {
+  try { await api('/web-mentions-item-status', { id, status }); await load(); }
+  catch (e) { toast('⚠️ ' + e.message); }
+}
+
+function copyDraft(btn) {
+  const text = btn.closest('.card').querySelector('textarea.draft').value;
+  if (!text) { toast('אין טיוטה להעתקה'); return; }
+  navigator.clipboard.writeText(text).then(() => toast('הטיוטה הועתקה 📋'));
+}
+
+async function saveDraft(btn, id) {
+  btn.disabled = true;
+  try {
+    await api('/web-mentions-item-draft-save', { id, draft: btn.closest('.card').querySelector('textarea.draft').value });
+    toast('הטיוטה נשמרה 💾');
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false;
+}
+
+async function redraft(btn, id) {
+  btn.disabled = true; btn.textContent = '⏳ מנסח...';
+  try {
+    const data = await api('/web-mentions-item-redraft', { id });
+    btn.closest('.card').querySelector('textarea.draft').value = data.draft || '';
+    toast('נוסחה טיוטה חדשה ✨');
+  } catch (e) { toast('⚠️ ' + e.message); }
+  btn.disabled = false; btn.textContent = '✨ נסח מחדש';
+}
+
+load();
+</script>
+</body>
+</html>"""
+
+
+@app.get("/web-mentions", response_class=HTMLResponse)
+async def web_mentions_page(request: Request):
+    if not is_request_authenticated(request):
+        return RedirectResponse("/", status_code=302)
+    return HTMLResponse(_WEB_MENTIONS_PAGE_HTML)
