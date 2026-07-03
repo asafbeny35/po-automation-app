@@ -5398,6 +5398,94 @@ body.panel-only .shell {
   line-height: 1.65;
 }
 
+.web-mentions-strip {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: -6px 0 18px;
+  padding: 14px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 125, 18, 0.16);
+  background:
+    radial-gradient(circle at top right, rgba(255, 173, 104, 0.16), transparent 45%),
+    linear-gradient(155deg, rgba(255,255,255,0.98), rgba(255,247,239,0.96));
+  box-shadow: 0 12px 26px rgba(20, 31, 59, 0.06);
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.web-mentions-strip:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 16px 32px rgba(20, 31, 59, 0.1);
+}
+
+.web-mentions-strip-icon {
+  font-size: 22px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 125, 18, 0.1);
+  flex-shrink: 0;
+}
+
+.web-mentions-strip-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.web-mentions-strip-title {
+  font-weight: 800;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.web-mentions-strip-summary {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.web-mentions-strip-summary.has-pending {
+  color: var(--brand-dark, #c2410c);
+  font-weight: 700;
+}
+
+.web-mentions-strip-btn {
+  position: relative;
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 125, 18, 0.35);
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.web-mentions-dot {
+  position: absolute;
+  top: -4px;
+  inset-inline-start: -4px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: #dc2626;
+  border: 2px solid rgba(255, 255, 255, 0.98);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+  opacity: 0;
+  transform: scale(0.65);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.web-mentions-dot.has-alert {
+  opacity: 1;
+  transform: scale(1);
+}
+
 .marketing-docs-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -15270,9 +15358,20 @@ input:focus {
         <div class="inventory-actions">
           <button type="button" id="marketingLoadButton" class="ghost-btn">טען נתוני שיווק</button>
           <button type="button" id="marketingRefreshButton" class="assistant-submit">עדכן לקוחות חדשים</button>
-          <a href="/web-mentions" target="_blank" rel="noopener" class="ghost-btn" style="text-decoration:none;">🔎 מאתר שיחות ברשת</a>
         </div>
       </div>
+
+      <a href="/web-mentions" target="_blank" rel="noopener" id="webMentionsStrip" class="web-mentions-strip">
+        <div class="web-mentions-strip-icon">🔎</div>
+        <div class="web-mentions-strip-body">
+          <div class="web-mentions-strip-title">מאתר שיחות ברשת</div>
+          <div id="webMentionsStripSummary" class="web-mentions-strip-summary">טוען סטטוס...</div>
+        </div>
+        <span class="web-mentions-strip-btn">
+          פתח
+          <span id="webMentionsStripDot" class="web-mentions-dot" aria-hidden="true"></span>
+        </span>
+      </a>
       <div id="marketingLoadProgress" class="receipts-progress" aria-live="polite">
         <div class="receipts-progress-head">
           <div id="marketingLoadProgressTitle" class="receipts-progress-title">טוען נתוני שיווק...</div>
@@ -20070,6 +20169,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const customerMailTools = Array.from(document.querySelectorAll("[data-mail-command]"));
   const marketingLoadButton = document.getElementById("marketingLoadButton");
   const marketingRefreshButton = document.getElementById("marketingRefreshButton");
+  const webMentionsStrip = document.getElementById("webMentionsStrip");
+  const webMentionsStripSummary = document.getElementById("webMentionsStripSummary");
+  const webMentionsStripDot = document.getElementById("webMentionsStripDot");
   const marketingDocsToggleButton = document.getElementById("marketingDocsToggleButton");
   const marketingDocsRefreshButton = document.getElementById("marketingDocsRefreshButton");
   const marketingLoadProgress = document.getElementById("marketingLoadProgress");
@@ -22220,6 +22322,9 @@ document.addEventListener("DOMContentLoaded", () => {
         console.warn("project managers tab load failed", error);
       });
     }
+    if (safeTabName === "marketing" && !webMentionsSummaryLoaded && !webMentionsSummaryLoading) {
+      loadWebMentionsSummary();
+    }
     if (safeTabName === "activity-log") {
       loadActivityLog();
     }
@@ -22291,6 +22396,58 @@ document.addEventListener("DOMContentLoaded", () => {
         ? "יש תיקי התקנה שעדיין מחכים לתיאום, מתואמים לביצוע או הותקנו חלקית."
         : "אין כרגע תיקי התקנה פעילים שדורשים המשך טיפול."
     );
+  }
+
+  let webMentionsSummaryLoaded = false;
+  let webMentionsSummaryLoading = false;
+
+  async function loadWebMentionsSummary() {
+    if (!webMentionsStrip || webMentionsSummaryLoading) return;
+    webMentionsSummaryLoading = true;
+    try {
+      const response = await fetch("/web-mentions-state");
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "שגיאה בטעינת מאתר השיחות.");
+      const items = Array.isArray(payload.items) ? payload.items : [];
+      const pendingCount = items.filter(item => String(item?.status || "").trim() === "new").length;
+      const lastScanAt = String(payload.last_scan_at || "").trim();
+      const lastScanText = lastScanAt ? formatRelativeOrDateHe(lastScanAt) : "עדיין לא בוצע סריקה";
+      if (webMentionsStripSummary) {
+        webMentionsStripSummary.textContent = pendingCount > 0
+          ? `${pendingCount} פוסטים ממתינים לעיון · סריקה אחרונה: ${lastScanText}`
+          : `אין פוסטים חדשים לעיון כרגע · סריקה אחרונה: ${lastScanText}`;
+        webMentionsStripSummary.classList.toggle("has-pending", pendingCount > 0);
+      }
+      if (webMentionsStripDot) {
+        webMentionsStripDot.classList.toggle("has-alert", pendingCount > 0);
+      }
+      if (webMentionsStrip) {
+        webMentionsStrip.title = pendingCount > 0
+          ? `יש ${pendingCount} פוסטים שממתינים לעיון במאתר שיחות ברשת.`
+          : "אין כרגע פוסטים שממתינים לעיון במאתר שיחות ברשת.";
+      }
+      webMentionsSummaryLoaded = true;
+    } catch (error) {
+      if (webMentionsStripSummary) {
+        webMentionsStripSummary.textContent = "לא הצלחתי לטעון את הסטטוס כרגע";
+      }
+      console.warn("web mentions summary load failed", error);
+    } finally {
+      webMentionsSummaryLoading = false;
+    }
+  }
+
+  function formatRelativeOrDateHe(isoLike) {
+    const date = new Date(isoLike);
+    if (Number.isNaN(date.getTime())) return isoLike;
+    const diffMs = Date.now() - date.getTime();
+    const diffHours = diffMs / (1000 * 60 * 60);
+    if (diffHours < 1) return "לפני פחות משעה";
+    if (diffHours < 24) return `לפני ${Math.floor(diffHours)} שעות`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays === 1) return "אתמול";
+    if (diffDays < 7) return `לפני ${diffDays} ימים`;
+    return date.toLocaleDateString("he-IL");
   }
 
   function installationDeliveryConfirmationUrl(row) {
@@ -41642,6 +41799,16 @@ document.addEventListener("DOMContentLoaded", () => {
     window.requestIdleCallback(() => bootstrapInstallationsIndicator(), { timeout: 1800 });
   } else {
     window.setTimeout(bootstrapInstallationsIndicator, 600);
+  }
+
+  const bootstrapWebMentionsIndicator = () => {
+    if (webMentionsSummaryLoaded || webMentionsSummaryLoading) return;
+    void loadWebMentionsSummary();
+  };
+  if (window.requestIdleCallback) {
+    window.requestIdleCallback(() => bootstrapWebMentionsIndicator(), { timeout: 1800 });
+  } else {
+    window.setTimeout(bootstrapWebMentionsIndicator, 600);
   }
 
   installationsList?.addEventListener("click", event => {
