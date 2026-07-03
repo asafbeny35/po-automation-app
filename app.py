@@ -27502,7 +27502,7 @@ function render() {
   list.innerHTML = items.map(i => {
     const score = i.score ?? '-';
     const cls = i.score >= minScore ? 'hi' : (i.score >= 40 ? 'mid' : '');
-    return `<div class="card" data-id="${i.id}">
+    return `<div class="card" data-id="${i.id}" data-url="${esc(i.url)}">
       <h3><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.title)}</a></h3>
       <div class="meta">
         <span class="score ${cls}">${score}</span>
@@ -27513,10 +27513,10 @@ function render() {
       ${i.snippet ? '<div class="snippet">' + esc(i.snippet) + '</div>' : ''}
       <textarea class="draft" placeholder="אין עדיין טיוטה — לחץ ✨ לניסוח">${esc(i.draft || '')}</textarea>
       <div class="row-actions">
+        <button class="primary" onclick="copyAndOpen(this)">🚀 העתק ופתח את הפוסט</button>
         <button onclick="copyDraft(this)">📋 העתק</button>
         <button onclick="redraft(this, '${i.id}')">✨ נסח מחדש</button>
         <button onclick="saveDraft(this, '${i.id}')">💾 שמור טיוטה</button>
-        <a class="btn" href="${esc(i.url)}" target="_blank" rel="noopener">↗ פתח את הפוסט</a>
         ${TAB !== 'posted' ? `<button onclick="setStatus('${i.id}','posted')">✅ פורסם</button>` : ''}
         ${TAB !== 'dismissed' ? `<button onclick="setStatus('${i.id}','dismissed')">🗑 דחה</button>` : `<button onclick="setStatus('${i.id}','new')">↩ החזר</button>`}
       </div>
@@ -27626,6 +27626,14 @@ function copyDraft(btn) {
   const text = btn.closest('.card').querySelector('textarea.draft').value;
   if (!text) { toast('אין טיוטה להעתקה'); return; }
   navigator.clipboard.writeText(text).then(() => toast('הטיוטה הועתקה 📋'));
+}
+
+function copyAndOpen(btn) {
+  const card = btn.closest('.card');
+  const text = card.querySelector('textarea.draft').value;
+  if (!text) { toast('אין טיוטה, לחץ ✨ לניסוח קודם'); return; }
+  navigator.clipboard.writeText(text).then(() => toast('הועתק! עכשיו רק להדביק (Ctrl+V) ולשלוח 🚀'));
+  window.open(card.dataset.url, '_blank', 'noopener');
 }
 
 async function saveDraft(btn, id) {
