@@ -27107,12 +27107,19 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
         seen_in_batch.add(item["id"])
         new_items.append(item)
 
+    # מדרגים גם פריטים קיימים שנשארו בלי ציון (למשל כשנסרקו בסביבה בלי מפתח Anthropic)
+    unscored_existing = [
+        item
+        for item in existing_items.values()
+        if item.get("score") is None and item.get("status") == "new"
+    ]
+    to_score = new_items + unscored_existing
     scored_count = 0
     drafted_count = 0
-    if new_items:
+    if to_score:
         try:
-            for chunk_start in range(0, len(new_items), 20):
-                chunk = new_items[chunk_start : chunk_start + 20]
+            for chunk_start in range(0, len(to_score), 20):
+                chunk = to_score[chunk_start : chunk_start + 20]
                 scores = _web_mentions_score_batch(chunk)
                 for item in chunk:
                     result = scores.get(item["id"])
@@ -27123,7 +27130,11 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
         except Exception as exc:
             errors.append(f"דירוג: {exc}")
         relevant = sorted(
-            [item for item in new_items if (item.get("score") or 0) >= min_score],
+            [
+                item
+                for item in to_score
+                if (item.get("score") or 0) >= min_score and not item.get("draft")
+            ],
             key=lambda item: -(item.get("score") or 0),
         )
         for item in relevant[:WEB_MENTIONS_MAX_DRAFTS_PER_SCAN]:
