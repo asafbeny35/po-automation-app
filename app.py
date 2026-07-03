@@ -26846,6 +26846,16 @@ WEB_MENTIONS_BUSINESS_CONTEXT = (
 )
 
 
+def _web_mentions_now() -> datetime:
+    """זמן נוכחי בשעון ישראל (naive). בפרודקשן השרת רץ ב-UTC, אז בלי זה השעות מוצגות שגוי."""
+    try:
+        from zoneinfo import ZoneInfo
+
+        return datetime.now(ZoneInfo("Asia/Jerusalem")).replace(tzinfo=None)
+    except Exception:
+        return datetime.now()
+
+
 def _web_mentions_default_state() -> dict:
     return {
         "settings": copy.deepcopy(WEB_MENTIONS_DEFAULT_SETTINGS),
@@ -26957,7 +26967,7 @@ def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, 
     published_dt = _web_mentions_parse_published(published_at)
     # מסננים כתבות/פוסטים ישנים מ-6 חודשים. פריט בלי תאריך תקין נזרק גם הוא —
     # עדיף לפספס כמה מאשר להציג תגובה לכתבה מ-2013.
-    if published_dt is None or (datetime.now() - published_dt) > timedelta(days=WEB_MENTIONS_MAX_AGE_DAYS):
+    if published_dt is None or (_web_mentions_now() - published_dt) > timedelta(days=WEB_MENTIONS_MAX_AGE_DAYS):
         return None
     return {
         "id": _web_mentions_item_id(url),
@@ -26967,7 +26977,7 @@ def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, 
         "url": url,
         "snippet": _web_mentions_strip_html(snippet)[:600],
         "published_at": published_dt.isoformat(timespec="seconds"),
-        "found_at": datetime.now().isoformat(timespec="seconds"),
+        "found_at": _web_mentions_now().isoformat(timespec="seconds"),
         "status": "new",
         "score": None,
         "score_reason": "",
@@ -27219,7 +27229,7 @@ def _web_mentions_run_scan_sync(state: dict) -> dict:
         state["items"] = {row["id"]: row for row in keep}
     else:
         state["items"] = existing_items
-    state["last_scan_at"] = datetime.now().isoformat(timespec="seconds")
+    state["last_scan_at"] = _web_mentions_now().isoformat(timespec="seconds")
 
     return {
         "found_total": len(collected),
@@ -27270,7 +27280,7 @@ async def _web_mentions_send_digest(*, force: bool = False) -> dict:
     await send_files_via_whatsapp(phone=MARKETING_REMINDER_TARGET_PHONE, message=message, file_paths=[])
     async with WEB_MENTIONS_LOCK:
         state = _load_web_mentions_state()
-        state["last_digest_date"] = date.today().isoformat()
+        state["last_digest_date"] = _web_mentions_now().date().isoformat()
         _save_web_mentions_state(state)
     return {"sent": True}
 
@@ -27283,13 +27293,14 @@ async def _web_mentions_background_loop() -> None:
             settings_row = state.get("settings") or {}
             interval_hours = max(1, int(settings_row.get("scan_interval_hours") or 6))
             last_scan = _parse_iso_datetime_safe(state.get("last_scan_at") or "")
-            if not last_scan or (datetime.now() - last_scan) >= timedelta(hours=interval_hours):
+            if not last_scan or (_web_mentions_now() - last_scan) >= timedelta(hours=interval_hours):
                 await _web_mentions_scan_and_save()
                 state = _load_web_mentions_state()
             if settings_row.get("digest_enabled", True):
                 digest_hour = int(settings_row.get("digest_hour") or 8)
-                today = date.today().isoformat()
-                if datetime.now().hour >= digest_hour and state.get("last_digest_date") != today:
+                now_il = _web_mentions_now()
+                today = now_il.date().isoformat()
+                if now_il.hour >= digest_hour and state.get("last_digest_date") != today:
                     await _web_mentions_send_digest()
         except Exception as exc:
             log_handled_error("web mentions background loop failed", exc)
@@ -27387,7 +27398,7 @@ async def web_mentions_item_status(request: Request):
                 return JSONResponse({"error": "הפריט לא נמצא"}, status_code=404)
             item["status"] = status
             if status == "posted":
-                item["posted_at"] = datetime.now().isoformat(timespec="seconds")
+                item["posted_at"] = _web_mentions_now().isoformat(timespec="seconds")
             _save_web_mentions_state(state)
         return JSONResponse({"status": "ok", "item": item})
     except Exception as exc:
