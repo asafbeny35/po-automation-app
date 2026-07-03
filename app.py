@@ -26896,10 +26896,35 @@ def _web_mentions_item_id(url: str) -> str:
     return hashlib.sha1(str(url or "").strip().lower().encode("utf-8")).hexdigest()[:16]
 
 
+WEB_MENTIONS_MAX_AGE_DAYS = 183  # ~6 חודשים — לא מציגים שיחות ישנות מזה
+
+
+def _web_mentions_parse_published(value: str) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    # פידים של RSS/Atom מחזירים תאריך בפורמט RFC822 (למשל "Wed, 03 Jul 2013 07:00:00 GMT")
+    try:
+        from email.utils import parsedate_to_datetime
+
+        dt = parsedate_to_datetime(raw)
+        if dt is not None:
+            return dt.replace(tzinfo=None) if dt.tzinfo else dt
+    except Exception:
+        pass
+    parsed = _parse_iso_datetime_safe(raw)
+    return parsed.replace(tzinfo=None) if (parsed and parsed.tzinfo) else parsed
+
+
 def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, snippet: str, published_at: str) -> dict | None:
     url = str(url or "").strip()
     title = _web_mentions_strip_html(title)
     if not url or not title:
+        return None
+    published_dt = _web_mentions_parse_published(published_at)
+    # מסננים כתבות/פוסטים ישנים מ-6 חודשים. פריט בלי תאריך תקין נזרק גם הוא —
+    # עדיף לפספס כמה מאשר להציג תגובה לכתבה מ-2013.
+    if published_dt is None or (datetime.now() - published_dt) > timedelta(days=WEB_MENTIONS_MAX_AGE_DAYS):
         return None
     return {
         "id": _web_mentions_item_id(url),
@@ -26908,7 +26933,7 @@ def _web_mentions_make_item(*, source: str, keyword: str, title: str, url: str, 
         "title": title[:300],
         "url": url,
         "snippet": _web_mentions_strip_html(snippet)[:600],
-        "published_at": str(published_at or ""),
+        "published_at": published_dt.isoformat(timespec="seconds"),
         "found_at": datetime.now().isoformat(timespec="seconds"),
         "status": "new",
         "score": None,
