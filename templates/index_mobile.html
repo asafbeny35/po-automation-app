@@ -1557,6 +1557,70 @@ body {
   color: #fff;
 }
 
+.payments-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid #ffd4b0;
+  border-radius: 14px;
+  background: #fff;
+}
+
+.payments-pagination-nav {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.payments-pagination-btn {
+  border: 1px solid #ffd4b0;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--text);
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  min-width: 40px;
+}
+
+.payments-pagination-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.payments-pagination-page {
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.payments-pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.payments-pagination-size select {
+  border: 1px solid #ffd4b0;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font: inherit;
+  font-weight: 700;
+  background: #fff;
+  color: var(--text);
+}
+
 .payments-cell-input {
   width: 100%;
   min-width: 0;
@@ -4670,6 +4734,7 @@ label.delivery-upload-label {
           </table>
         </div>
         <div id="paymentsTransfer2026CollectionFilterSummary" class="payments-summary">כשתסנן את הטבלה, כאן יופיע הסיכום של מה שמוצג כרגע.</div>
+        <div id="paymentsTransfer2026CollectionPagination" class="payments-pagination"></div>
       </div>
 
       <div class="payments-section" id="paymentsTransfer2026PaymentSection">
@@ -6252,6 +6317,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const paymentsTransfer2026PaymentFilterSummary = document.getElementById("paymentsTransfer2026PaymentFilterSummary");
   const paymentsTransfer2026CollectionBody = document.getElementById("paymentsTransfer2026CollectionBody");
   const paymentsTransfer2026PaymentBody = document.getElementById("paymentsTransfer2026PaymentBody");
+  const paymentsTransfer2026CollectionPagination = document.getElementById("paymentsTransfer2026CollectionPagination");
   const addPaymentTransferButton = document.getElementById("addPaymentTransferButton");
   const paymentsTransferDraft = document.getElementById("paymentsTransferDraft");
   const paymentDraftDate = document.getElementById("paymentDraftDate");
@@ -6595,6 +6661,7 @@ document.addEventListener("DOMContentLoaded", () => {
     collection: "",
     payment: "",
   };
+  let paymentsCollectionPagination = { page: 1, pageSize: 20 };
   let paymentTransferEditing = {};
   let paymentClients = [];
   let paymentClientsLoaded = false;
@@ -8937,6 +9004,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const filterSummaryEl = scope === "collection"
       ? paymentsTransfer2026CollectionFilterSummary
       : paymentsTransfer2026PaymentFilterSummary;
+    if (scope === "collection") {
+      renderPaymentsCollectionPagination(sortedRows.length);
+    }
+    const pagedRows = scope === "collection" ? getPaymentsCollectionPageRows(sortedRows) : sortedRows;
     if (!sortedRows.length) {
       targetBody.innerHTML = `<tr><td colspan="11"><div class="payments-empty">אין כרגע שורות להצגה.</div></td></tr>`;
       if (filterSummaryEl) filterSummaryEl.innerHTML = paymentFilterSummaryHtml([], scope);
@@ -8945,7 +9016,7 @@ document.addEventListener("DOMContentLoaded", () => {
       applyPlayfulTooltips(targetBody);
       return;
     }
-    targetBody.innerHTML = sortedRows.map(row => {
+    targetBody.innerHTML = pagedRows.map(row => {
       const rowKey = paymentRowKey(row);
       const editingRow = paymentTransferEditing[rowKey];
       const isEditing = !!editingRow;
@@ -9067,6 +9138,68 @@ document.addEventListener("DOMContentLoaded", () => {
     applyPlayfulTooltips(targetBody);
   }
 
+  const PAYMENTS_COLLECTION_PAGE_SIZE_OPTIONS = [20, 50, 100, 200, "all"];
+
+  function getPaymentsCollectionPageRows(visibleRows) {
+    const pageSize = paymentsCollectionPagination.pageSize;
+    if (pageSize === "all") return visibleRows;
+    const totalPages = Math.max(1, Math.ceil(visibleRows.length / pageSize));
+    if (paymentsCollectionPagination.page > totalPages) paymentsCollectionPagination.page = totalPages;
+    if (paymentsCollectionPagination.page < 1) paymentsCollectionPagination.page = 1;
+    const start = (paymentsCollectionPagination.page - 1) * pageSize;
+    return visibleRows.slice(start, start + pageSize);
+  }
+
+  function renderPaymentsCollectionPagination(totalCount) {
+    if (!paymentsTransfer2026CollectionPagination) return;
+    const pageSize = paymentsCollectionPagination.pageSize;
+    const totalPages = pageSize === "all" ? 1 : Math.max(1, Math.ceil(totalCount / pageSize));
+    if (paymentsCollectionPagination.page > totalPages) paymentsCollectionPagination.page = totalPages;
+    if (paymentsCollectionPagination.page < 1) paymentsCollectionPagination.page = 1;
+    const page = paymentsCollectionPagination.page;
+    if (!totalCount) {
+      paymentsTransfer2026CollectionPagination.innerHTML = "";
+      return;
+    }
+    const sizeOptionsHtml = PAYMENTS_COLLECTION_PAGE_SIZE_OPTIONS.map(option => {
+      const value = option === "all" ? "all" : String(option);
+      const label = option === "all" ? "הכל" : String(option);
+      const selected = String(pageSize) === value ? " selected" : "";
+      return `<option value="${value}"${selected}>${label}</option>`;
+    }).join("");
+    paymentsTransfer2026CollectionPagination.innerHTML = `
+      <div class="payments-pagination-nav">
+        <button type="button" class="payments-pagination-btn" data-payments-page="first" ${page <= 1 ? "disabled" : ""} title="עמוד ראשון">&raquo;</button>
+        <button type="button" class="payments-pagination-btn" data-payments-page="prev" ${page <= 1 ? "disabled" : ""} title="עמוד קודם">&rsaquo;</button>
+        <span class="payments-pagination-page">עמוד ${page} מתוך ${totalPages} (${totalCount} שורות)</span>
+        <button type="button" class="payments-pagination-btn" data-payments-page="next" ${page >= totalPages ? "disabled" : ""} title="עמוד הבא">&lsaquo;</button>
+        <button type="button" class="payments-pagination-btn" data-payments-page="last" ${page >= totalPages ? "disabled" : ""} title="עמוד אחרון">&laquo;</button>
+      </div>
+      <label class="payments-pagination-size">שורות בעמוד
+        <select data-payments-page-size>${sizeOptionsHtml}</select>
+      </label>
+    `;
+    paymentsTransfer2026CollectionPagination.querySelectorAll("[data-payments-page]").forEach(button => {
+      button.onclick = () => {
+        const action = button.dataset.paymentsPage;
+        if (action === "first") paymentsCollectionPagination.page = 1;
+        else if (action === "prev") paymentsCollectionPagination.page = Math.max(1, paymentsCollectionPagination.page - 1);
+        else if (action === "next") paymentsCollectionPagination.page = Math.min(totalPages, paymentsCollectionPagination.page + 1);
+        else if (action === "last") paymentsCollectionPagination.page = totalPages;
+        renderPaymentTransferRows(paymentsTransfer2026CollectionBody, paymentTransferState.payments_2026_collection, "collection");
+      };
+    });
+    const sizeSelect = paymentsTransfer2026CollectionPagination.querySelector("[data-payments-page-size]");
+    if (sizeSelect) {
+      sizeSelect.onchange = () => {
+        const value = sizeSelect.value;
+        paymentsCollectionPagination.pageSize = value === "all" ? "all" : Number(value);
+        paymentsCollectionPagination.page = 1;
+        renderPaymentTransferRows(paymentsTransfer2026CollectionBody, paymentTransferState.payments_2026_collection, "collection");
+      };
+    }
+  }
+
   function renderPaymentsTransferState(payload = {}) {
     paymentTransferState = {
       payments_2026_collection: Array.isArray(payload.payments_2026_collection) ? payload.payments_2026_collection : [],
@@ -9086,6 +9219,7 @@ document.addEventListener("DOMContentLoaded", () => {
       button.onclick = () => {
         const [scope, filter] = String(button.dataset.paymentsFilter || "").split(":");
         paymentTransferViewFilter[scope] = paymentTransferViewFilter[scope] === filter ? "" : filter;
+        if (scope === "collection") paymentsCollectionPagination.page = 1;
         renderPaymentsTransferState(paymentTransferState);
         if (scope === "payment") {
           window.requestAnimationFrame(() => {
@@ -12095,6 +12229,7 @@ document.addEventListener("DOMContentLoaded", () => {
         current.direction = "asc";
       }
       paymentTransferSort[scope] = current;
+      if (scope === "collection") paymentsCollectionPagination.page = 1;
       renderPaymentsTransferState(paymentTransferState);
     });
   });
