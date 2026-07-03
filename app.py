@@ -27457,7 +27457,7 @@ _WEB_MENTIONS_PAGE_HTML = """<!DOCTYPE html>
 <div class="wrap">
   <h1>🔎 מאתר שיחות ברשת</h1>
   <div class="sub">איתור שיחות בעברית הרלוונטיות למוצרי ben-yacov.com + טיוטת תגובה מקצועית. הפרסום נעשה ידנית על ידך — מהחשבון האישי שלך ובשקיפות.</div>
-  <div class="notice">💡 נסרק אוטומטית: Google News בעברית + פידים של Google Alerts (צור התראות ב-google.com/alerts → "עדכון RSS" → הדבק את הכתובות בהגדרות — כך נתפסים גם פורומים ואתרי תוכן ישראליים). קבוצות פייסבוק אי אפשר לסרוק אוטומטית — בשביל זה לוח הסריקה המהירה למטה.</div>
+  <div class="notice" id="sourcesNotice">💡 מקורות אוטומטיים: Google News בעברית + פידים של Google Alerts (מחוברים). קבוצות פייסבוק אי אפשר לסרוק אוטומטית, בשביל זה לוח הסריקה המהירה למטה. להוספת מקורות: צור עוד התראות ב-google.com/alerts ("עדכון RSS") והדבק בהגדרות.</div>
   <div class="toolbar">
     <button class="primary" id="scanBtn" onclick="runScan()">🔄 סרוק עכשיו</button>
     <button onclick="sendDigest(this)">📲 שלח סיכום לוואטסאפ</button>
@@ -27589,6 +27589,10 @@ async function load() {
     STATE = data;
     fillSettings();
     renderFbPanel();
+    const feedCount = (data.settings.feeds || []).length;
+    document.getElementById('sourcesNotice').innerHTML = '💡 מקורות אוטומטיים: Google News בעברית + ' +
+      (feedCount ? feedCount + ' פידים של Google Alerts (מחוברים ✅)' : 'פידים של Google Alerts (עדיין לא חוברו)') +
+      '. קבוצות פייסבוק אי אפשר לסרוק אוטומטית, בשביל זה לוח הסריקה המהירה למטה. להוספת מקורות: צור עוד התראות ב-google.com/alerts ("עדכון RSS") והדבק בהגדרות.';
     const newCount = (data.items || []).filter(i => (i.status || 'new') === 'new').length;
     let line = `${newCount} שיחות ממתינות · סריקה אחרונה: ${data.last_scan_at ? data.last_scan_at.replace('T',' ') : 'עדיין לא'}`;
     if (!data.anthropic_key_configured) line += '\\n⚠️ מפתח Anthropic לא מוגדר — הדירוג והטיוטות לא יעבדו עד שיוגדר anthropic_api_key.';
