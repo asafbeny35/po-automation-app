@@ -583,6 +583,10 @@ def _force_refresh_admin_drive_asset(asset_key: str) -> dict:
     local_path = Path(spec["local_path"])
     if not local_path.exists():
         raise FileNotFoundError(f"מסמך מנהלה לא נמצא מקומית: {local_path.name}")
+    # Must load the full persisted cache before mutating it — otherwise persisting
+    # the (still-empty, single-process) in-memory cache would overwrite the
+    # Supabase row and wipe out every other asset's cached Drive upload.
+    _load_admin_drive_asset_cache_once()
 
     parent_id = _ensure_admin_drive_root_folder()
     for folder_name in spec.get("folders", ()):
