@@ -13547,6 +13547,48 @@ def _delete_local_order_output_dir(row: dict) -> dict:
     return {"status": "ok", "path": str(target_dir)}
 
 
+def _matching_payment_rows_for_order_history_row(history_row: dict) -> list[dict]:
+    """שורות "תשלומים והעברות" שמשויכות לרשומת היסטוריית הזמנות — למחיקה מדורגת.
+
+    התאמה דורשת מזהה מסמכי (חשבונית מס / תעודת משלוח / מס' הזמנה); שם לקוח
+    לבדו לעולם לא מוחק, וכשקיים בשני הצדדים — חייב להסכים.
+    """
+    if not isinstance(history_row, dict):
+        return []
+    target_po = str(history_row.get("po_number") or "").strip()
+    target_invoice = str(history_row.get("tax_invoice_number") or "").strip()
+    target_delivery = str(
+        history_row.get("delivery_document_number") or history_row.get("delivery_number") or ""
+    ).strip()
+    if not (target_po or target_invoice or target_delivery):
+        return []
+    target_mode = str(history_row.get("mode") or history_row.get("source_mode") or "").strip().upper()
+    target_customer = _canonical_income_customer_name(history_row.get("customer_name", ""))
+    state = load_payment_transfer_rows(force_refresh=True) or {}
+    matches: list[dict] = []
+    for row in state.get("all_rows") or []:
+        row_po = str(row.get("po_number") or "").strip()
+        row_invoice = str(row.get("tax_invoice_number") or "").strip()
+        row_delivery = str(row.get("delivery_number") or "").strip()
+        row_mode = str(row.get("source_mode") or "").strip().upper()
+        row_customer = _canonical_income_customer_name(row.get("customer_name", ""))
+        document_match = (
+            (target_invoice and row_invoice == target_invoice)
+            or (target_delivery and row_delivery == target_delivery)
+            or (target_po and row_po == target_po)
+        )
+        if not document_match:
+            continue
+        if target_mode and row_mode and row_mode != target_mode:
+            continue
+        if target_customer and row_customer and row_customer != target_customer:
+            continue
+        matches.append(dict(row))
+    # מוחקים מהשורה הגבוהה לנמוכה כדי שמספרי השורות בגיליון לא יזוזו תוך כדי.
+    matches.sort(key=lambda item: (str(item.get("_sheet_title") or ""), -int(item.get("_sheet_row") or 0)))
+    return matches
+
+
 def _matching_order_history_rows_for_payment_row(payment_row: dict) -> list[dict]:
     if not isinstance(payment_row, dict):
         return []
@@ -17509,6 +17551,21 @@ async def order_history_delete(request: Request):
                 delivery_document_number=str(fallback_row.get("delivery_number") or "").strip(),
                 tax_invoice_number=str(fallback_row.get("tax_invoice_number") or "").strip(),
             )
+        # מחיקה מדורגת: שורות "תשלומים והעברות" שמשויכות להזמנה נמחקות יחד איתה.
+        payments_cleanup: list[dict] = []
+        for payment_row in _matching_payment_rows_for_order_history_row(fallback_row):
+            try:
+                payments_cleanup.append(
+                    delete_payment_transfer_row(
+                        str(payment_row.get("_sheet_title") or "").strip(),
+                        int(payment_row.get("_sheet_row") or 0),
+                        payment_row,
+                        exact_only=True,
+                    )
+                )
+            except Exception as payments_exc:
+                log_handled_error("order_history_delete payments cascade failed", payments_exc)
+                payments_cleanup.append({"status": "error", "error": str(payments_exc)})
         installations_sync_result = {"status": "skipped"}
         try:
             installations_sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
@@ -17519,6 +17576,7 @@ async def order_history_delete(request: Request):
             {
                 "status": "ok",
                 "delivery_confirmation_cleanup": delivery_result,
+                "payments_cleanup": payments_cleanup,
                 "installations_sync": installations_sync_result,
                 **_build_order_history_payload(result.get("rows") or []),
             }
