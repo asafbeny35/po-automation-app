@@ -15594,7 +15594,13 @@ def _load_mobile_domain_rows(domain: str, force_refresh: bool = False) -> list[d
         "finance_bank_movements": lambda: load_marketing_rows("finance_bank_movements", force_refresh=force_refresh),
         "finance_customer_withholdings": lambda: load_marketing_rows("finance_customer_withholdings", force_refresh=force_refresh),
         "finance_settings": lambda: load_marketing_rows("finance_settings", force_refresh=force_refresh),
-        "payments_transfer": lambda: list((load_payment_transfer_rows(force_refresh=force_refresh, repair_schema=False) or {}).get("all_rows") or []),
+        # מעשירים כל שורה ב-_snapshot_hash כדי שגם האפליקציה תוכל לשלוח
+        # expected_snapshot_hash ולקבל הגנת נעילה אופטימית כמו הדסקטופ.
+        "payments_transfer": lambda: [
+            {**row, "_snapshot_hash": _payments_row_snapshot_hash(row)}
+            for row in ((load_payment_transfer_rows(force_refresh=force_refresh, repair_schema=False) or {}).get("all_rows") or [])
+            if isinstance(row, dict)
+        ],
         "delivery_confirmations": lambda: load_delivery_confirmation_rows(),
         "delivery_contacts": lambda: load_delivery_contact_rows(),
         "pazomat": lambda: load_pazomat_rows(force_refresh=force_refresh),
