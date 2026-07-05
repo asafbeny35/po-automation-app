@@ -25818,6 +25818,10 @@ async def finalize_quote(request: Request):
                 drive_sync_result = {"status": "error", "error": str(exc)}
 
         quote_relative_file = _quote_file_relative_to_output(quote_pdf_path if quote_pdf_path.exists() else None)
+        if IS_VERCEL:
+            # ב-Vercel הקובץ המקומי חי רק בתוך הבקשה הנוכחית — קישור /files אליו
+            # ימות מיד ("file not found"). מציגים רק את קישורי ה-Drive הקבועים.
+            quote_relative_file = None
         quote_drive_folder_id = str(drive_sync_result.get("order_folder_id") or "").strip()
         quote_drive_folder_url = str(drive_sync_result.get("quote_drive_folder_url") or "").strip()
         quote_drive_url = str(drive_sync_result.get("quote_drive_url") or "").strip()
