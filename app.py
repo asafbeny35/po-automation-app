@@ -2817,15 +2817,26 @@ def _finance_customer_withholdings_epoch_payload() -> dict:
     }
 
 
+_FINANCE_INVOICES_EPOCH_LAST_SIGNATURE = ""
+
+
 def _finance_invoices_epoch_payload() -> dict:
-    rows = _dedupe_finance_invoice_rows(
-        get_cached_marketing_rows("finance_invoices") or load_marketing_rows("finance_invoices")
-    )
+    # קורא דרך ה-TTL (20 שניות) ולא קאש-בלבד — כדי ששמירה מהנייד (Vercel/Supabase)
+    # תיראה גם בשרת הדסקטופ המקומי, וזה מה שמאפשר watch אמיתי בין המכשירים.
+    global _FINANCE_INVOICES_EPOCH_LAST_SIGNATURE
+    rows = _dedupe_finance_invoice_rows(load_marketing_rows("finance_invoices"))
     latest_updated_at = ""
     for row in rows:
         updated_at = str(row.get("updated_at") or "").strip()
         if updated_at and updated_at > latest_updated_at:
             latest_updated_at = updated_at
+    signature = f"{len(rows)}|{latest_updated_at}"
+    if _FINANCE_INVOICES_EPOCH_LAST_SIGNATURE and signature != _FINANCE_INVOICES_EPOCH_LAST_SIGNATURE:
+        # הדאטה השתנה מתחת לקאש של טאב הכספים (שמירה מרחוק) — מפילים אותו כדי
+        # ש-/finance-state הבא יחזיר את השורות החדשות ולא קאש בן 15 דקות.
+        # בלי schedule_refresh: הפונקציה רצה ב-thread (אין event loop לתזמון).
+        _invalidate_finance_state_cache(schedule_refresh=False)
+    _FINANCE_INVOICES_EPOCH_LAST_SIGNATURE = signature
     return {
         "count": len(rows),
         "latest_updated_at": latest_updated_at,
@@ -20248,10 +20259,12 @@ async def finance_customer_withholdings_epoch():
 @app.get("/finance-invoices-epoch")
 async def finance_invoices_epoch():
     try:
+        # עלול לפנות ל-Supabase (אחרי פקיעת ה-TTL) — לא חוסמים את ה-event loop.
+        payload = await asyncio.to_thread(_finance_invoices_epoch_payload)
         return JSONResponse(
             {
                 "status": "ok",
-                **_finance_invoices_epoch_payload(),
+                **payload,
             }
         )
     except Exception as exc:
@@ -26835,6 +26848,10 @@ WEB_MENTIONS_MAX_DRAFTS_PER_SCAN = 10
 WEB_MENTIONS_SITE_URL = "https://www.ben-yacov.com"
 
 WEB_MENTIONS_DEFAULT_KEYWORDS = [
+    # איזכורי מותג ישירים — שמות המוצר והחברה כפי שמופיעים במפרטים ובפרסומים
+    "קוואיטפייפ",
+    "QuietPipe",
+    "בן יעקב פתרונות טקסטיל",
     # בידוד אקוסטי לצנרת (QuietPipe) — ניסוחים של בעיה כפי שאנשים מתארים אותה
     "בידוד אקוסטי לצנרת",
     "רעש צנרת ביוב",

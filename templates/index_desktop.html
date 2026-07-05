@@ -20938,6 +20938,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // watch חי: כל 20 שניות בודקים את ה-epoch של חשבוניות הספקים; שינוי (שמירה
+  // מהנייד, מהדסקטופ או ממחשב אחר) מרענן את הטבלה בשקט — בלי רענון ידני.
+  let financeInvoicesEpochLastSeen = null;
+  async function pollFinanceInvoicesEpoch() {
+    if (document.visibilityState !== "visible") return;
+    try {
+      const response = await fetch("/finance-invoices-epoch");
+      if (!response.ok) return;
+      const payload = await response.json();
+      const signature = `${Number(payload?.count || 0)}|${String(payload?.latest_updated_at || "")}`;
+      if (financeInvoicesEpochLastSeen === null) {
+        financeInvoicesEpochLastSeen = signature;
+        return;
+      }
+      if (signature !== financeInvoicesEpochLastSeen) {
+        financeInvoicesEpochLastSeen = signature;
+        await loadFinanceState({ silent: true });
+        showToast("info", "כספים", "טבלת חשבוניות הספקים התעדכנה.");
+      }
+    } catch (error) {
+      console.warn("finance invoices epoch poll failed", error);
+    }
+  }
+  setInterval(pollFinanceInvoicesEpoch, 20000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") pollFinanceInvoicesEpoch();
+  });
+
   async function refreshFinanceStateIfStale() {
     try {
       const raw = localStorage.getItem(FINANCE_STATE_STORAGE_KEY);
@@ -35522,13 +35550,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  async function loadFinanceState() {
+  async function loadFinanceState(options = {}) {
+    const silent = !!options.silent;
     if (financeInvoicesLoading) return;
     financeInvoicesLoading = true;
-    if (financeInvoicesSummary) {
+    if (!silent && financeInvoicesSummary) {
       financeInvoicesSummary.innerHTML = "טוען עכשיו את חשבוניות הספקים ואת חישובי המע״מ / מס ההכנסה...";
     }
-    startFinanceInvoicesProgress("טוען נתוני כספים...", "קורא את חשבוניות הספקים ואת חישובי הדיווחים...");
+    if (!silent) startFinanceInvoicesProgress("טוען נתוני כספים...", "קורא את חשבוניות הספקים ואת חישובי הדיווחים...");
     try {
       const response = await fetch("/finance-state");
       const payload = await response.json();
@@ -35545,9 +35574,10 @@ document.addEventListener("DOMContentLoaded", () => {
       persistFinanceLocalState();
       renderFinanceInvoicesTable(payload.invoice_summary || null);
       renderFinanceBankMovementsTable();
-      if (payload.warning) showToast("info", "כספים", payload.warning);
-      finishFinanceInvoicesProgress(true, "נתוני הכספים נטענו ומוכנים לעבודה.");
+      if (payload.warning && !silent) showToast("info", "כספים", payload.warning);
+      if (!silent) finishFinanceInvoicesProgress(true, "נתוני הכספים נטענו ומוכנים לעבודה.");
     } catch (error) {
+      if (silent) { console.warn("Silent finance refresh failed", error); return; }
       renderFinanceInvoicesTable();
       if (financeInvoicesSummary) financeInvoicesSummary.textContent = error.message || "לא הצלחתי לטעון את נתוני הכספים.";
       finishFinanceInvoicesProgress(false, error.message || "לא הצלחתי לטעון את טאב הכספים.");
