@@ -14346,6 +14346,17 @@ def _effective_inactive_customer_rows(rows: list[dict] | None = None) -> list[di
     return current_rows if current_rows else _load_bundled_customer_reference_rows("inactive")
 
 
+def _mobile_effective_customer_rows(kind: str) -> list[dict]:
+    rows = load_customer_rows() if kind == "active" else load_inactive_customer_rows()
+    valid = [row for row in (rows or []) if isinstance(row, dict)]
+    has_any_domain = any(_normalize_customer_domain_value(row.get("customer_domain") or "") for row in valid)
+    if valid and not has_any_domain:
+        bundled = _load_bundled_customer_reference_rows("inactive" if kind == "inactive" else "active")
+        if bundled:
+            return bundled
+    return valid
+
+
 def _customer_rows_need_rebuild(rows: list[dict]) -> bool:
     valid_rows = [row for row in (rows or []) if isinstance(row, dict)]
     if not valid_rows:
@@ -15579,8 +15590,10 @@ def _build_mobile_bootstrap_snapshot() -> dict:
 def _load_mobile_domain_rows(domain: str, force_refresh: bool = False) -> list[dict]:
     normalized_domain = str(domain or "").strip().lower().replace("-", "_")
     domain_loaders = {
-        "customers": lambda: load_customer_rows(),
-        "inactive_customers": lambda: load_inactive_customer_rows(),
+        # כמו customers-state של הדסקטופ: אם אין אף שיוך תחום — נופלים לקובץ
+        # הייחוס המובנה (אחרת המובייל מציג לקוחות בלי תחומים והסינון ריק).
+        "customers": lambda: _mobile_effective_customer_rows("active"),
+        "inactive_customers": lambda: _mobile_effective_customer_rows("inactive"),
         "order_history": lambda: load_order_history_rows(force_refresh=force_refresh),
         "quote_history": lambda: load_quote_history_rows(force_refresh=force_refresh),
         "working_orders": lambda: load_working_order_rows(force_refresh=force_refresh),
