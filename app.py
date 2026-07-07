@@ -23726,7 +23726,9 @@ def _build_installation_cases_from_history(order_rows: list[dict], existing_case
         elif base_case["status"] not in {"מושהה", "בוטל", "הושלם"}:
             if total_installed > 0:
                 base_case["status"] = "הותקן חלקית"
-            elif base_case["status"] not in {"תואם", "ממתין לתיאום"}:
+            elif base_case["status"] not in {"תואם", "ממתין לתיאום", "הותקן חלקית"}:
+                # "הותקן חלקית" ידני נשמר גם בלי ביקורים רשומים — אחרת הסנכרון
+                # דורס מיד סטטוס שהמשתמש קבע (הבאג: שינוי סטטוס שלא נשמר).
                 base_case["status"] = "ממתין לתיאום"
         built_rows.append(base_case)
     built_rows.sort(key=_installation_case_sort_key)
