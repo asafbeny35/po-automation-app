@@ -14053,6 +14053,19 @@ async def admin_drive_asset(asset_key: str):
             return JSONResponse({"error": f"לא הצלחתי לפתוח את מסמך המנהלה: {exc}"}, status_code=500)
 
 
+@app.get("/admin-drive-file/{asset_key}")
+async def admin_drive_file(asset_key: str):
+    """מגיש את קובץ מסמך המנהלה עצמו (bytes) — לצפיין הנייטיבי באפליקציה,
+    בלי ה-redirect ל-Google Drive של /admin-drive/{asset_key}."""
+    try:
+        local_path = _admin_drive_asset_local_path(asset_key)
+        media_type, _ = mimetypes.guess_type(str(local_path))
+        return FileResponse(str(local_path), media_type=media_type or "application/octet-stream", filename=local_path.name)
+    except Exception as exc:
+        log_handled_error(f"admin_drive_file failed for {asset_key}", exc)
+        return JSONResponse({"error": f"לא הצלחתי לפתוח את מסמך המנהלה: {exc}"}, status_code=500)
+
+
 @app.get("/admin-drive-folder")
 async def admin_drive_folder():
     try:
@@ -15716,6 +15729,188 @@ async def mobile_domain_rows(domain: str, force_refresh: bool = False, limit: in
     except Exception as exc:
         log_handled_error("mobile_domain_rows failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לטעון כרגע את הדומיין {domain}: {exc}"}, status_code=500)
+
+
+def _admin_credit_add_months(base_date: date, months_to_add: int) -> date:
+    """שכפול addAdminCreditMonths מהדסקטופ — קפיצת חודש עם הצמדת היום לסוף החודש."""
+    month_index = base_date.month - 1 + months_to_add
+    year = base_date.year + month_index // 12
+    month = month_index % 12 + 1
+    last_day = calendar.monthrange(year, month)[1]
+    return date(year, month, min(base_date.day, last_day))
+
+
+def _admin_credit_advance_balance(balance: float, payment: float, annual_rate: float, mode: str) -> float:
+    """שכפול advanceAdminCreditBalance מהדסקטופ — הפחתת תשלום חודשי מהיתרה."""
+    normalized_balance = max(0.0, float(balance or 0))
+    normalized_payment = max(0.0, float(payment or 0))
+    normalized_rate = max(0.0, float(annual_rate or 0))
+    if not normalized_balance or not normalized_payment:
+        return normalized_balance
+    if mode == "principal-only":
+        return max(0.0, normalized_balance - normalized_payment)
+    monthly_interest = normalized_balance * (normalized_rate / 100) / 12
+    principal_component = max(0.0, normalized_payment - monthly_interest)
+    return max(0.0, normalized_balance - principal_component)
+
+
+def _admin_credit_currency(value: float) -> str:
+    return f"₪ {value:,.2f}"
+
+
+def _admin_lending_docs(block: str) -> list[dict]:
+    return [
+        {"key": match.group(1), "label": match.group(2).strip()}
+        for match in re.finditer(r'href="/admin-drive/([^"]+)"[^>]*>([^<]*)</a>', block)
+    ]
+
+
+def _parse_admin_credit_cards(html: str) -> list[dict]:
+    """קורא את כרטיסי ההלוואות/משכנתאות מתבנית הדסקטופ — היא מקור האמת היחיד."""
+    section = html.split('id="adminLoansSection"', 1)[-1].split("</section>", 1)[0]
+    cards: list[dict] = []
+    for match in re.finditer(r'<article\s+class="admin-credit-card"(.*?)</article>', section, re.S):
+        block = match.group(0)
+
+        def attr(name: str) -> str:
+            attr_match = re.search(rf'data-credit-{name}="([^"]*)"', block)
+            return (attr_match.group(1) if attr_match else "").strip()
+
+        kicker = re.search(r'class="admin-credit-kicker">([^<]*)</div>', block)
+        title = re.search(r"<h3>([^<]*)</h3>", block)
+        blurb = re.search(r'class="admin-credit-blurb">([^<]*)</div>', block)
+        facts = [
+            {"label": fact.group(1).strip(), "value": fact.group(3).strip(),
+             "role": ("balance" if "balance-value" in fact.group(2) else "next_payment" if "next-payment-value" in fact.group(2) else "")}
+            for fact in re.finditer(r'<div class="admin-credit-fact"><span>([^<]*)</span><strong([^>]*)>([^<]*)</strong></div>', block)
+        ]
+        extra_block = re.search(r'class="admin-credit-extra">(.*?)</div>', block, re.S)
+        details = [item.strip() for item in re.findall(r"<li>(.*?)</li>", extra_block.group(1) if extra_block else "", re.S)]
+        cards.append(
+            {
+                "title": (title.group(1) if title else "").strip(),
+                "kicker": (kicker.group(1) if kicker else "").strip(),
+                "group": attr("group") or "loan",
+                "blurb": (blurb.group(1) if blurb else "").strip(),
+                "facts": facts,
+                "details": details,
+                "docs": _admin_lending_docs(block),
+                "balance": attr("balance"),
+                "next_payment_date": attr("next-payment-date"),
+                "monthly_payment": attr("monthly-payment"),
+                "annual_rate": attr("annual-rate"),
+                "payment_mode": attr("payment-mode") or "amortized",
+                "posting_lag_days": attr("posting-lag-days") or "1",
+            }
+        )
+    return cards
+
+
+def _parse_admin_vehicle_cards(html: str) -> list[dict]:
+    """קורא את כרטיסי צי הרכבים מתבנית הדסקטופ."""
+    section = html.split('id="adminVehiclesSection"', 1)[-1].split("</section>", 1)[0]
+    cards: list[dict] = []
+    for match in re.finditer(r'<article class="admin-vehicle-card">(.*?)</article>', section, re.S):
+        block = match.group(1)
+        image = re.search(r'<img src="([^"]+)"', block)
+        name = re.search(r'class="admin-vehicle-name">([^<]*)</span>', block)
+        plate = re.search(r'class="admin-vehicle-plate">([^<]*)</span>', block)
+        title = re.search(r"<h3>([^<]*)</h3>", block)
+        subtitle = re.search(r'class="admin-vehicle-subtitle">([^<]*)</div>', block)
+        facts = [
+            {"label": fact.group(1).strip(), "value": fact.group(2).strip()}
+            for fact in re.finditer(r'<div class="admin-vehicle-fact"><span>([^<]*)</span><strong>([^<]*)</strong></div>', block)
+        ]
+        cards.append(
+            {
+                "name": (name.group(1) if name else "").strip(),
+                "plate": (plate.group(1) if plate else "").strip(),
+                "title": (title.group(1) if title else "").strip(),
+                "subtitle": (subtitle.group(1) if subtitle else "").strip(),
+                "image_path": (image.group(1) if image else "").strip(),
+                "facts": facts,
+                "docs": _admin_lending_docs(block),
+            }
+        )
+    return cards
+
+
+@app.get("/mobile/admin-lending")
+async def mobile_admin_lending():
+    """הלוואות, משכנתאות וצי הרכבים לאפליקציה — נפרסר ישירות מתבנית הדסקטופ
+    כדי שהדסקטופ יישאר מקור האמת היחיד, כולל חישוב היתרה הדינמית בצד השרת."""
+    try:
+        html = (BASE_DIR / "templates" / "index_desktop.html").read_text(encoding="utf-8")
+        loans = _parse_admin_credit_cards(html)
+        vehicles = _parse_admin_vehicle_cards(html)
+
+        try:
+            from zoneinfo import ZoneInfo
+
+            today = datetime.now(ZoneInfo("Asia/Jerusalem")).date()
+        except Exception:
+            today = datetime.now().date()
+
+        loans_total = 0.0
+        mortgages_total = 0.0
+        for card in loans:
+            balance = float(card.pop("balance") or 0)
+            payment = float(card.pop("monthly_payment") or 0)
+            annual_rate = float(card.pop("annual_rate") or 0)
+            mode = str(card.pop("payment_mode"))
+            posting_lag_days = max(0, int(float(card.pop("posting_lag_days") or 1)))
+            next_payment_raw = str(card.pop("next_payment_date") or "").strip()
+            next_payment = None
+            try:
+                next_payment = datetime.strptime(next_payment_raw, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+            if next_payment:
+                # אותה לולאת התקדמות כמו syncAdminCreditCards בדסקטופ.
+                guard = 0
+                while guard < 600:
+                    posted_date = next_payment + timedelta(days=posting_lag_days)
+                    if today < posted_date:
+                        break
+                    balance = _admin_credit_advance_balance(balance, payment, annual_rate, mode)
+                    next_payment = _admin_credit_add_months(next_payment, 1)
+                    guard += 1
+                    if balance <= 0:
+                        break
+            balance = round(balance, 2)
+            next_payment_display = (
+                "ההלוואה נפרעה"
+                if balance <= 0
+                else (f"{next_payment.strftime('%d/%m/%Y')} · {_admin_credit_currency(payment)}" if next_payment else "")
+            )
+            for fact in card["facts"]:
+                role = fact.pop("role", "")
+                if role == "balance":
+                    fact["value"] = _admin_credit_currency(balance)
+                elif role == "next_payment" and next_payment_display:
+                    fact["value"] = next_payment_display
+            if card.get("group") == "mortgage":
+                mortgages_total += balance
+            else:
+                loans_total += balance
+
+        for card in vehicles:
+            card["image_path"] = card["image_path"].lstrip("/")
+
+        return JSONResponse(
+            {
+                "status": "ok",
+                "loans": loans,
+                "vehicles": vehicles,
+                "totals": {
+                    "loans": _admin_credit_currency(round(loans_total, 2)),
+                    "mortgages": _admin_credit_currency(round(mortgages_total, 2)),
+                },
+            }
+        )
+    except Exception as exc:
+        log_handled_error("mobile_admin_lending failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לטעון כרגע את ההלוואות והרכבים: {exc}"}, status_code=500)
 
 
 @app.post("/insurance-assistant")
