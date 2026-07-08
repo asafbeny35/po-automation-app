@@ -9552,29 +9552,57 @@ def _hr_parse_contribution_document(file_path: Path, employees: list[dict]) -> d
         r"(\d{2})/(\d{4})\s+תרוכשמ\s+שדוח",
         r"חודש\s+משכורת\s+(\d{2})/(\d{4})",
     ])
-    employee = _hr_match_employee_from_text(text, employees)
-    if not employee or not month_key:
+    if not month_key:
         return None
-    id_number = re.sub(r"\D+", "", str(employee.get("id_number") or ""))
-    amount_match = re.search(
-        rf"{re.escape(id_number)}\s+([0-9,]+\.[0-9]{{2}})\s+([0-9,]+\.[0-9]{{2}})\s+([0-9,]+\.[0-9]{{2}})\s+([0-9,]+\.[0-9]{{2}})\s*:\S*לכה",
-        text,
-    )
-    if not amount_match:
+    # דוח אחד יכול לכלול כמה עובדים; כל שורת עובד בטקסט המחולץ (RTL הפוך) נראית כך:
+    # <סה"כ> <פיצויים> <תגמולי מעסיק> <תגמולי עובד> <שכר> <שם הפוך> <מס' עובד> <ת"ז>
+    entries: list[dict] = []
+    matched_ids = 0
+    for id_number, employee in _hr_employee_by_id_number(employees).items():
+        if id_number not in text:
+            continue
+        matched_ids += 1
+        row_match = re.search(
+            rf"((?:[0-9,]+\.[0-9]{{2}}\s+)+)(?:[^\s0-9]+\s+)+\d{{3,5}}\s+{re.escape(id_number)}",
+            text,
+        )
+        if not row_match:
+            continue
+        amounts = [_hr_decimal_string(value) for value in row_match.group(1).split()]
+        if len(amounts) < 5:
+            continue
+        entries.append({
+            "employee": dict(employee),
+            "employee_contribution": amounts[-2],
+            "employer_contribution": amounts[-3],
+            "compensation_amount": amounts[-4],
+        })
+    if not entries and matched_ids <= 1:
+        # נפילה לאחור לדוח של עובד יחיד: שורת "סך הכל" שווה לשורת העובד היחיד
+        employee = _hr_match_employee_from_text(text, employees)
         amount_match = re.search(
             r"([0-9,]+\.[0-9]{2})\s+([0-9,]+\.[0-9]{2})\s+([0-9,]+\.[0-9]{2})\s+([0-9,]+\.[0-9]{2})\s*:\S*לכה",
             text,
         )
-    if not amount_match:
+        if employee and amount_match:
+            _, employee_contribution, employer_contribution, compensation_amount = amount_match.groups()
+            entries.append({
+                "employee": dict(employee),
+                "employee_contribution": _hr_decimal_string(employee_contribution),
+                "employer_contribution": _hr_decimal_string(employer_contribution),
+                "compensation_amount": _hr_decimal_string(compensation_amount),
+            })
+    if not entries:
         return None
-    _, employee_contribution, employer_contribution, compensation_amount = amount_match.groups()
+    first = entries[0]
     return {
         "doc_type": "contributions",
-        "employee": employee,
+        "employee": dict(first.get("employee") or {}),
         "month_key": month_key,
-        "employee_contribution": _hr_decimal_string(employee_contribution),
-        "employer_contribution": _hr_decimal_string(employer_contribution),
-        "compensation_amount": _hr_decimal_string(compensation_amount),
+        "employee_contribution": first.get("employee_contribution") or "",
+        "employer_contribution": first.get("employer_contribution") or "",
+        "compensation_amount": first.get("compensation_amount") or "",
+        "entries": entries,
         "text": text,
     }
 
@@ -25286,34 +25314,53 @@ async def hr_ingest_files(
                     upsert_hr_row("payroll", row, "row_id")
                     results.append({"file_name": safe_name, "section": "payroll", "employee_name": employee_name, "month_key": month_key})
                 elif parsed.get("doc_type") == "contributions":
-                    upload_result = _hr_upload_file_to_drive(final_path, employee_name, "contributions", month_key=month_key, drive_name=safe_name)
-                    employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or employee.get("drive_folder_id") or "").strip()
-                    employee["drive_folder_url"] = str(upload_result.get("employee_folder_url") or employee.get("drive_folder_url") or "").strip()
-                    upsert_hr_row("employees", employee, "employee_id")
+                    # דוח הפרשות אחד יכול לכלול כמה עובדים — נקלוט שורה לכל עובד שזוהה בדוח
+                    contribution_entries = parsed.get("entries") or [{
+                        "employee": employee,
+                        "employee_contribution": str(parsed.get("employee_contribution") or "").strip(),
+                        "employer_contribution": str(parsed.get("employer_contribution") or "").strip(),
+                        "compensation_amount": str(parsed.get("compensation_amount") or "").strip(),
+                    }]
+                    for entry in contribution_entries:
+                        entry_employee = dict(entry.get("employee") or {})
+                        entry_employee_id = str(entry_employee.get("employee_id") or "").strip()
+                        entry_employee_name = str(entry_employee.get("full_name") or "").strip()
+                        if not entry_employee_id or entry_employee_id not in employees_by_id:
+                            errors.append({"file_name": safe_name, "error": f"לא נמצא עובד מתאים לשורה בדוח ההפרשות ({entry_employee_name or 'ללא שם'})."})
+                            continue
+                        entry_dir = _hr_storage_dir() / entry_employee_id / (month_key or "general")
+                        entry_dir.mkdir(parents=True, exist_ok=True)
+                        entry_path = entry_dir / safe_name
+                        if entry_path != final_path:
+                            shutil.copy2(temp_path, entry_path)
+                        upload_result = _hr_upload_file_to_drive(entry_path, entry_employee_name, "contributions", month_key=month_key, drive_name=safe_name)
+                        entry_employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or entry_employee.get("drive_folder_id") or "").strip()
+                        entry_employee["drive_folder_url"] = str(upload_result.get("employee_folder_url") or entry_employee.get("drive_folder_url") or "").strip()
+                        upsert_hr_row("employees", entry_employee, "employee_id")
 
-                    existing_row = next(
-                        (
-                            item for item in contribution_rows
-                            if str(item.get("employee_id") or "").strip() == employee_id
-                            and str(item.get("month_key") or "").strip() == month_key
-                        ),
-                        {},
-                    ) or {}
-                    row = dict(existing_row)
-                    row.update({
-                        "row_id": str(row.get("row_id") or f"contribution_{employee_id}_{month_key}").strip(),
-                        "employee_id": employee_id,
-                        "employee_name": employee_name,
-                        "month_key": month_key,
-                        "employee_contribution": str(parsed.get("employee_contribution") or row.get("employee_contribution") or "").strip(),
-                        "employer_contribution": str(parsed.get("employer_contribution") or row.get("employer_contribution") or "").strip(),
-                        "compensation_amount": str(parsed.get("compensation_amount") or row.get("compensation_amount") or "").strip(),
-                        "split_report_file_name": safe_name,
-                        "split_report_drive_file_id": str(upload_result.get("drive_file_id") or "").strip(),
-                        "split_report_drive_url": str(upload_result.get("drive_url") or "").strip(),
-                    })
-                    upsert_hr_row("contributions", row, "row_id")
-                    results.append({"file_name": safe_name, "section": "contributions", "employee_name": employee_name, "month_key": month_key})
+                        existing_row = next(
+                            (
+                                item for item in contribution_rows
+                                if str(item.get("employee_id") or "").strip() == entry_employee_id
+                                and str(item.get("month_key") or "").strip() == month_key
+                            ),
+                            {},
+                        ) or {}
+                        row = dict(existing_row)
+                        row.update({
+                            "row_id": str(row.get("row_id") or f"contribution_{entry_employee_id}_{month_key}").strip(),
+                            "employee_id": entry_employee_id,
+                            "employee_name": entry_employee_name,
+                            "month_key": month_key,
+                            "employee_contribution": str(entry.get("employee_contribution") or row.get("employee_contribution") or "").strip(),
+                            "employer_contribution": str(entry.get("employer_contribution") or row.get("employer_contribution") or "").strip(),
+                            "compensation_amount": str(entry.get("compensation_amount") or row.get("compensation_amount") or "").strip(),
+                            "split_report_file_name": safe_name,
+                            "split_report_drive_file_id": str(upload_result.get("drive_file_id") or "").strip(),
+                            "split_report_drive_url": str(upload_result.get("drive_url") or "").strip(),
+                        })
+                        upsert_hr_row("contributions", row, "row_id")
+                        results.append({"file_name": safe_name, "section": "contributions", "employee_name": entry_employee_name, "month_key": month_key})
                 elif parsed.get("doc_type") == "hours":
                     upload_result = _hr_upload_file_to_drive(final_path, employee_name, "hours", month_key=month_key, drive_name=safe_name)
                     employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or employee.get("drive_folder_id") or "").strip()
