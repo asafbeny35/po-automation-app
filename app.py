@@ -17767,6 +17767,55 @@ async def order_history_refresh():
         return JSONResponse({"error": f"לא הצלחתי לטעון את ההיסטוריה: {exc}"}, status_code=500)
 
 
+@app.post("/order-history-resend-whatsapp")
+async def order_history_resend_whatsapp(request: Request):
+    try:
+        body = await request.json()
+        history_id = str(body.get("history_id") or "").strip()
+        send_to_dad = bool(body.get("send_to_dad"))
+        if not history_id:
+            return JSONResponse({"error": "חסר מזהה היסטוריה לשליחה."}, status_code=400)
+        rows = get_cached_order_history_rows() or load_order_history_rows(force_refresh=False)
+        row = next((r for r in rows if str(r.get("history_id") or "").strip() == history_id), None)
+        if row is None:
+            rows = load_order_history_rows(force_refresh=True)
+            row = next((r for r in rows if str(r.get("history_id") or "").strip() == history_id), None)
+        if row is None:
+            return JSONResponse({"error": "ההזמנה לא נמצאה בהיסטוריה."}, status_code=404)
+        po_number = str(row.get("po_number") or "").strip()
+        merged_id = str(row.get("merged_drive_file_id") or "").strip()
+        delivery_id = str(row.get("delivery_drive_file_id") or "").strip()
+        drive_file_id = merged_id or delivery_id
+        if not drive_file_id:
+            return JSONResponse({"error": "לשורה הזו אין קובץ מסמכים שמור בדרייב."}, status_code=400)
+        target_dir = OUTPUT_DIR / "whatsapp_resend"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        safe_po = _safe_folder_name(po_number) if po_number else history_id[:8]
+        file_name = f"{safe_po}_כל המסמכים.pdf" if merged_id else f"{safe_po}_תעודת משלוח.pdf"
+        local_path = await asyncio.to_thread(download_drive_file, drive_file_id, target_dir / file_name)
+        message = f"מסמכים עבור הזמנת רכש {po_number}" if po_number else "מסמכי הזמנה"
+        deliveries: list[dict] = []
+        errors: list[dict] = []
+        targets = [("0547720142", "אסף")]
+        if send_to_dad:
+            targets.append(("+972505204010", "אבא"))
+        for phone, label in targets:
+            try:
+                result = await send_files_via_whatsapp(phone=phone, message=message, file_paths=[str(local_path)])
+                deliveries.append({"target": phone, "label": label, **(result if isinstance(result, dict) else {})})
+            except Exception as exc:
+                log_handled_error(f"order history whatsapp resend failed for {phone}", exc)
+                errors.append({"target": phone, "label": label, "error": str(exc)})
+        status = "ok" if deliveries and not errors else ("partial" if deliveries else "error")
+        return JSONResponse(
+            {"status": status, "deliveries": deliveries, "errors": errors, "file_name": file_name},
+            status_code=200 if status != "error" else 500,
+        )
+    except Exception as exc:
+        log_handled_error("order_history_resend_whatsapp failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לשלוח שוב את המסמכים: {exc}"}, status_code=500)
+
+
 @app.post("/order-history-delete")
 async def order_history_delete(request: Request):
     try:

@@ -38714,6 +38714,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const createAdditionalDeliveryButton = partialState.isPartial && partialState.hasRemainder
         ? `<button type="button" class="secondary-btn history-action-btn" data-history-additional-delivery="${escapeHtml(row.history_id || "")}">יצירת ת. משלוח נוספת</button>`
         : "";
+      const resendWhatsappButton = (String(row.merged_drive_file_id || "").trim() || String(row.delivery_drive_file_id || "").trim())
+        ? `<button type="button" class="ghost-btn history-action-btn" data-history-resend-whatsapp="${escapeHtml(row.history_id || "")}">שלח שוב בוואטסאפ</button>`
+        : "";
       return `
         <article class="history-item ${compact ? "compact" : ""}" data-history-id="${escapeHtml(row.history_id || "")}">
           <div class="history-item-head">
@@ -38732,7 +38735,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>חשבונית: ${escapeHtml(String(row.tax_invoice_number || "").trim() || "—")}</span>
               </div>
               <div class="history-item-links">${renderedLinks.join("") || `<span class="history-link-chip">אין עדיין קישורי Drive</span>`}</div>
-              ${(createInvoiceLaterButton || createAdditionalDeliveryButton) ? `<div class="history-item-actions">${createInvoiceLaterButton}${createAdditionalDeliveryButton}</div>` : ""}
+              ${(createInvoiceLaterButton || createAdditionalDeliveryButton || resendWhatsappButton) ? `<div class="history-item-actions">${createInvoiceLaterButton}${createAdditionalDeliveryButton}${resendWhatsappButton}</div>` : ""}
             </div>
             <button type="button" class="history-delete-btn" data-history-delete="${escapeHtml(row.history_id || "")}" aria-label="מחיקת שורת היסטוריה">
               <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -38775,6 +38778,41 @@ document.addEventListener("DOMContentLoaded", () => {
           showToast("success", "חשבונית המס נוצרה", "החשבונית נוצרה ונשמרה לאותה הזמנה בהיסטוריה.");
         } catch (error) {
           showToast("error", "יצירת חשבונית נכשלה", error.message || "לא הצלחנו ליצור את החשבונית מהשורה שנבחרה.");
+        } finally {
+          button.dataset.busy = "false";
+          button.textContent = originalText;
+        }
+      });
+    });
+    host.querySelectorAll("[data-history-resend-whatsapp]").forEach(button => {
+      button.addEventListener("click", async event => {
+        event.stopPropagation();
+        const historyId = String(button.dataset.historyResendWhatsapp || "").trim();
+        if (!historyId || button.dataset.busy === "true") return;
+        const sendToDad = window.confirm("לשלוח גם לאבא?\n\nאישור = אליך + לאבא, ביטול = רק אליך.");
+        button.dataset.busy = "true";
+        const originalText = button.textContent;
+        button.textContent = "שולח...";
+        try {
+          const response = await fetch("/order-history-resend-whatsapp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ history_id: historyId, send_to_dad: sendToDad })
+          });
+          const result = await response.json();
+          if (!response.ok || result.status === "error") {
+            const firstError = (result.errors || [])[0]?.error || result.error || "השליחה נכשלה.";
+            throw new Error(firstError);
+          }
+          if (result.status === "partial") {
+            const failed = (result.errors || []).map(item => item.label || item.target).join(", ");
+            showToast("warning", "נשלח חלקית", `חלק מהיעדים נכשלו: ${failed}`);
+          } else {
+            const sentTo = (result.deliveries || []).map(item => item.label || item.target).join(", ") || "היעדים";
+            showToast("success", "המסמכים נשלחו בוואטסאפ", `נשלח אל: ${sentTo}.`);
+          }
+        } catch (error) {
+          showToast("error", "השליחה נכשלה", error.message || "לא הצלחנו לשלוח שוב את המסמכים בוואטסאפ.");
         } finally {
           button.dataset.busy = "false";
           button.textContent = originalText;
@@ -41480,8 +41518,14 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error(result.error || "השרת החזיר שגיאה בזמן יצירת המסמכים");
       }
       stopProgressTimer();
-      setProgress(100, isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "התהליך הושלם.");
-      updateStatus(isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "success");
+      const waFailed = !isQuoteFlow && result?.whatsapp_send_result && ["error", "skipped"].includes(result.whatsapp_send_result.status) && result.whatsapp_send_result.reason !== "ui_test_skip_whatsapp";
+      if (waFailed) {
+        setProgress(100, "המסמכים נוצרו — אך לא נשלחו בוואטסאפ", `שליחת הוואטסאפ נכשלה: ${result.whatsapp_send_result.error || result.whatsapp_send_result.reason || "סיבה לא ידועה"}. המסמכים זמינים בקישורים למטה.`);
+        updateStatus("המסמכים נוצרו, אך שליחת הוואטסאפ נכשלה", "error");
+      } else {
+        setProgress(100, isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "התהליך הושלם.");
+        updateStatus(isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה" : "המסמכים נוצרו בהצלחה", "success");
+      }
       renderDownloadLinks(result);
       if (!isQuoteFlow && isTransportMode(mode)) {
         // The transport label PDF is single-use per order — don't carry it into the next one.
@@ -41527,7 +41571,9 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         console.log("whatsapp_send_result:", JSON.stringify(waResult));
       }
-      showToast("success", isQuoteFlow ? "הצעת המחיר מוכנה" : "המסמכים מוכנים", isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה וקישורי השליחה זמינים למטה." : "המסמכים נוצרו בהצלחה וקישורי ההורדה זמינים למטה.");
+      if (!waFailed) {
+        showToast("success", isQuoteFlow ? "הצעת המחיר מוכנה" : "המסמכים מוכנים", isQuoteFlow ? "הצעת המחיר נוצרה בהצלחה וקישורי השליחה זמינים למטה." : "המסמכים נוצרו בהצלחה וקישורי ההורדה זמינים למטה.");
+      }
     } catch (error) {
       stopProgressTimer();
       setProgress(100, "אירעה שגיאה בתהליך", error.message || "לא הצלחנו להשלים את התהליך.");
