@@ -3814,36 +3814,115 @@ def _finance_extract_line_item_service(text: str) -> str:
     return ""
 
 
+def _ocr_image_bytes_via_claude(img_bytes: bytes) -> str:
+    """Transcribe an invoice/receipt page image via Claude Vision.
+
+    Last-resort OCR fallback for bundle splitting: on Vercel there is no
+    pytesseract and Google Vision can come back empty on crumpled thermal
+    receipts, which used to collapse a multi-invoice PDF to page 0 only.
+    Claude reliably reads these Hebrew receipts, so we use it to recover the
+    page text (keywords like חשבונית / קבלה + the invoice number) that the
+    splitter needs to find invoice boundaries.
+    """
+    api_key = str(settings.anthropic_api_key or "").strip()
+    if not api_key:
+        return ""
+    try:
+        import base64
+        import httpx
+
+        b64 = base64.standard_b64encode(img_bytes).decode("utf-8")
+        prompt = (
+            "Transcribe ALL text from this image of an Israeli Hebrew invoice/receipt, "
+            "line by line, exactly as printed. Hebrew reads right-to-left. Be sure to "
+            "include header words such as חשבונית / קבלה / חשבונית מס / חשבונית מס/קבלה, "
+            "the supplier name, and any invoice/receipt number and total. "
+            "Return ONLY the raw transcribed text, no explanation."
+        )
+        response = httpx.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+            },
+            json={
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 1024,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                            {"type": "text", "text": prompt},
+                        ],
+                    }
+                ],
+            },
+            timeout=40.0,
+        )
+        response.raise_for_status()
+        content = response.json().get("content") or []
+        return next((block.get("text", "") for block in content if block.get("type") == "text"), "") or ""
+    except Exception as exc:
+        log_handled_error("claude OCR fallback failed", exc)
+        return ""
+
+
 def _finance_ocr_pdf_page_texts(file_path: Path) -> list[dict]:
     import fitz
+    from concurrent.futures import ThreadPoolExecutor
+
     from services.ocr_service import _ocr_image_bytes_via_vision
 
-    page_entries: list[dict] = []
+    # Render every page up front (PyMuPDF is not safe to share across threads),
+    # then OCR the pages concurrently — the OCR calls are network-bound so this
+    # keeps a big multi-invoice bundle well under the request timeout.
+    rendered: list[dict] = []
     pdf = fitz.open(str(file_path))
     try:
         for page_index in range(pdf.page_count):
             page = pdf.load_page(page_index)
             pixmap = page.get_pixmap(matrix=fitz.Matrix(1.2, 1.2), alpha=False)
-            img_bytes = pixmap.tobytes("png")
-            raw_text = _ocr_image_bytes_via_vision(img_bytes)
-            if not raw_text:
-                try:
-                    from PIL import Image
-                    import pytesseract
-                    image = Image.frombytes("RGB", [pixmap.width, pixmap.height], pixmap.samples)
-                    raw_text = pytesseract.image_to_string(image, lang="heb+eng", config="--psm 6")
-                except Exception:
-                    raw_text = ""
-            fixed_text = fix_hebrew_text(raw_text or "").strip()
-            page_entries.append(
+            rendered.append(
                 {
                     "page_number": page_index + 1,
-                    "raw_text": (raw_text or "").strip(),
-                    "fixed_text": fixed_text,
+                    "img_bytes": pixmap.tobytes("png"),
+                    "width": pixmap.width,
+                    "height": pixmap.height,
+                    "samples": bytes(pixmap.samples),
                 }
             )
     finally:
         pdf.close()
+
+    def _ocr_one(item: dict) -> dict:
+        img_bytes = item["img_bytes"]
+        raw_text = _ocr_image_bytes_via_vision(img_bytes)
+        if not raw_text:
+            try:
+                from PIL import Image
+                import pytesseract
+                image = Image.frombytes("RGB", [item["width"], item["height"]], item["samples"])
+                raw_text = pytesseract.image_to_string(image, lang="heb+eng", config="--psm 6")
+            except Exception:
+                raw_text = ""
+        if not (raw_text or "").strip():
+            # Google Vision / pytesseract came back empty (common on Vercel) —
+            # recover with Claude so the splitter still sees the page's text.
+            raw_text = _ocr_image_bytes_via_claude(img_bytes)
+        fixed_text = fix_hebrew_text(raw_text or "").strip()
+        return {
+            "page_number": item["page_number"],
+            "raw_text": (raw_text or "").strip(),
+            "fixed_text": fixed_text,
+        }
+
+    if not rendered:
+        return []
+    with ThreadPoolExecutor(max_workers=min(6, len(rendered))) as executor:
+        page_entries = list(executor.map(_ocr_one, rendered))
+    page_entries.sort(key=lambda entry: entry["page_number"])
     return page_entries
 
 
@@ -3929,7 +4008,30 @@ def _finance_split_invoice_bundle(file_path: Path) -> list[dict]:
             current_doc = None
     if current_doc:
         groups.append(current_doc)
-    return [group for group in groups if group.get("pages")]
+    result = [group for group in groups if group.get("pages")]
+
+    # Safety net: if OCR could not identify a single invoice boundary on a
+    # multi-page PDF, treat every page as its own invoice rather than silently
+    # collapsing the whole bundle to page 0. Better to over-split (the user
+    # reviews the drafts in the confirmation modal) than to drop invoices.
+    if len(result) <= 1 and len(page_entries) > 1:
+        detected_start = any(
+            _finance_is_bundle_financial_start(entry.get("raw_text") or "", entry.get("fixed_text") or "")
+            for entry in page_entries
+        )
+        if not detected_start:
+            return [
+                {
+                    "pages": [entry["page_number"]],
+                    "raw_text_parts": [entry.get("raw_text") or ""],
+                    "fixed_text_parts": [entry.get("fixed_text") or ""],
+                    "signature": _finance_bundle_page_signature(
+                        entry.get("raw_text") or "", entry.get("fixed_text") or ""
+                    ),
+                }
+                for entry in page_entries
+            ]
+    return result
 
 
 def _ensure_finance_invoice_storage_dirs() -> None:
@@ -7736,11 +7838,24 @@ def _finance_parse_uploaded_invoice_drafts(file_path: Path, original_name: str) 
             stale_file.unlink()
         except Exception:
             continue
-    drafts: list[dict] = []
+    from concurrent.futures import ThreadPoolExecutor
+
+    # Export each split group to its own PDF (fast, local), then parse the
+    # groups concurrently — every parse is a network-bound Claude Vision call,
+    # so running them in parallel keeps a large bundle inside the timeout.
+    temp_targets: list[Path] = []
     for index, group in enumerate(bundle_groups, start=1):
         temp_target = split_root / f"{index:03d}-temp.pdf"
         _finance_export_split_pdf(file_path, group.get("pages") or [], temp_target)
-        draft = _finance_parse_uploaded_invoice_draft(temp_target, temp_target.name)
+        temp_targets.append(temp_target)
+
+    with ThreadPoolExecutor(max_workers=min(6, len(temp_targets) or 1)) as executor:
+        parsed_drafts = list(
+            executor.map(lambda target: _finance_parse_uploaded_invoice_draft(target, target.name), temp_targets)
+        )
+
+    drafts: list[dict] = []
+    for index, (temp_target, draft) in enumerate(zip(temp_targets, parsed_drafts), start=1):
         supplier_slug = _safe_folder_name(str(draft.get("supplier_name") or "").strip()) or "invoice"
         invoice_date_slug = str(draft.get("invoice_date") or "").strip().replace("/", "-") or datetime.now().strftime("%Y-%m-%d")
         final_target = split_root / f"{index:03d}-{supplier_slug}-{invoice_date_slug}.pdf"
