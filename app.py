@@ -12041,9 +12041,9 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "13578301 - חובה.pdf",
     },
     "vehicle-white-niro-license": {
-        "local_path": ADMIN_VEHICLE_DOCS_DIR / "קיה לבנה רישיון 2026.pdf",
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "קיה לבנה רישיון 2027.pdf",
         "folders": ("רכבים", "קיה נירו לבנה 2024"),
-        "drive_name": "84522303 - רישיון 2026.pdf",
+        "drive_name": "84522303 - רישיון 2027.pdf",
     },
     "vehicle-white-niro-comprehensive": {
         "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417225 מקיף.pdf",
