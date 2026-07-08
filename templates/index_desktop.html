@@ -18272,6 +18272,7 @@ input:focus {
     </div>
     <div class="confirm-modal-actions">
       <button type="button" id="financeInvoiceParseCancel" class="ghost-btn">ביטול</button>
+      <button type="button" id="financeInvoiceParseSkip" class="ghost-btn" style="display:none;">דלג לחשבונית הבאה</button>
       <button type="button" id="financeInvoiceParseSave" class="assistant-submit">שמירה לטבלה</button>
     </div>
   </div>
@@ -20389,6 +20390,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const financeInvoiceParseModal = document.getElementById("financeInvoiceParseModal");
   const financeInvoiceParseClose = document.getElementById("financeInvoiceParseClose");
   const financeInvoiceParseCancel = document.getElementById("financeInvoiceParseCancel");
+  const financeInvoiceParseSkip = document.getElementById("financeInvoiceParseSkip");
   const financeInvoiceParseSave = document.getElementById("financeInvoiceParseSave");
   const financeInvoiceParseMeta = document.getElementById("financeInvoiceParseMeta");
   const financeInvoiceParseFields = document.getElementById("financeInvoiceParseFields");
@@ -20798,6 +20800,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let financeIncomeTaxRateValue = 3;
   let financeInvoiceParseQueue = [];
   let currentFinanceInvoiceParseDraft = null;
+  let financeInvoiceParseTotal = 0;
+  let financeInvoiceParseIndex = 0;
   let financeInvoicesSendSelectedDueDates = [];
   let financeInvoicesSendDropdownOpen = false;
   let financeInvoicesSendSubmitting = false;
@@ -34379,6 +34383,8 @@ document.addEventListener("DOMContentLoaded", () => {
     setFinanceInvoiceParseModalProgress(false);
     currentFinanceInvoiceParseDraft = null;
     if (clearQueue) financeInvoiceParseQueue = [];
+    financeInvoiceParseTotal = 0;
+    financeInvoiceParseIndex = 0;
   }
 
   function collectFinanceInvoiceParseRow() {
@@ -34406,7 +34412,10 @@ document.addEventListener("DOMContentLoaded", () => {
     currentFinanceInvoiceParseDraft = normalizeFinanceInvoiceRowForClient(draft || {});
     if (financeInvoiceParseMeta) {
       const fullLabel = String(currentFinanceInvoiceParseDraft.source_file_name || "").trim();
-      financeInvoiceParseMeta.innerHTML = `קובץ מקור: <strong title="${escapeHtml(fullLabel || "ללא שם קובץ")}">${escapeHtml(formatFinanceInvoiceFileLabel(fullLabel))}</strong>`;
+      const counter = financeInvoiceParseTotal > 1
+        ? `<strong class="finance-parse-counter">חשבונית ${financeInvoiceParseIndex} מתוך ${financeInvoiceParseTotal}</strong> · `
+        : "";
+      financeInvoiceParseMeta.innerHTML = `${counter}קובץ מקור: <strong title="${escapeHtml(fullLabel || "ללא שם קובץ")}">${escapeHtml(formatFinanceInvoiceFileLabel(fullLabel))}</strong>`;
     }
     if (financeInvoiceParseFields) {
       financeInvoiceParseFields.innerHTML = financeInvoiceParseFieldDefinitions().map(([field, label, placeholder, inputMode]) => `
@@ -34439,6 +34448,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (financeInvoiceParseUnpaidToggle) {
       financeInvoiceParseUnpaidToggle.checked = ["1", "true", "yes", "on", "כן"].includes(String(currentFinanceInvoiceParseDraft.create_payable_row || "").trim().toLowerCase());
     }
+    if (financeInvoiceParseSkip) {
+      // "דלג" is only meaningful while there are more parsed drafts waiting.
+      financeInvoiceParseSkip.style.display = financeInvoiceParseQueue.length > 0 ? "" : "none";
+    }
     setFinanceInvoiceParseModalProgress(false);
     financeInvoiceParseModal?.classList.add("visible");
     financeInvoiceParseModal?.setAttribute("aria-hidden", "false");
@@ -34450,7 +34463,24 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const nextDraft = financeInvoiceParseQueue.shift();
+    financeInvoiceParseIndex += 1;
     renderFinanceInvoiceParseModal(nextDraft);
+  }
+
+  function skipFinanceInvoiceParseDraft() {
+    // Advance to the next parsed draft WITHOUT saving the current one, so a
+    // blank or garbled draft never forces the user to choose between saving
+    // junk and cancelling the whole queue (which discards every remaining
+    // invoice in the bundle).
+    openNextFinanceInvoiceParseDraft();
+  }
+
+  function requestCloseFinanceInvoiceParseModal() {
+    const remaining = financeInvoiceParseQueue.length;
+    if (remaining > 0 && !window.confirm(`יש עוד ${remaining} חשבוניות בתור שטרם נבדקו. לבטל את כולן?`)) {
+      return;
+    }
+    closeFinanceInvoiceParseModal(true);
   }
 
   function financeInvoicesSendDueDateOptions() {
@@ -35871,6 +35901,8 @@ document.addEventListener("DOMContentLoaded", () => {
         throw new Error("הקבצים נשמרו, אבל לא הצלחתי לפרסר מהם נתונים להצגה.");
       }
       financeInvoiceParseQueue = drafts.slice(1);
+      financeInvoiceParseTotal = drafts.length;
+      financeInvoiceParseIndex = 1;
       renderFinanceInvoicesTable();
       finishFinanceInvoicesProgress(true, `הקבצים נשמרו ופורסרו. פותח עכשיו חלונית אישור ל-${drafts.length} חשבוניות.`);
       renderFinanceInvoiceParseModal(drafts[0]);
@@ -44021,11 +44053,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   financeInvoiceParseClose?.addEventListener("click", () => {
-    closeFinanceInvoiceParseModal(true);
+    requestCloseFinanceInvoiceParseModal();
   });
 
   financeInvoiceParseCancel?.addEventListener("click", () => {
-    closeFinanceInvoiceParseModal(true);
+    requestCloseFinanceInvoiceParseModal();
+  });
+
+  financeInvoiceParseSkip?.addEventListener("click", () => {
+    skipFinanceInvoiceParseDraft();
   });
 
   financeInvoiceParseSave?.addEventListener("click", async () => {

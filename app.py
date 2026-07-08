@@ -3814,6 +3814,55 @@ def _finance_extract_line_item_service(text: str) -> str:
     return ""
 
 
+def _anthropic_messages_post(payload: dict, timeout: float = 40.0, max_attempts: int = 4):
+    """POST to the Anthropic Messages API with retry/backoff on transient
+    overload and network errors.
+
+    Bundles fire several Claude image calls close together, which is exactly
+    when Anthropic sheds load with HTTP 529 ("Overloaded") — and a single 529
+    used to abort an invoice parse and hand back an empty draft. Retrying the
+    retryable statuses (429 / 5xx incl. 529) and timeouts with exponential
+    backoff turns those transient failures into successful parses. Raises on
+    the final attempt so the caller's existing error handling still applies.
+    """
+    import time as _time
+
+    import httpx
+
+    api_key = str(settings.anthropic_api_key or "").strip()
+    headers = {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
+    retryable_status = {429, 500, 502, 503, 504, 529}
+    last_exc: Exception | None = None
+    for attempt in range(max_attempts):
+        # small deterministic-ish jitter by attempt+index avoids a thundering herd
+        backoff = min(8.0, 1.5 * (2 ** attempt))
+        try:
+            response = httpx.post(
+                "https://api.anthropic.com/v1/messages",
+                headers=headers,
+                json=payload,
+                timeout=timeout,
+            )
+            if response.status_code in retryable_status and attempt < max_attempts - 1:
+                _time.sleep(backoff)
+                continue
+            response.raise_for_status()
+            return response
+        except (httpx.TimeoutException, httpx.TransportError) as exc:
+            last_exc = exc
+            if attempt < max_attempts - 1:
+                _time.sleep(backoff)
+                continue
+            raise
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("anthropic messages post exhausted retries")
+
+
 def _ocr_image_bytes_via_claude(img_bytes: bytes) -> str:
     """Transcribe an invoice/receipt page image via Claude Vision.
 
@@ -3829,7 +3878,6 @@ def _ocr_image_bytes_via_claude(img_bytes: bytes) -> str:
         return ""
     try:
         import base64
-        import httpx
 
         b64 = base64.standard_b64encode(img_bytes).decode("utf-8")
         prompt = (
@@ -3839,14 +3887,8 @@ def _ocr_image_bytes_via_claude(img_bytes: bytes) -> str:
             "the supplier name, and any invoice/receipt number and total. "
             "Return ONLY the raw transcribed text, no explanation."
         )
-        response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
+        response = _anthropic_messages_post(
+            {
                 "model": "claude-sonnet-4-6",
                 "max_tokens": 1024,
                 "messages": [
@@ -3861,7 +3903,6 @@ def _ocr_image_bytes_via_claude(img_bytes: bytes) -> str:
             },
             timeout=40.0,
         )
-        response.raise_for_status()
         content = response.json().get("content") or []
         return next((block.get("text", "") for block in content if block.get("type") == "text"), "") or ""
     except Exception as exc:
@@ -3920,7 +3961,10 @@ def _finance_ocr_pdf_page_texts(file_path: Path) -> list[dict]:
 
     if not rendered:
         return []
-    with ThreadPoolExecutor(max_workers=min(6, len(rendered))) as executor:
+    # Cap concurrency low: Anthropic returns 529 (Overloaded) when a bundle
+    # fires too many image calls at once. 3 in flight + retry/backoff keeps the
+    # burst gentle while still finishing well inside the request timeout.
+    with ThreadPoolExecutor(max_workers=min(3, len(rendered))) as executor:
         page_entries = list(executor.map(_ocr_one, rendered))
     page_entries.sort(key=lambda entry: entry["page_number"])
     return page_entries
@@ -7269,14 +7313,8 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
             "}\n"
             "Important: Hebrew is RTL — read each word from right to left. Return JSON only."
         )
-        response = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
+        response = _anthropic_messages_post(
+            {
                 "model": "claude-sonnet-4-6",
                 "max_tokens": 512,
                 "messages": [
@@ -7286,9 +7324,8 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
                     }
                 ],
             },
-            timeout=30.0,
+            timeout=40.0,
         )
-        response.raise_for_status()
         content = response.json().get("content") or []
         raw_json = next((block.get("text", "") for block in content if block.get("type") == "text"), "")
         json_match = re.search(r"\{[\s\S]*\}", raw_json)
@@ -7849,7 +7886,7 @@ def _finance_parse_uploaded_invoice_drafts(file_path: Path, original_name: str) 
         _finance_export_split_pdf(file_path, group.get("pages") or [], temp_target)
         temp_targets.append(temp_target)
 
-    with ThreadPoolExecutor(max_workers=min(6, len(temp_targets) or 1)) as executor:
+    with ThreadPoolExecutor(max_workers=min(3, len(temp_targets) or 1)) as executor:
         parsed_drafts = list(
             executor.map(lambda target: _finance_parse_uploaded_invoice_draft(target, target.name), temp_targets)
         )
