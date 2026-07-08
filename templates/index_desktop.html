@@ -49161,5 +49161,42 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 })();
 </script>
+<script>
+(() => {
+  const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+  let bannerEl = null;
+  function ensureBanner() {
+    if (bannerEl) return bannerEl;
+    bannerEl = document.createElement("div");
+    bannerEl.id = "whatsappBridgeBanner";
+    bannerEl.setAttribute("dir", "rtl");
+    bannerEl.style.cssText = "display:none; position:sticky; top:0; z-index:2147483000; background:#b91c1c; color:#fff; padding:10px 16px; font-size:14px; font-weight:600; text-align:center;";
+    document.body.prepend(bannerEl);
+    return bannerEl;
+  }
+  async function checkWhatsappBridge() {
+    try {
+      const response = await fetch("/whatsapp-bridge-health", { cache: "no-store" });
+      if (!response.ok) return;
+      const result = await response.json();
+      const health = result?.health || {};
+      const banner = ensureBanner();
+      if (["disconnected", "unreachable"].includes(String(health.status || ""))) {
+        const qrUrl = String(health.qr_page_url || "").trim();
+        const reason = health.status === "unreachable" ? "שירות השליחה לא מגיב" : "הסשן של WhatsApp Web מנותק";
+        banner.innerHTML = `⚠️ וואטסאפ מנותק — מסמכים לא יישלחו (${reason}). ` +
+          (qrUrl ? `<a href="${qrUrl}" target="_blank" rel="noopener noreferrer" style="color:#fde68a; text-decoration:underline;">לחץ כאן לסריקת QR מחודשת</a>` : "");
+        banner.style.display = "block";
+      } else if (health.status === "ok") {
+        banner.style.display = "none";
+      }
+    } catch (_error) { /* בדיקת רקע — שקט בכשל רשת רגעי */ }
+  }
+  document.addEventListener("DOMContentLoaded", () => {
+    checkWhatsappBridge();
+    setInterval(checkWhatsappBridge, CHECK_INTERVAL_MS);
+  });
+})();
+</script>
 </body>
 </html>

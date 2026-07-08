@@ -11852,13 +11852,156 @@ async def _startup_prewarm_state() -> None:
         STARTUP_PREWARM_TASK = None
 
 
+# ============================================================================
+# שומר סף לגשר הוואטסאפ (Railway) — מזהה ניתוק סשן ושולח התראה במייל
+# ============================================================================
+WHATSAPP_WATCHDOG_TASK: asyncio.Task | None = None
+WHATSAPP_WATCHDOG_STATE_PATH = PROJECT_ROOT / "whatsapp_watchdog_state.json"
+WHATSAPP_WATCHDOG_INTERVAL_SECONDS = 30 * 60
+WHATSAPP_WATCHDOG_ALERT_RECIPIENTS = ["asafbeny@gmail.com"]
+WHATSAPP_WATCHDOG_REMINDER_HOURS = 24
+
+
+def _load_whatsapp_watchdog_state() -> dict:
+    try:
+        if WHATSAPP_WATCHDOG_STATE_PATH.exists():
+            return json.loads(WHATSAPP_WATCHDOG_STATE_PATH.read_text(encoding="utf-8")) or {}
+    except Exception:
+        pass
+    return {}
+
+
+def _save_whatsapp_watchdog_state(state: dict) -> None:
+    try:
+        WHATSAPP_WATCHDOG_STATE_PATH.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception as exc:
+        log_handled_error("whatsapp watchdog state save failed", exc)
+
+
+async def _check_whatsapp_bridge_health() -> dict:
+    base_url = str(settings.whatsapp_railway_url or "").rstrip("/")
+    checked_at = datetime.now().isoformat(timespec="seconds")
+    if not base_url:
+        return {"status": "unconfigured", "checked_at": checked_at}
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            response = await client.get(f"{base_url}/health")
+            response.raise_for_status()
+            payload = response.json()
+        wa_ready = bool(payload.get("wa_ready"))
+        return {
+            "status": "ok" if wa_ready else "disconnected",
+            "wa_ready": wa_ready,
+            "checked_at": checked_at,
+            "qr_page_url": f"{base_url}/qr/page",
+        }
+    except Exception as exc:
+        return {
+            "status": "unreachable",
+            "wa_ready": False,
+            "error": str(exc),
+            "checked_at": checked_at,
+            "qr_page_url": f"{base_url}/qr/page",
+        }
+
+
+def _send_whatsapp_watchdog_alert(kind: str, health: dict) -> None:
+    qr_url = str(health.get("qr_page_url") or "").strip()
+    if kind == "recovered":
+        subject = "וואטסאפ במערכת ההזמנות חזר לפעול ✅"
+        message = (
+            "הסשן של WhatsApp Web בשרת השליחות חזר להיות מחובר.\n"
+            "אין צורך בפעולה — שליחת המסמכים תעבוד כרגיל."
+        )
+    else:
+        reason = "השירות לא מגיב" if health.get("status") == "unreachable" else "הסשן של WhatsApp Web מנותק"
+        subject = "⚠️ וואטסאפ במערכת ההזמנות מנותק — נדרשת סריקת QR"
+        message = (
+            f"שומר הסף זיהה בעיה בשליחת וואטסאפ: {reason}.\n\n"
+            "מסמכי הזמנות לא יישלחו בוואטסאפ עד שהסשן יחובר מחדש.\n\n"
+            f"לחיבור מחדש: פתח את {qr_url} וסרוק את הקוד מוואטסאפ בטלפון\n"
+            "(וואטסאפ ← הגדרות ← מכשירים מקושרים ← קישור מכשיר).\n\n"
+            "אחרי הסריקה אפשר לשלוח שוב מסמכים מהיסטוריית ההזמנות עם כפתור \"שלח שוב בוואטסאפ\"."
+        )
+    _send_work_managers_email(WHATSAPP_WATCHDOG_ALERT_RECIPIENTS, subject, message)
+
+
+async def _whatsapp_watchdog_loop() -> None:
+    await asyncio.sleep(90)
+    while True:
+        try:
+            state = _load_whatsapp_watchdog_state()
+            now = datetime.now()
+            # שני שרתים מקומיים מריצים את אותה לולאה — מדלגים אם מופע אחר בדק ממש עכשיו
+            last_cycle_raw = str(state.get("last_cycle_at") or "").strip()
+            try:
+                last_cycle = datetime.fromisoformat(last_cycle_raw) if last_cycle_raw else None
+            except Exception:
+                last_cycle = None
+            if last_cycle and (now - last_cycle) < timedelta(seconds=WHATSAPP_WATCHDOG_INTERVAL_SECONDS / 2):
+                await asyncio.sleep(WHATSAPP_WATCHDOG_INTERVAL_SECONDS)
+                continue
+            state["last_cycle_at"] = now.isoformat(timespec="seconds")
+            _save_whatsapp_watchdog_state(state)
+
+            health = await _check_whatsapp_bridge_health()
+            state = _load_whatsapp_watchdog_state()
+            state["last_health"] = health
+            is_down = health.get("status") in {"disconnected", "unreachable"}
+            down_since = str(state.get("down_since") or "").strip()
+            last_alert_raw = str(state.get("last_alert_at") or "").strip()
+            try:
+                last_alert = datetime.fromisoformat(last_alert_raw) if last_alert_raw else None
+            except Exception:
+                last_alert = None
+
+            if is_down and not down_since:
+                state["down_since"] = now.isoformat(timespec="seconds")
+                state["last_alert_at"] = now.isoformat(timespec="seconds")
+                _save_whatsapp_watchdog_state(state)
+                await asyncio.to_thread(_send_whatsapp_watchdog_alert, "down", health)
+                print(f"WHATSAPP WATCHDOG: bridge down ({health.get('status')}), alert sent")
+            elif is_down and down_since:
+                if last_alert is None or (now - last_alert) >= timedelta(hours=WHATSAPP_WATCHDOG_REMINDER_HOURS):
+                    state["last_alert_at"] = now.isoformat(timespec="seconds")
+                    _save_whatsapp_watchdog_state(state)
+                    await asyncio.to_thread(_send_whatsapp_watchdog_alert, "down", health)
+                    print("WHATSAPP WATCHDOG: bridge still down, reminder sent")
+                else:
+                    _save_whatsapp_watchdog_state(state)
+            elif not is_down and down_since:
+                state["down_since"] = ""
+                state["last_alert_at"] = ""
+                _save_whatsapp_watchdog_state(state)
+                await asyncio.to_thread(_send_whatsapp_watchdog_alert, "recovered", health)
+                print("WHATSAPP WATCHDOG: bridge recovered, all-clear sent")
+            else:
+                _save_whatsapp_watchdog_state(state)
+        except Exception as exc:
+            log_handled_error("whatsapp watchdog cycle failed", exc)
+        await asyncio.sleep(WHATSAPP_WATCHDOG_INTERVAL_SECONDS)
+
+
+@app.get("/whatsapp-bridge-health")
+async def whatsapp_bridge_health():
+    try:
+        health = await _check_whatsapp_bridge_health()
+        state = _load_whatsapp_watchdog_state()
+        return JSONResponse({"status": "ok", "health": health, "down_since": str(state.get("down_since") or "")})
+    except Exception as exc:
+        log_handled_error("whatsapp_bridge_health failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לבדוק את גשר הוואטסאפ: {exc}"}, status_code=500)
+
+
 @app.on_event("startup")
 async def startup_background_tasks() -> None:
-    global MARKETING_REMINDER_AUTOSEND_TASK, STARTUP_PREWARM_TASK
+    global MARKETING_REMINDER_AUTOSEND_TASK, STARTUP_PREWARM_TASK, WHATSAPP_WATCHDOG_TASK
     if MARKETING_REMINDER_AUTOSEND_TASK is None or MARKETING_REMINDER_AUTOSEND_TASK.done():
         MARKETING_REMINDER_AUTOSEND_TASK = asyncio.create_task(_marketing_reminder_autosend_loop())
     if STARTUP_PREWARM_TASK is None or STARTUP_PREWARM_TASK.done():
         STARTUP_PREWARM_TASK = asyncio.create_task(_startup_prewarm_state())
+    if not IS_VERCEL and (WHATSAPP_WATCHDOG_TASK is None or WHATSAPP_WATCHDOG_TASK.done()):
+        WHATSAPP_WATCHDOG_TASK = asyncio.create_task(_whatsapp_watchdog_loop())
 
 def _extract_brosh_site_details(text: str):
     import re
