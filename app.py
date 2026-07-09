@@ -10376,18 +10376,31 @@ def _save_finance_state_disk_cache(payload: dict) -> None:
         pass
 
 
+def _manual_order_customers_payload_is_valid(payload) -> bool:
+    """A usable recent-customers payload must carry a customers list.
+
+    Guards against a corrupt/mis-shaped cache row (seen in production: the
+    app_settings value held a settings-shaped dict with no "customers" key).
+    Trusting such a row returned an empty datalist and made the quote/order
+    customer picker unusable, and — because loading a cache stamps it "fresh" —
+    it was never rebuilt. Rejecting invalid payloads lets the builder rebuild
+    and self-heal the stored cache.
+    """
+    return isinstance(payload, dict) and isinstance(payload.get("customers"), list)
+
+
 def _load_manual_order_customers_disk_cache() -> dict | None:
     global MANUAL_ORDER_CUSTOMERS_CACHE, MANUAL_ORDER_CUSTOMERS_CACHE_TS
     try:
         supabase_payload = _load_supabase_app_state("app_manual_order_recent_customers")
-        if isinstance(supabase_payload, dict):
+        if _manual_order_customers_payload_is_valid(supabase_payload):
             MANUAL_ORDER_CUSTOMERS_CACHE = copy.deepcopy(supabase_payload)
             MANUAL_ORDER_CUSTOMERS_CACHE_TS = time.time()
             return copy.deepcopy(supabase_payload)
         if not MANUAL_ORDER_CUSTOMERS_CACHE_FILE.exists():
             return None
         payload = json.loads(MANUAL_ORDER_CUSTOMERS_CACHE_FILE.read_text(encoding="utf-8"))
-        if not isinstance(payload, dict):
+        if not _manual_order_customers_payload_is_valid(payload):
             return None
         MANUAL_ORDER_CUSTOMERS_CACHE = copy.deepcopy(payload)
         MANUAL_ORDER_CUSTOMERS_CACHE_TS = time.time()
@@ -10967,7 +10980,7 @@ async def _build_manual_order_recent_templates_payload(
 async def _build_manual_order_recent_customers_payload(force_refresh: bool = False) -> dict:
     if not force_refresh:
         cached = _get_cached_manual_order_customers()
-        if cached and _manual_order_customers_cache_is_fresh():
+        if cached and _manual_order_customers_cache_is_fresh() and _manual_order_customers_payload_is_valid(cached):
             return cached
 
     cfg = get_mode_config("prod")
@@ -19458,7 +19471,7 @@ async def manual_order_recent_customers(request: Request):
     except Exception as exc:
         log_handled_error("manual_order_recent_customers failed", exc)
         cached = _get_cached_manual_order_customers()
-        if cached:
+        if cached and _manual_order_customers_payload_is_valid(cached):
             stale_payload = dict(cached)
             stale_payload["status"] = "stale"
             stale_payload["warning"] = "מוצגת כרגע רשימת לקוחות אחרונה שנשמרה במטמון."
