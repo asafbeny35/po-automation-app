@@ -10239,11 +10239,16 @@ def _finance_resolve_invoice_document_to_path(row: dict, target_dir: Path) -> Pa
     if drive_file_id:
         source_name = str(row.get("source_file_name") or source_file_path.name or f"invoice_{row.get('row_id')}.pdf").strip()
         safe_name = _safe_folder_name(source_name) or f"invoice_{row.get('row_id')}.pdf"
-        return download_drive_file(drive_file_id, target_dir / safe_name)
+        try:
+            return download_drive_file(drive_file_id, target_dir / safe_name)
+        except Exception as exc:
+            # קובץ שנמחק מהדרייב לא אמור להפיל את כל השליחה לרו"ח — מדלגים ומדווחים
+            log_handled_error(f"finance invoice drive download failed for {row.get('row_id')} ({row.get('supplier_name')})", exc)
+            return None
     return None
 
 
-def _finance_build_zip_attachment(rows: list[dict], due_dates: list[str], target_dir: Path) -> Path:
+def _finance_build_zip_attachment(rows: list[dict], due_dates: list[str], target_dir: Path, missing_rows: list[dict] | None = None) -> Path:
     labels = _finance_normalize_due_dates(due_dates)
     slug = "-".join(_finance_safe_due_date_slug(label) for label in labels) or "all"
     zip_path = target_dir / f"חשבוניות-{slug}.zip"
@@ -10256,6 +10261,8 @@ def _finance_build_zip_attachment(rows: list[dict], due_dates: list[str], target
         for row in rows:
             local_path = _finance_resolve_invoice_document_to_path(row, source_cache_dir)
             if not local_path or not local_path.exists():
+                if missing_rows is not None:
+                    missing_rows.append(row)
                 continue
             filename = str(row.get("source_file_name") or local_path.name or f"invoice_{row.get('row_id')}.pdf").strip()
             safe_filename = _safe_folder_name(Path(filename).stem) or f"invoice_{row.get('row_id')}"
@@ -21130,8 +21137,18 @@ async def finance_invoices_send_email(request: Request):
         export_dir.mkdir(parents=True, exist_ok=True)
         vat_summary_rows = await _finance_vat_summary_rows_for_due_dates(selected_due_dates) if include_vat_summary else []
         attachments: list[str] = []
+        warnings: list[str] = []
         if include_zip:
-            attachments.append(str(_finance_build_zip_attachment(filtered_rows, selected_due_dates, export_dir)))
+            zip_missing_rows: list[dict] = []
+            attachments.append(str(_finance_build_zip_attachment(filtered_rows, selected_due_dates, export_dir, missing_rows=zip_missing_rows)))
+            if zip_missing_rows:
+                missing_labels = ", ".join(
+                    f"{str(row.get('supplier_name') or 'ספק לא ידוע').strip()} ({str(row.get('reference_number') or 'ללא אסמכתא').strip()})"
+                    for row in zip_missing_rows
+                )
+                warnings.append(
+                    f"{len(zip_missing_rows)} חשבוניות נכללו בטבלה אך קובץ המקור שלהן חסר ולא צורף ל-ZIP: {missing_labels}"
+                )
         if include_pdf:
             pdf_path = export_dir / f"חשבוניות-{ '-'.join(_finance_safe_due_date_slug(item) for item in selected_due_dates) or 'all' }.pdf"
             pdf_path.write_bytes(
@@ -21163,6 +21180,7 @@ async def finance_invoices_send_email(request: Request):
                 "attachments": [Path(path).name for path in attachments],
                 "rows_count": len(filtered_rows),
                 "due_dates": selected_due_dates,
+                "warnings": warnings,
             }
         )
     except Exception as exc:

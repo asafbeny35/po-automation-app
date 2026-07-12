@@ -34785,6 +34785,9 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `מייל טסט נשלח ל-asafbeny@gmail.com עבור ${escapeHtml(financeInvoicesSendDatesLabel(dueDates))}.`
           : `המייל נשלח אל ${escapeHtml(sentTo)} עבור ${escapeHtml(financeInvoicesSendDatesLabel(dueDates))}.`
       );
+      (payload.warnings || []).forEach(warning => {
+        showToast("warning", "שים לב", escapeHtml(String(warning || "")));
+      });
     } catch (error) {
       finishFinanceInvoicesSendModalProgress(false, error.message || "לא הצלחתי לשלוח את החשבוניות.");
       showToast("error", testSend ? "שליחת טסט נכשלה" : "שליחת חשבוניות נכשלה", error.message || "לא הצלחתי לשלוח את החשבוניות.", 9000);
