@@ -8013,6 +8013,18 @@ def _finance_cleanup_duplicate_drive_files(file_id: str, file_name: str, keep_fo
     safe_name = str(file_name or "").strip()
     if not safe_name:
         return
+    # קבצים שרשומות חשבוניות עדיין מצביעות עליהם אסורים במחיקה — התאמת שם בלבד
+    # מחקה בעבר קבצים חיים של חשבוניות אחרות והשאירה עשרות רשומות עם מזהים מתים
+    referenced_ids: set[str] = set()
+    try:
+        for row in load_marketing_rows("finance_invoices"):
+            row_file_id = str((row or {}).get("drive_file_id") or "").strip()
+            if row_file_id:
+                referenced_ids.add(row_file_id)
+    except Exception as exc:
+        log_handled_error("finance duplicate cleanup could not load referenced ids — skipping cleanup", exc)
+        return
+    referenced_ids.discard(file_id)
     for folder in list_child_folders(root_id):
         folder_id = str(folder.get("id") or "").strip()
         if not folder_id:
@@ -8021,9 +8033,10 @@ def _finance_cleanup_duplicate_drive_files(file_id: str, file_name: str, keep_fo
         duplicate_id = str((duplicate or {}).get("id") or "").strip()
         if not duplicate_id or duplicate_id == file_id:
             continue
-        if folder_id == keep_folder_id:
-            delete_drive_file(duplicate_id)
+        if duplicate_id in referenced_ids:
+            print(f"FINANCE DRIVE CLEANUP: skipping {duplicate_id} ({safe_name}) — still referenced by an invoice row")
             continue
+        print(f"FINANCE DRIVE CLEANUP: deleting orphan duplicate {duplicate_id} ({safe_name}) in folder {folder.get('name')}")
         delete_drive_file(duplicate_id)
 
 
