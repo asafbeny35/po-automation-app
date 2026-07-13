@@ -2505,29 +2505,14 @@ def _next_empty_row(service, sheet_name=None):
     return len(values) + 1
 
 
-def _invoice_issue_date_display(invoice_doc) -> str:
-    """תאריך הפקת החשבונית — לא תאריך הזמנת הרכש של הלקוח.
-
-    בעבר נרשם po.po_date; בהזמנות שמומשו הרבה אחרי תאריך ההזמנה זה קבר את
-    שורת הגבייה עמוק ברשימה וגם חישב מועד גבייה מוקדם מדי (שוטף+ מהתאריך הלא נכון).
-    """
-    raw = getattr(invoice_doc, "raw", None) or {}
-    value = str(raw.get("documentDate") or raw.get("date") or "").strip()
-    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
-        try:
-            return datetime.strptime(value[:10], fmt).strftime("%d/%m/%Y")
-        except ValueError:
-            continue
-    return datetime.now().strftime("%d/%m/%Y")
-
-
 def append_payment_row(po, delivery_doc, invoice_doc, source_mode: str = ""):
     service = _service()
     sheet = _payment_current_sheet_name()
     _ensure_payment_sheet_schema(service, sheet)
     row_data = _normalize_payment_transfer_row(
         {
-            "invoice_date": _invoice_issue_date_display(invoice_doc),
+            # תמיד תאריך יצירת ההזמנה (מועד ההפקה בפועל) — לא תאריך הזמנת הרכש של הלקוח
+            "invoice_date": datetime.now().strftime("%d/%m/%Y"),
             "customer_name": po.customer_name,
             "payment_terms_days": _payment_days_only(po),
             "payment_direction": "גביה",
