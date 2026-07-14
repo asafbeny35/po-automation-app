@@ -18455,6 +18455,9 @@ _INSTALLER_VIEW_HTML = """<!DOCTYPE html>
   #sheet .wa-btn { background: #25D366; color: #fff; }
   #sheet .call-btn { background: #ff9f2e; color: #fff; }
   #sheet .share-btn { display: block; width: 100%; padding: 18px; margin: 8px 0 0; background: #4a3f2f; color: #fff; text-align: center; border: none; border-radius: 14px; font-size: 19px; font-weight: 700; cursor: pointer; }
+  #sheet .docs-btn { display: block; width: 100%; padding: 20px; margin: 2px 0 20px; background: #c9761a; color: #fff; text-align: center; border: none; border-radius: 16px; font-size: 22px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 12px rgba(201,118,26,0.35); }
+  #sheet .docs-btn:active { background: #b0640f; }
+  #sheet .docs-btn:disabled { background: #d9c3a4; box-shadow: none; }
 </style>
 </head>
 <body>
@@ -18509,6 +18512,7 @@ function openSheet(id) {
     `;
   });
   document.getElementById("sheet-content").innerHTML = `
+    <button class="docs-btn" onclick="downloadDocuments('${esc(r.installation_id)}', this)">להורדת המסמכים</button>
     <div class="row"><div class="label">שם הלקוח</div><div class="value">${esc(r.customer_name)}</div></div>
     <div class="row"><div class="label">תאריך הזמנה</div><div class="value">${esc(r.po_date)}</div></div>
     <div class="row"><div class="label">מספר הזמנה</div><div class="value">${esc(r.po_number)}</div></div>
@@ -18519,6 +18523,35 @@ function openSheet(id) {
     <button class="share-btn" onclick="shareInstallation('${esc(r.installation_id)}')">שתף פרטי התקנה</button>
   `;
   document.getElementById("overlay").classList.add("open");
+}
+
+async function downloadDocuments(id, btn) {
+  const original = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "מוריד מסמכים...";
+  try {
+    const res = await fetch(`/installer/${TOKEN}/${encodeURIComponent(id)}/documents`, { cache: "no-store" });
+    if (!res.ok) {
+      let msg = "לא הצלחתי להוריד את המסמכים כרגע, נסה שוב.";
+      try { const j = await res.json(); if (j && j.error) msg = j.error; } catch (e) {}
+      alert(msg);
+      return;
+    }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "כל המסמכים.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  } catch (e) {
+    alert("בעיה בהורדת המסמכים, נסה שוב.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
 }
 
 function shareInstallation(id) {
@@ -18580,6 +18613,37 @@ async def installer_view_data(token: str):
     except Exception as exc:
         log_handled_error("installer_view_data failed", exc)
         return JSONResponse({"error": "טעינת הנתונים נכשלה זמנית, ננסה שוב אוטומטית."}, status_code=500)
+
+
+@app.get("/installer/{token}/{installation_id}/documents")
+async def installer_view_documents(token: str, installation_id: str):
+    if not _installer_view_token_valid(token):
+        return JSONResponse({"error": "not found"}, status_code=404)
+    try:
+        target_id = str(installation_id or "").strip()
+        case = next(
+            (c for c in _installer_view_open_cases() if str(c.get("installation_id") or "").strip() == target_id),
+            None,
+        )
+        if case is None:
+            return JSONResponse({"error": "ההתקנה לא נמצאה."}, status_code=404)
+        drive_file_id = _installer_view_documents_drive_id(case)
+        if not drive_file_id:
+            return JSONResponse({"error": "אין עדיין קובץ מסמכים מאוחד להזמנה הזו."}, status_code=404)
+        target_dir = OUTPUT_DIR / "installer_view_documents"
+        target_dir.mkdir(parents=True, exist_ok=True)
+        po_number = str(case.get("po_number") or "").strip()
+        safe_po = _safe_folder_name(po_number) if po_number else target_id[:8]
+        local_path = await asyncio.to_thread(download_drive_file, drive_file_id, target_dir / f"{safe_po}_כל המסמכים.pdf")
+        download_name = "כל המסמכים.pdf"
+        return FileResponse(
+            str(local_path),
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(download_name)}"},
+        )
+    except Exception as exc:
+        log_handled_error("installer_view_documents failed", exc)
+        return JSONResponse({"error": "לא הצלחתי להוריד את המסמכים כרגע, נסה שוב."}, status_code=500)
 
 
 @app.get("/installer/{token}", response_class=HTMLResponse)
@@ -24505,17 +24569,62 @@ def _installer_view_row(case: dict) -> dict:
         "status": str(case.get("status") or "").strip(),
         "waze_url": f"https://waze.com/ul?q={quote(delivery_address)}&navigate=yes" if delivery_address else "",
         "contacts": contacts,
+        "has_documents": _installer_view_has_documents(case),
     }
 
 
-def _build_installer_view_rows() -> list[dict]:
+def _installer_view_has_documents(case: dict) -> bool:
+    """בדיקה זולה (בלי קריאת דרייב) האם קיים קובץ 'כל המסמכים' מאוחד להתקנה."""
+    if str((case or {}).get("merged_drive_file_id") or "").strip():
+        return True
+    links = _normalize_order_history_links((case or {}).get("document_links_json") or (case or {}).get("document_links") or [])
+    for link in links:
+        name = normalize_ws(str(link.get("name") or "")).lower()
+        if str(link.get("url") or "").strip() and ("כל המסמכים" in name or "all documents" in name):
+            return True
+    return False
+
+
+def _installer_view_documents_drive_id(case: dict) -> str:
+    """מאתר את מזהה קובץ 'כל המסמכים' המאוחד בדרייב עבור התקנה. כולל סריקת תיקיית ההזמנה כגיבוי."""
+    merged_id = str((case or {}).get("merged_drive_file_id") or "").strip()
+    if merged_id:
+        return merged_id
+    links = _normalize_order_history_links((case or {}).get("document_links_json") or (case or {}).get("document_links") or [])
+    for link in links:
+        name = normalize_ws(str(link.get("name") or "")).lower()
+        url = str(link.get("url") or "").strip()
+        if not url:
+            continue
+        if "כל המסמכים" in name or "all documents" in name:
+            file_id = _extract_drive_file_id_from_url(url)
+            if file_id:
+                return file_id
+    folder_id = str((case or {}).get("order_drive_folder_id") or "").strip()
+    if folder_id:
+        try:
+            for item in list_folder_files(folder_id):
+                name = normalize_ws(str(item.get("name") or "")).lower()
+                if name.endswith(".pdf") and ("כל המסמכים" in name or "all documents" in name):
+                    file_id = str(item.get("id") or "").strip()
+                    if file_id:
+                        return file_id
+        except Exception as exc:
+            log_handled_error("installer_view documents folder scan failed", exc)
+    return ""
+
+
+def _installer_view_open_cases() -> list[dict]:
     sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
     payload = _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))
-    open_cases = [
+    return [
         case for case in (payload.get("rows") or [])
         if str(case.get("status") or "").strip() not in INSTALLER_VIEW_CLOSED_STATUSES
     ]
-    return [_installer_view_row(case) for case in open_cases]
+
+
+def _build_installer_view_rows() -> list[dict]:
+    return [_installer_view_row(case) for case in _installer_view_open_cases()]
 
 
 def _sync_installation_cases_from_order_history(force_refresh: bool = False, persist: bool = True) -> dict:
