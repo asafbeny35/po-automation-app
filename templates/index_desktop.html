@@ -37819,10 +37819,23 @@ document.addEventListener("DOMContentLoaded", () => {
     toast.innerHTML = `<strong>${title}</strong><span>${formatAppMessageHtml(message)}</span>`;
     toastStack.appendChild(toast);
     requestAnimationFrame(() => toast.classList.add("visible"));
+    const isError = String(type) === "error";
+    const effectiveDuration = isError && duration === 3200 ? 8000 : duration;
+    if (isError) {
+      console.error("TOAST:", title, "|", message);
+      try {
+        fetch("/client-error-toast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title: String(title || ""), message: String(message || ""), page: location.pathname, at: new Date().toISOString() }),
+          keepalive: true,
+        }).catch(() => {});
+      } catch (_e) { /* דיווח בלבד — לא מפריע לזרימה */ }
+    }
     window.setTimeout(() => {
       toast.classList.remove("visible");
       window.setTimeout(() => toast.remove(), 220);
-    }, Math.max(1200, Number(duration) || 3200));
+    }, Math.max(1200, Number(effectiveDuration) || 3200));
   }
 
   function noteUserInitiatedAction() {

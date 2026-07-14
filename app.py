@@ -12167,6 +12167,20 @@ async def _whatsapp_watchdog_loop() -> None:
         await asyncio.sleep(WHATSAPP_WATCHDOG_INTERVAL_SECONDS)
 
 
+@app.post("/client-error-toast")
+async def client_error_toast(request: Request):
+    """טוסט שגיאה שהוצג למשתמש בדפדפן — נרשם ללוג השרת כדי שיהיה ניתן לשחזר בדיעבד."""
+    try:
+        body = await request.json()
+        title = str(body.get("title") or "").strip()[:200]
+        message = str(body.get("message") or "").strip()[:500]
+        page = str(body.get("page") or "").strip()[:100]
+        print(f"CLIENT ERROR TOAST: {title} | {message} | page={page}")
+        return JSONResponse({"status": "ok"})
+    except Exception:
+        return JSONResponse({"status": "ok"})
+
+
 @app.get("/whatsapp-bridge-health")
 async def whatsapp_bridge_health():
     try:
