@@ -11355,14 +11355,20 @@ button.delivery-confirm-filter-btn.active * {
 
 .delivery-confirm-file-line {
   display: inline-flex;
+  /* דורס את flex-direction: column שמגיע בירושה מ-.delivery-confirm-meta —
+     בלעדיו ה-× נדחף לשורה נפרדת ושם קובץ ארוך נמרח בלי קיטום */
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 6px;
-  width: fit-content;
+  width: 100%;
+  min-width: 0;
   max-width: 260px;
   margin-top: 8px;
   padding: 0;
   border: 0;
   background: transparent;
+  overflow: hidden;
 }
 
 .delivery-confirm-file-line .delivery-confirm-file-name {
