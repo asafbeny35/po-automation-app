@@ -18452,6 +18452,7 @@ _INSTALLER_VIEW_HTML = """<!DOCTYPE html>
   .card .name { font-size: 26px; font-weight: 700; color: #2c2620; }
   .card .meta { font-size: 20px; color: #6b5c42; display: flex; gap: 10px; flex-wrap: wrap; }
   .card .meta b { color: #c9761a; font-weight: 700; }
+  .card .sched { align-self: flex-start; background: #e5f6e9; color: #1a7f37; border: 1px solid #bfe5c8; border-radius: 999px; padding: 6px 14px; font-size: 18px; font-weight: 700; }
   .empty { text-align: center; color: #9a8b73; font-size: 20px; padding: 60px 20px; }
   #overlay { position: fixed; inset: 0; background: rgba(30,22,10,0.5); display: none; align-items: flex-end; z-index: 20; }
   #overlay.open { display: flex; }
@@ -18506,6 +18507,7 @@ function renderList(rows) {
     <div class="card" onclick="openSheet('${esc(r.installation_id)}')">
       <div class="name">${esc(r.customer_name)}</div>
       <div class="meta"><b>${esc(r.doors_count)}</b> דלתות &nbsp;•&nbsp; ${esc(r.city)}</div>
+      ${r.scheduled ? `<div class="sched">תואם${r.scheduled_date ? " · " + esc(r.scheduled_date) : ""}</div>` : ""}
     </div>
   `).join("");
 }
@@ -24559,7 +24561,7 @@ def _installer_view_split_contacts(name_field: str, phone_field: str, fallback_l
     return contacts
 
 
-def _installer_view_row(case: dict) -> dict:
+def _installer_view_row(case: dict, case_visits: list[dict] | None = None) -> dict:
     install_items = case.get("install_items") or []
     remaining_items = case.get("remaining_items") or []
     total_ordered = _installation_number(case.get("total_ordered_quantity"))
@@ -24572,6 +24574,7 @@ def _installer_view_row(case: dict) -> dict:
         _installer_view_split_contacts(case.get("secondary_contact_name"), case.get("secondary_contact_phone"), "איש קשר נוסף")
     )
     delivery_address = str(case.get("delivery_address") or "").strip()
+    is_scheduled, scheduled_date = _installer_view_scheduled_info(case, case_visits or [])
     return {
         "installation_id": str(case.get("installation_id") or "").strip(),
         "customer_name": str(case.get("customer_name") or "").strip(),
@@ -24581,6 +24584,8 @@ def _installer_view_row(case: dict) -> dict:
         "po_date": str(case.get("po_date") or "").strip(),
         "delivery_address": delivery_address,
         "status": str(case.get("status") or "").strip(),
+        "scheduled": is_scheduled,
+        "scheduled_date": scheduled_date,
         "waze_url": f"https://waze.com/ul?q={quote(delivery_address)}&navigate=yes" if delivery_address else "",
         "contacts": contacts,
         "has_documents": _installer_view_has_documents(case),
@@ -24628,17 +24633,56 @@ def _installer_view_documents_drive_id(case: dict) -> str:
     return ""
 
 
-def _installer_view_open_cases() -> list[dict]:
+def _installer_view_open_cases() -> tuple[list[dict], list[dict]]:
     sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
     payload = _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))
-    return [
+    open_cases = [
         case for case in (payload.get("rows") or [])
         if str(case.get("status") or "").strip() not in INSTALLER_VIEW_CLOSED_STATUSES
     ]
+    return open_cases, list(sync_result.get("visits") or [])
+
+
+def _installer_view_display_date(value) -> str:
+    raw = str(value or "").strip()
+    for fmt in ("%Y-%m-%d", "%d/%m/%Y"):
+        try:
+            return datetime.strptime(raw[:10], fmt).strftime("%d/%m/%Y")
+        except ValueError:
+            continue
+    return raw
+
+
+def _installer_view_scheduled_info(case: dict, case_visits: list[dict]) -> tuple[bool, str]:
+    """(האם ההתקנה תואמה, תאריך התיאום לתצוגה) — מהסטטוס, מ-next_visit_date או מביקור מתואם שטרם בוצע."""
+    status = str((case or {}).get("status") or "").strip()
+    candidates: list[str] = []
+    next_visit = str((case or {}).get("next_visit_date") or "").strip()
+    if next_visit:
+        candidates.append(next_visit)
+    for visit in case_visits or []:
+        if str((visit or {}).get("visit_date") or "").strip():
+            continue  # ביקור שכבר בוצע — לא תיאום עתידי
+        scheduled = str((visit or {}).get("scheduled_date") or "").strip()
+        if scheduled and str((visit or {}).get("status") or "").strip() == "תואם":
+            candidates.append(scheduled)
+    is_scheduled = status == "תואם" or bool(candidates)
+    display_date = _installer_view_display_date(min(candidates)) if candidates else ""
+    return is_scheduled, display_date
 
 
 def _build_installer_view_rows() -> list[dict]:
-    return [_installer_view_row(case) for case in _installer_view_open_cases()]
+    open_cases, visit_rows = _installer_view_open_cases()
+    visits_by_installation: dict[str, list[dict]] = {}
+    for visit in visit_rows:
+        key = str((visit or {}).get("installation_id") or "").strip()
+        if key:
+            visits_by_installation.setdefault(key, []).append(visit)
+    rows = []
+    for case in open_cases:
+        case_visits = visits_by_installation.get(str(case.get("installation_id") or "").strip()) or []
+        rows.append(_installer_view_row(case, case_visits))
+    return rows
 
 
 def _sync_installation_cases_from_order_history(force_refresh: bool = False, persist: bool = True) -> dict:
