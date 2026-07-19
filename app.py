@@ -12423,7 +12423,7 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "מלגזה - צד ג'.pdf",
     },
     "vehicle-forklift-mandatory": {
-        "local_path": ADMIN_VEHICLE_DOCS_DIR / "110493401725 תעודת חובה.pdf",
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "1104934017-26 תעודת חובה.pdf",
         "folders": ("רכבים", "מלגזה"),
         "drive_name": "מלגזה - חובה.pdf",
     },
