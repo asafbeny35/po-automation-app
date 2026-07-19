@@ -663,6 +663,14 @@ class GreenInvoiceClient:
             url=(data.get("url") or {}).get("he") or (data.get("url") or {}).get("origin"),
         )
 
+    @staticmethod
+    def _document_url_variants(document) -> list[str]:
+        raw = getattr(document, "raw", None) or {}
+        url_payload = raw.get("url") or {}
+        if isinstance(url_payload, dict):
+            return [str(url_payload.get("he") or ""), str(url_payload.get("origin") or "")]
+        return []
+
     async def create_document(self, token: str, payload: dict):
         print("DOCUMENT PAYLOAD:")
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -682,16 +690,41 @@ class GreenInvoiceClient:
             print(json.dumps(data, ensure_ascii=False, indent=2))
             return self._normalize_document_response(data)
 
-    async def download_pdf(self, token: str, url: str, save_path: Path):
+    async def download_pdf(self, token: str, url: str, save_path: Path, fallback_urls: list[str] | None = None):
+        """מוריד PDF ומוודא שהתוכן באמת PDF.
+
+        חשבונית ירוקה מחזירה לפעמים את דף ה-HTML של האפליקציה במקום הקובץ
+        (קישור חתום שפג/תקלה זמנית) — בעבר זה נשמר כ-pdf מזויף ונשלח ללקוחות.
+        """
+        import asyncio as _asyncio
         save_path.parent.mkdir(parents=True, exist_ok=True)
+        candidates: list[str] = []
+        for item in [url, *(fallback_urls or [])]:
+            value = str(item or "").strip()
+            if value and value not in candidates:
+                candidates.append(value)
+        last_error: Exception | None = None
         async with httpx.AsyncClient(timeout=120, follow_redirects=True) as client:
-            response = await client.get(
-                url,
-                headers={"Authorization": f"Bearer {token}"},
-            )
-            response.raise_for_status()
-            save_path.write_bytes(response.content)
-        return save_path
+            for attempt in range(3):
+                for candidate in candidates:
+                    try:
+                        response = await client.get(
+                            candidate,
+                            headers={"Authorization": f"Bearer {token}"},
+                        )
+                        response.raise_for_status()
+                        content = response.content
+                        if not content.lstrip()[:5].startswith(b"%PDF"):
+                            last_error = RuntimeError(
+                                f"התקבל תוכן שאינו PDF (כנראה דף HTML של חשבונית ירוקה) מ-{candidate[:90]}"
+                            )
+                            continue
+                        save_path.write_bytes(content)
+                        return save_path
+                    except Exception as exc:
+                        last_error = exc
+                await _asyncio.sleep(1.5 * (attempt + 1))
+        raise RuntimeError(f"הורדת ה-PDF מחשבונית ירוקה נכשלה אחרי 3 ניסיונות: {last_error}")
 
     async def _build_sales_document_context(self, po: PurchaseOrderData):
         token = await self._get_token()
@@ -780,6 +813,7 @@ class GreenInvoiceClient:
                 ctx["token"],
                 delivery.url,
                 target_dir / f"{_safe_folder_name(po.po_number or 'document')}_delivery_{delivery.number}.pdf",
+                fallback_urls=self._document_url_variants(delivery),
             )
         return delivery, delivery_pdf_path
 
@@ -806,6 +840,7 @@ class GreenInvoiceClient:
                 ctx["token"],
                 invoice.url,
                 target_dir / f"{_safe_folder_name(po.po_number or 'document')}_invoice_{invoice.number}.pdf",
+                fallback_urls=self._document_url_variants(invoice),
             )
         return invoice, invoice_pdf_path
 
@@ -857,6 +892,7 @@ class GreenInvoiceClient:
                 ctx["token"],
                 delivery.url,
                 output_dir / f"{safe_po}_delivery_{delivery.number}.pdf",
+                fallback_urls=self._document_url_variants(delivery),
             )
 
         if invoice.url:
@@ -864,6 +900,7 @@ class GreenInvoiceClient:
                 ctx["token"],
                 invoice.url,
                 output_dir / f"{safe_po}_invoice_{invoice.number}.pdf",
+                fallback_urls=self._document_url_variants(invoice),
             )
 
         return delivery, invoice, delivery_pdf_path, invoice_pdf_path

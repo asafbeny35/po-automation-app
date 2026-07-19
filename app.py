@@ -27191,6 +27191,25 @@ async def finalize(request: Request):
             print("WHATSAPP: no files to send")
             return {"status": "skipped", "reason": "no_files"}
         existing_files = [fp for fp in file_paths if Path(fp).exists()]
+        # קובץ .pdf שאינו PDF אמיתי (למשל דף HTML שחזר מחשבונית ירוקה במקום מסמך)
+        # לא יוצא ללקוחות — עדיף כישלון גלוי מאשר מסמך שלא נפתח
+        corrupt_files = []
+        for fp in list(existing_files):
+            if str(fp).lower().endswith(".pdf"):
+                try:
+                    head = Path(fp).open("rb").read(8)
+                except Exception:
+                    head = b""
+                if not head.lstrip()[:5].startswith(b"%PDF"):
+                    corrupt_files.append(Path(fp).name)
+                    existing_files.remove(fp)
+        if corrupt_files:
+            print(f"WHATSAPP: BLOCKED corrupt pdf files: {corrupt_files}")
+            return {
+                "status": "error",
+                "error": f"קבצים פגומים (HTML במקום PDF) נחסמו מהשליחה: {', '.join(corrupt_files)}. המסמכים לא נשלחו — נסה להפיק שוב.",
+                "corrupt_files": corrupt_files,
+            }
         print(f"WHATSAPP: sending {len(existing_files)}/{len(file_paths)} files, files={existing_files}")
         if not existing_files:
             print("WHATSAPP: all file paths missing from disk")
