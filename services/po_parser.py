@@ -207,7 +207,7 @@ def parse_purchase_order(pdf_path: str | Path):
         return _build_purchase_order(parse_levinstein(levinstein_text), raw_text, "levinstein")
 
     if "עמרם אברהם ביצועים" in fixed_text or "office@amramb.co.il" in fixed_text:
-        return _build_purchase_order(parse_amram(raw_text), raw_text, "amram")
+        return _build_purchase_order(parse_amram(raw_text, pdf_path=pdf_path), raw_text, "amram")
 
     if "הגבעה י.ח" in fixed_text:
         return _build_purchase_order(parse_hagivaa(fixed_text), raw_text, "hagivaa")
