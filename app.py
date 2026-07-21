@@ -12443,7 +12443,7 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "ליברה - ביטוח חיים למשכנתא 2.pdf",
     },
     "insurance-migdal-home": {
-        "local_path": ADMIN_INSURANCE_DIR / "מגדל" / "2-3-2026-16-12_12.pdf",
+        "local_path": ADMIN_INSURANCE_DIR / "מגדל" / "מגדל דירה חידוש 2026-27.pdf",
         "folders": ("ביטוחים", "מגדל"),
         "drive_name": "מגדל - ביטוח דירה.pdf",
     },
