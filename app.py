@@ -13357,23 +13357,85 @@ async def _resolve_delivery_confirmation_source_po_attachment(row: dict) -> Path
     raise RuntimeError("לא הצלחתי לאתר את הזמנת הרכש המקורית לצירוף.")
 
 
+def _pdf_bytes_look_valid(path: Path) -> bool:
+    try:
+        with open(path, "rb") as handle:
+            return handle.read(5).startswith(b"%PDF")
+    except Exception:
+        return False
+
+
+async def _fetch_valid_delivery_confirmation_invoice(row: dict, mode: str) -> tuple[Path, dict]:
+    """קובץ חשבונית תקין לצירוף למייל אישור מסירה.
+
+    חשבונית ירוקה מגישה לפעמים את דף ה-HTML של האפליקציה במקום ה-PDF, וקבצים
+    כאלה הגיעו לדרייב לפני שהוולידציה נוספה (חשבונית 550598 לעמרם, 19.07) —
+    ואז כל שליחה צירפה את הקובץ הפגום מהדרייב. כאן מאמתים חתימת %PDF, ואם
+    העותק בדרייב פגום — מורידים מחדש מחשבונית ירוקה, מחליפים בדרייב ומעדכנים
+    את הרשומה. אם אין שום עותק תקין — עוצרים את השליחה במקום לצרף זבל.
+    """
+    row = dict(row or {})
+    po_number = str(row.get("po_number") or "invoice").strip() or "invoice"
+    invoice_number = str(row.get("tax_invoice_number") or po_number).strip()
+    target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{_safe_folder_name(invoice_number)}.pdf"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    invoice_drive_file_id = str(row.get("invoice_drive_file_id") or "").strip()
+    if invoice_drive_file_id:
+        try:
+            candidate = download_drive_file(invoice_drive_file_id, target)
+            if _pdf_bytes_look_valid(Path(candidate)):
+                return Path(candidate).resolve(), row
+            log_handled_error(
+                f"delivery confirmation invoice {invoice_number} on Drive is not a valid PDF — refetching from GreenInvoice",
+                RuntimeError("invalid pdf magic"),
+            )
+        except Exception as exc:
+            log_handled_error(f"delivery confirmation invoice {invoice_number} drive download failed — refetching", exc)
+
+    fresh: Path | None = None
+    local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(row)
+    if local_invoice_pdf and local_invoice_pdf.exists() and _pdf_bytes_look_valid(local_invoice_pdf):
+        fresh = Path(local_invoice_pdf)
+    elif invoice_number:
+        invoice_doc, invoice_mode = await _find_greeninvoice_invoice_document_any_mode(mode, invoice_number)
+        if invoice_doc:
+            raw = invoice_doc.get("raw") or {}
+            url_payload = raw.get("url") or {}
+            invoice_url = str(url_payload.get("origin") or url_payload.get("he") or "").strip() if isinstance(url_payload, dict) else ""
+            if invoice_url:
+                cfg = get_mode_config(invoice_mode or mode)
+                client = GreenInvoiceClient(base_url=cfg["base_url"], api_key=cfg["api_key"], api_secret=cfg["api_secret"])
+                token = await client._get_token()
+                fresh = Path(await client.download_pdf(token, invoice_url, target))
+
+    if not fresh or not fresh.exists() or not _pdf_bytes_look_valid(fresh):
+        raise RuntimeError(f"חשבונית {invoice_number} לא זמינה כ-PDF תקין — השליחה נעצרה כדי לא לצרף קובץ פגום.")
+    fresh = fresh.resolve()
+
+    order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
+    if order_folder_id:
+        try:
+            if invoice_drive_file_id:
+                try:
+                    delete_drive_file(invoice_drive_file_id)
+                except Exception:
+                    pass
+            uploaded = upload_file_to_folder(order_folder_id, fresh, drive_name=f"{invoice_number}.pdf")
+            new_id = str(uploaded.get("id") or "").strip()
+            if new_id:
+                row["invoice_drive_file_id"] = new_id
+        except Exception as drive_exc:
+            log_handled_error(f"delivery confirmation invoice {invoice_number} drive re-upload failed", drive_exc)
+    return fresh, row
+
+
 async def _resolve_delivery_confirmation_internal_print_attachments(row: dict, mode: str) -> tuple[dict, list[str]]:
     resolved_row = await _ensure_delivery_confirmation_drive_assets(row, mode)
     invoice_attachment: Path | None = None
     signed_attachment: Path | None = None
     source_po_attachment: Path | None = None
 
-    invoice_drive_file_id = str(resolved_row.get("invoice_drive_file_id") or "").strip()
-    if invoice_drive_file_id:
-        invoice_number = str(resolved_row.get("tax_invoice_number") or "invoice").strip() or "invoice"
-        invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{invoice_number}.pdf"
-        invoice_attachment = download_drive_file(invoice_drive_file_id, invoice_target).resolve()
-    else:
-        local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(resolved_row)
-        if local_invoice_pdf and local_invoice_pdf.exists():
-            invoice_attachment = local_invoice_pdf.resolve()
-        else:
-            raise RuntimeError("לא הצלחתי לאתר את חשבונית המס לצירוף.")
+    invoice_attachment, resolved_row = await _fetch_valid_delivery_confirmation_invoice(resolved_row, mode)
 
     signed_local = str(resolved_row.get("signed_delivery_local_path") or "").strip()
     signed_drive_file_id = str(resolved_row.get("signed_delivery_drive_file_id") or "").strip()
@@ -19047,46 +19109,8 @@ async def delivery_confirmations_send(request: Request):
         if internal_print_only and not test_send:
             row, attachments = await _resolve_delivery_confirmation_internal_print_attachments(row, mode)
         else:
-            invoice_drive_file_id = str(row.get("invoice_drive_file_id") or "").strip()
-            if invoice_drive_file_id:
-                invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
-                attachments.append(str(download_drive_file(invoice_drive_file_id, invoice_target)))
-            else:
-                local_invoice_pdf = _find_local_delivery_confirmation_invoice_pdf(row)
-                if local_invoice_pdf:
-                    attachments.append(str(local_invoice_pdf))
-                    order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
-                    if order_folder_id:
-                        try:
-                            uploaded = upload_file_to_folder(order_folder_id, local_invoice_pdf, drive_name=local_invoice_pdf.name)
-                            row["invoice_drive_file_id"] = uploaded.get("id", "")
-                        except Exception as drive_exc:
-                            log_handled_error("delivery confirmation local invoice drive sync failed", drive_exc)
-                elif str(row.get("tax_invoice_number") or "").strip():
-                    invoice_doc, invoice_mode = await _find_greeninvoice_invoice_document_any_mode(mode, row.get("tax_invoice_number", ""))
-                    if invoice_doc:
-                        raw = invoice_doc.get("raw") or {}
-                        url_payload = raw.get("url") or {}
-                        invoice_url = ""
-                        if isinstance(url_payload, dict):
-                            invoice_url = str(url_payload.get("origin") or url_payload.get("he") or "").strip()
-                        if invoice_url:
-                            cfg = get_mode_config(invoice_mode or mode)
-                            client = GreenInvoiceClient(
-                                base_url=cfg["base_url"],
-                                api_key=cfg["api_key"],
-                                api_secret=cfg["api_secret"],
-                            )
-                            token = await client._get_token()
-                            invoice_target = OUTPUT_DIR / "_delivery_confirmation_cache" / f"invoice_{po_number}.pdf"
-                            attachments.append(str(await client.download_pdf(token, invoice_url, invoice_target)))
-                            order_folder_id = str(row.get("order_drive_folder_id") or "").strip()
-                            if order_folder_id and attachments:
-                                try:
-                                    uploaded = upload_file_to_folder(order_folder_id, Path(attachments[-1]), drive_name=Path(attachments[-1]).name)
-                                    row["invoice_drive_file_id"] = uploaded.get("id", "")
-                                except Exception as drive_exc:
-                                    log_handled_error("delivery confirmation invoice fallback drive sync failed", drive_exc)
+            invoice_attachment_path, row = await _fetch_valid_delivery_confirmation_invoice(row, mode)
+            attachments.append(str(invoice_attachment_path))
 
             signed_local = str(row.get("signed_delivery_local_path") or "").strip()
             signed_drive_file_id = str(row.get("signed_delivery_drive_file_id") or "").strip()
