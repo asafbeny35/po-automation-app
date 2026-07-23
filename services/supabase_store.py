@@ -401,6 +401,7 @@ TABLE_CONFIGS: dict[str, JsonDict] = {
     "app_google_drive_oauth_token": _app_state_config("app_google_drive_oauth_token"),
     "app_admin_drive_asset_cache": _app_state_config("app_admin_drive_asset_cache"),
     "app_web_mentions": _app_state_config("app_web_mentions"),
+    "app_lost_debts": _app_state_config("app_lost_debts"),
     "finance_customer_withholdings": {"table": "finance_customer_withholdings", "id_getter": _id_finance_withholding, "mapper": lambda row: _map_raw(row, _id_finance_withholding(row))},
     "finance_bank_movements": {"table": "finance_bank_movements", "id_getter": _id_finance_bank_movement, "mapper": lambda row: _map_raw(row, _id_finance_bank_movement(row))},
     "payments_transfer_state": {

@@ -2198,6 +2198,130 @@ body {
   background: #fff7ef;
 }
 
+/* ===== חובות אבודים / נדרשים ===== */
+.lost-debts-link-row { margin-top: 12px; }
+.lost-debts-link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border: 1px solid #f0d7c2;
+  border-radius: 16px;
+  background: linear-gradient(120deg, #fff8f2 0%, #fef3ec 100%);
+  cursor: pointer;
+  text-align: right;
+  transition: box-shadow .18s ease, transform .18s ease, border-color .18s ease;
+}
+.lost-debts-link:hover { box-shadow: 0 14px 30px rgba(201, 118, 26, 0.14); transform: translateY(-1px); border-color: #e6b98f; }
+.lost-debts-link-icon {
+  flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fdeede; color: #c9761a;
+}
+.lost-debts-link-icon svg { width: 22px; height: 22px; }
+.lost-debts-link-text { flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.lost-debts-link-text strong { color: #7a4a12; font-size: 16px; }
+.lost-debts-link-text small { color: #a98a68; font-size: 12.5px; }
+.lost-debts-link-count {
+  flex: 0 0 auto; background: #c0392b; color: #fff; border-radius: 999px;
+  min-width: 26px; height: 26px; padding: 0 9px; display: inline-flex;
+  align-items: center; justify-content: center; font-size: 13px; font-weight: 700;
+}
+.lost-debts-link-arrow { flex: 0 0 auto; color: #c9761a; font-size: 20px; font-weight: 700; }
+
+.lost-debts-section { border-top: 2px dashed #f0d7c2; }
+.lost-debts-title-icon { color: #c0392b; }
+.lost-debts-add-panel {
+  background: #fff8f2; border: 1px solid #f0d7c2; border-radius: 14px;
+  padding: 16px 18px; margin-bottom: 16px;
+}
+.lost-debts-add-actions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.lost-debts-add-hint { color: #a98a68; font-size: 12.5px; margin: 10px 0 0; }
+
+.lost-debts-list { display: flex; flex-direction: column; gap: 14px; }
+.lost-debts-card {
+  border: 1px solid #ecdfce; border-radius: 16px; background: #fff;
+  overflow: hidden; box-shadow: 0 2px 8px rgba(60,45,20,0.05);
+}
+.lost-debts-card-head {
+  display: flex; align-items: center; gap: 12px; padding: 16px 18px;
+  cursor: pointer; background: #fffaf4;
+}
+.lost-debts-card-head:hover { background: #fff4e9; }
+.lost-debts-toggle {
+  flex: 0 0 30px; width: 30px; height: 30px; border-radius: 9px; border: 1px solid #e6b98f;
+  background: #fff; color: #c9761a; font-size: 20px; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.lost-debts-card-headinfo { flex: 1 1 auto; min-width: 0; }
+.lost-debts-card-name { font-size: 17px; font-weight: 700; color: #2c2620; }
+.lost-debts-card-meta { font-size: 13px; color: #9a8b73; margin-top: 2px; }
+.lost-debts-card-total { flex: 0 0 auto; font-size: 18px; font-weight: 800; color: #c0392b; }
+.lost-debts-card-remove {
+  flex: 0 0 auto; background: none; border: none; color: #cbb6a0; cursor: pointer;
+  font-size: 13px; text-decoration: underline; padding: 4px;
+}
+.lost-debts-card-remove:hover { color: #c0392b; }
+.lost-debts-card-body { padding: 0 18px 18px; display: none; }
+.lost-debts-card.open .lost-debts-card-body { display: block; }
+.lost-debts-card.open .lost-debts-toggle { background: #c9761a; color: #fff; border-color: #c9761a; }
+
+.lost-debts-rows { border: 1px solid #f0e6d8; border-radius: 12px; overflow: hidden; margin: 14px 0 20px; }
+.lost-debts-rows table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.lost-debts-rows th { background: #faf3ea; color: #7a6a52; font-weight: 600; padding: 9px 12px; text-align: right; }
+.lost-debts-rows td { padding: 9px 12px; border-top: 1px solid #f3ebde; color: #3a2f22; }
+.lost-debts-rows tr:last-child td { border-bottom: 1px solid #f3ebde; }
+.lost-debts-rows .amount-cell { font-weight: 700; color: #c0392b; }
+
+.lost-debts-block { margin-bottom: 20px; }
+.lost-debts-block-title {
+  font-size: 14px; font-weight: 700; color: #6b5c42; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 8px;
+}
+.lost-debts-block-title .ldb-dot { width: 8px; height: 8px; border-radius: 50%; background: #c9761a; }
+.lost-debts-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.lost-debts-chip {
+  padding: 8px 14px; border-radius: 999px; border: 1px solid #e0d3c0; background: #fff;
+  color: #6b5c42; font-size: 13.5px; cursor: pointer; user-select: none; transition: all .15s ease;
+}
+.lost-debts-chip.selected { background: #c9761a; border-color: #c9761a; color: #fff; font-weight: 600; }
+.lost-debts-textarea, .lost-debts-input {
+  width: 100%; border: 1px solid #e0d3c0; border-radius: 10px; padding: 10px 12px;
+  font-family: inherit; font-size: 14px; color: #2c2620; background: #fff;
+}
+.lost-debts-textarea { min-height: 60px; resize: vertical; }
+.lost-debts-attach-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 10px; }
+.lost-debts-attach-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 13px; border-radius: 9px;
+  border: 1px dashed #d7b998; background: #fffaf3; color: #a5701f; font-size: 13px; cursor: pointer;
+}
+.lost-debts-attach-btn:hover { background: #fff2e2; }
+.lost-debts-attachment {
+  display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 8px;
+  background: #f1f7f1; border: 1px solid #cfe6cf; color: #1a7f37; font-size: 12.5px; text-decoration: none;
+}
+.lost-debts-attachment .rm { cursor: pointer; color: #a0b8a0; font-weight: 700; }
+.lost-debts-attachment .rm:hover { color: #c0392b; }
+.lost-debts-proceeding {
+  border: 1px solid #ecdfce; border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; background: #fffdf9;
+}
+.lost-debts-proceeding-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.lost-debts-proceeding-type { font-weight: 700; color: #7a4a12; }
+.lost-debts-contact-row {
+  display: grid; grid-template-columns: 1.3fr 1fr 1fr 1.3fr auto; gap: 8px; align-items: center; margin-bottom: 8px;
+}
+.lost-debts-contact-row .rm-contact { background: none; border: none; color: #cbb6a0; cursor: pointer; font-size: 18px; }
+.lost-debts-contact-row .rm-contact:hover { color: #c0392b; }
+.lost-debts-refs { display: flex; flex-direction: column; gap: 6px; }
+.lost-debts-ref {
+  display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 9px;
+  background: #f6f8fb; border: 1px solid #dde6f0; font-size: 13px; color: #2c4a6b; text-decoration: none;
+}
+.lost-debts-ref:hover { background: #eef3f9; }
+.lost-debts-save-row { display: flex; gap: 10px; margin-top: 14px; padding-top: 14px; border-top: 1px solid #f0e6d8; }
+.lost-debts-empty { color: #9a8b73; text-align: center; padding: 30px 20px; font-size: 15px; }
+
 .payments-search-panel {
   margin-top: 18px;
   margin-bottom: 18px;
@@ -14540,6 +14664,20 @@ input:focus {
         </button>
       </div>
 
+      <div class="lost-debts-link-row">
+        <button type="button" class="lost-debts-link" data-payments-jump="lost-debts">
+          <span class="lost-debts-link-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          </span>
+          <span class="lost-debts-link-text">
+            <strong>חובות אבודים / נדרשים</strong>
+            <small>ניהול לקוחות בגבייה קשה — סיבות, הליכים, אסמכתאות ואנשי קשר</small>
+          </span>
+          <span class="lost-debts-link-count" id="lostDebtsLinkCount" hidden></span>
+          <span class="lost-debts-link-arrow" aria-hidden="true">←</span>
+        </button>
+      </div>
+
       <div class="payments-search-panel">
         <div class="payments-header" style="margin-bottom:0;">
           <div>
@@ -14777,6 +14915,33 @@ input:focus {
           </table>
         </div>
         <div id="paymentsTransfer2026PaymentFilterSummary" class="payments-summary">כשתסנן את הטבלה, כאן יופיע הסיכום של מה שמוצג כרגע.</div>
+      </div>
+
+      <div class="payments-section lost-debts-section" id="lostDebtsSection">
+        <div class="payments-header">
+          <div>
+            <h3><span class="lost-debts-title-icon" aria-hidden="true">⚠</span> חובות אבודים / נדרשים</h3>
+            <p>לקוחות שהגבייה מולם נתקעה. כל לקוח מרכז את שורות החוב, סיבת אי-התשלום, ההליכים שננקטו, אסמכתאות (תעודות משלוח חתומות שנאספות אוטומטית) ואנשי קשר.</p>
+          </div>
+          <div class="payments-header-actions">
+            <button class="inventory-add-btn" type="button" id="lostDebtsAddButton"><span class="plus">+</span><span>העבר לקוח לחובות אבודים</span></button>
+          </div>
+        </div>
+
+        <div id="lostDebtsAddPanel" class="lost-debts-add-panel" hidden>
+          <label class="payments-editor-field wide">
+            <span>בחר לקוח עם שורות שמועד הגבייה שלהן חלף</span>
+            <select id="lostDebtsAddSelect"><option value="">— בחר לקוח —</option></select>
+          </label>
+          <div class="lost-debts-add-actions">
+            <button type="button" class="assistant-submit" id="lostDebtsAddConfirm">העבר את כל השורות שבפיגור</button>
+            <button type="button" class="ghost-btn" id="lostDebtsAddCancel">ביטול</button>
+          </div>
+          <p class="lost-debts-add-hint">כל שורות הגבייה של הלקוח שמועדן חלף יעברו לכאן ויוסרו מטבלת "מועד הגבייה חלף".</p>
+        </div>
+
+        <div id="lostDebtsSummary" class="payments-summary">עדיין לא נטענו נתוני חובות אבודים.</div>
+        <div id="lostDebtsList" class="lost-debts-list"></div>
       </div>
 
     </section>
@@ -31544,6 +31709,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function getPaymentsSectionByScope(scope) {
     if (scope === "collection") return paymentsTransfer2026CollectionSection;
     if (scope === "payment") return paymentsTransfer2026PaymentSection;
+    if (scope === "lost-debts") return document.getElementById("lostDebtsSection");
     return null;
   }
 
@@ -32451,6 +32617,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (payload.current_user_name) {
       paymentTransferCurrentUserName = String(payload.current_user_name || "").trim();
+    }
+    if (Array.isArray(payload.lost_debts)) {
+      lostDebtsCustomers = payload.lost_debts;
+      renderLostDebts();
     }
     const hasAllRows = Array.isArray(payload.all_rows);
     const fallbackRows = [
@@ -42914,10 +43084,371 @@ document.addEventListener("DOMContentLoaded", () => {
   paymentsJumpCards.forEach(card => {
     card.addEventListener("click", () => {
       const scope = card.dataset.paymentsJump || "";
-      setActivePaymentsJump(scope);
+      setActivePaymentsJump(scope === "lost-debts" ? "" : scope);
       getPaymentsSectionByScope(scope)?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   });
+
+  // ===== חובות אבודים / נדרשים =====
+  let lostDebtsCustomers = [];
+  const LOST_DEBTS_REASONS = ["ניתוק קשר", "סירוב לתשלום", "צ׳ק חזר"];
+  const LOST_DEBTS_PROCEEDINGS = ["דרישה לתשלום", "מייל", "דואר", "הודעה"];
+  const lostDebtsExpanded = new Set();
+  const lostDebtsDrafts = {};
+
+  function lostDebtParseAmount(value) {
+    return Number(String(value || "").replace(/[^\d.]/g, "")) || 0;
+  }
+
+  function lostDebtDraft(key) {
+    if (!lostDebtsDrafts[key]) {
+      const entry = lostDebtsCustomers.find(c => c.customer_key === key) || {};
+      lostDebtsDrafts[key] = JSON.parse(JSON.stringify({
+        reason: entry.reason || { options: [], note: "", attachments: [] },
+        proceedings: entry.proceedings || [],
+        contacts: entry.contacts || [],
+      }));
+    }
+    return lostDebtsDrafts[key];
+  }
+
+  function renderLostDebts() {
+    const list = document.getElementById("lostDebtsList");
+    const summary = document.getElementById("lostDebtsSummary");
+    const linkCount = document.getElementById("lostDebtsLinkCount");
+    if (!list) return;
+    const count = lostDebtsCustomers.length;
+    if (linkCount) {
+      linkCount.hidden = count === 0;
+      linkCount.textContent = String(count);
+    }
+    const total = lostDebtsCustomers.reduce((sum, c) => sum + (c.debt_rows || []).reduce((s, r) => s + lostDebtParseAmount(r.amount), 0), 0);
+    if (summary) {
+      summary.innerHTML = count
+        ? `${count} לקוחות בחובות אבודים · סה״כ חוב פתוח: <strong>${escapeHtml(formatCurrency(total))}</strong>`
+        : "אין כרגע לקוחות בחובות אבודים. השתמש בכפתור למעלה כדי להעביר לקוח שהגבייה מולו נתקעה.";
+    }
+    if (!count) {
+      list.innerHTML = `<div class="lost-debts-empty">אין עדיין חובות אבודים 🙂</div>`;
+      return;
+    }
+    list.innerHTML = lostDebtsCustomers.map(renderLostDebtCard).join("");
+    lostDebtsCustomers.forEach(c => wireLostDebtCard(c.customer_key));
+  }
+
+  function renderLostDebtCard(entry) {
+    const key = entry.customer_key;
+    const open = lostDebtsExpanded.has(key);
+    const rows = entry.debt_rows || [];
+    const total = rows.reduce((s, r) => s + lostDebtParseAmount(r.amount), 0);
+    const draft = open ? lostDebtDraft(key) : null;
+    const rowsHtml = rows.map(r => `
+      <tr>
+        <td>${escapeHtml(r.invoice_date || "—")}</td>
+        <td class="amount-cell">${escapeHtml(r.amount || "—")}</td>
+        <td>${escapeHtml(r.po_number || "—")}</td>
+        <td>${escapeHtml(r.delivery_number || "—")}</td>
+        <td>${escapeHtml(r.tax_invoice_number || "—")}</td>
+        <td>${escapeHtml(r.due_date || "—")}</td>
+      </tr>`).join("");
+    let bodyHtml = "";
+    if (open) {
+      bodyHtml = `
+        <div class="lost-debts-rows">
+          <table>
+            <thead><tr><th>תאריך הפקה</th><th>סכום</th><th>הזמנה</th><th>ת.משלוח</th><th>חשבונית</th><th>מועד גבייה</th></tr></thead>
+            <tbody>${rowsHtml || `<tr><td colspan="6">אין שורות</td></tr>`}</tbody>
+          </table>
+        </div>
+        ${renderLostDebtReason(key, draft)}
+        ${renderLostDebtProceedings(key, draft)}
+        ${renderLostDebtReferences(entry)}
+        ${renderLostDebtContacts(key, draft)}
+        <div class="lost-debts-save-row">
+          <button type="button" class="assistant-submit" data-ld-save="${escapeHtml(key)}">שמור שינויים</button>
+        </div>`;
+    }
+    return `
+      <div class="lost-debts-card${open ? " open" : ""}" data-ld-card="${escapeHtml(key)}">
+        <div class="lost-debts-card-head" data-ld-toggle="${escapeHtml(key)}">
+          <button type="button" class="lost-debts-toggle" aria-label="הרחב">${open ? "−" : "+"}</button>
+          <div class="lost-debts-card-headinfo">
+            <div class="lost-debts-card-name">${escapeHtml(entry.customer_name || "לקוח")}</div>
+            <div class="lost-debts-card-meta">${rows.length} שורות חוב · ${(entry.proceedings || []).length} הליכים · ${(entry.contacts || []).length} אנשי קשר</div>
+          </div>
+          <div class="lost-debts-card-total">${escapeHtml(formatCurrency(total))}</div>
+          <button type="button" class="lost-debts-card-remove" data-ld-remove="${escapeHtml(key)}">החזר לגבייה</button>
+        </div>
+        <div class="lost-debts-card-body">${bodyHtml}</div>
+      </div>`;
+  }
+
+  function renderLostDebtAttachments(attachments, removeAttr) {
+    return (attachments || []).map((a, i) => {
+      const url = a.drive_url || a.url || "#";
+      const label = a.name || (a.kind === "link" ? a.url : "קובץ");
+      return `<a class="lost-debts-attachment" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(label)}<span class="rm" ${removeAttr}="${i}" title="הסר">×</span></a>`;
+    }).join("");
+  }
+
+  function renderLostDebtReason(key, draft) {
+    const selected = new Set(draft.reason.options || []);
+    const chips = LOST_DEBTS_REASONS.map(opt =>
+      `<span class="lost-debts-chip${selected.has(opt) ? " selected" : ""}" data-ld-reason-opt="${escapeHtml(key)}" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</span>`
+    ).join("");
+    return `
+      <div class="lost-debts-block">
+        <div class="lost-debts-block-title"><span class="ldb-dot"></span> סיבה</div>
+        <div class="lost-debts-chips">${chips}</div>
+        <textarea class="lost-debts-textarea" placeholder="הערה חופשית לגבי הסיבה..." data-ld-reason-note="${escapeHtml(key)}">${escapeHtml(draft.reason.note || "")}</textarea>
+        <div class="lost-debts-attach-row" data-ld-reason-attachments="${escapeHtml(key)}">
+          ${renderLostDebtAttachments(draft.reason.attachments, "data-ld-reason-rm")}
+          <button type="button" class="lost-debts-attach-btn" data-ld-reason-file="${escapeHtml(key)}">📎 צרף קובץ</button>
+          <button type="button" class="lost-debts-attach-btn" data-ld-reason-link="${escapeHtml(key)}">🔗 הוסף קישור</button>
+        </div>
+      </div>`;
+  }
+
+  function renderLostDebtProceedings(key, draft) {
+    const existing = new Map((draft.proceedings || []).map(p => [p.type, p]));
+    const chips = LOST_DEBTS_PROCEEDINGS.map(opt =>
+      `<span class="lost-debts-chip${existing.has(opt) ? " selected" : ""}" data-ld-proc-toggle="${escapeHtml(key)}" data-opt="${escapeHtml(opt)}">${escapeHtml(opt)}</span>`
+    ).join("");
+    const cards = (draft.proceedings || []).map((p, idx) => `
+      <div class="lost-debts-proceeding">
+        <div class="lost-debts-proceeding-head">
+          <span class="lost-debts-proceeding-type">${escapeHtml(p.type)}</span>
+        </div>
+        <textarea class="lost-debts-textarea" placeholder="פירוט / תאריך..." data-ld-proc-note="${escapeHtml(key)}" data-idx="${idx}">${escapeHtml(p.note || "")}</textarea>
+        <div class="lost-debts-attach-row" data-ld-proc-attachments="${escapeHtml(key)}" data-idx="${idx}">
+          ${renderLostDebtAttachments(p.attachments, "data-ld-proc-rm")}
+          <button type="button" class="lost-debts-attach-btn" data-ld-proc-file="${escapeHtml(key)}" data-idx="${idx}">📎 צרף קובץ</button>
+          <button type="button" class="lost-debts-attach-btn" data-ld-proc-link="${escapeHtml(key)}" data-idx="${idx}">🔗 הוסף קישור</button>
+        </div>
+      </div>`).join("");
+    return `
+      <div class="lost-debts-block">
+        <div class="lost-debts-block-title"><span class="ldb-dot"></span> הליכים</div>
+        <div class="lost-debts-chips">${chips}</div>
+        ${cards}
+      </div>`;
+  }
+
+  function renderLostDebtReferences(entry) {
+    const refs = entry.references || [];
+    const body = refs.length
+      ? `<div class="lost-debts-refs">${refs.map(r => {
+          const url = r.drive_url || (r.drive_file_id ? `https://drive.google.com/file/d/${r.drive_file_id}/view` : "#");
+          return `<a class="lost-debts-ref" href="${escapeHtml(url)}" target="_blank" rel="noopener">📄 ${escapeHtml(r.name || ("ת.משלוח " + (r.delivery_number || "")))}${r.po_number ? " · הזמנה " + escapeHtml(r.po_number) : ""}</a>`;
+        }).join("")}</div>`
+      : `<p style="color:#9a8b73;font-size:13px;margin:0;">לא נמצאו תעודות משלוח חתומות להזמנות שהועברו לכאן. הן ייאספו אוטומטית כשיהיו זמינות.</p>`;
+    return `
+      <div class="lost-debts-block">
+        <div class="lost-debts-block-title"><span class="ldb-dot"></span> אסמכתאות <small style="font-weight:400;color:#a98a68;">(תעודות משלוח חתומות — נאספות אוטומטית)</small></div>
+        ${body}
+      </div>`;
+  }
+
+  function renderLostDebtContacts(key, draft) {
+    const rows = (draft.contacts || []).map((c, idx) => `
+      <div class="lost-debts-contact-row" data-idx="${idx}">
+        <input class="lost-debts-input" placeholder="שם" value="${escapeHtml(c.name || "")}" data-ld-contact="${escapeHtml(key)}" data-field="name" data-idx="${idx}">
+        <input class="lost-debts-input" placeholder="תפקיד" value="${escapeHtml(c.role || "")}" data-ld-contact="${escapeHtml(key)}" data-field="role" data-idx="${idx}">
+        <input class="lost-debts-input" placeholder="טלפון" value="${escapeHtml(c.phone || "")}" data-ld-contact="${escapeHtml(key)}" data-field="phone" data-idx="${idx}">
+        <input class="lost-debts-input" placeholder="מייל" value="${escapeHtml(c.email || "")}" data-ld-contact="${escapeHtml(key)}" data-field="email" data-idx="${idx}">
+        <button type="button" class="rm-contact" data-ld-contact-rm="${escapeHtml(key)}" data-idx="${idx}" title="הסר">×</button>
+      </div>`).join("");
+    return `
+      <div class="lost-debts-block">
+        <div class="lost-debts-block-title"><span class="ldb-dot"></span> אנשי קשר וטלפונים</div>
+        ${rows}
+        <button type="button" class="lost-debts-attach-btn" data-ld-contact-add="${escapeHtml(key)}" style="margin-top:6px;">+ הוסף איש קשר</button>
+      </div>`;
+  }
+
+  function lostDebtRerenderCard(key) {
+    const card = document.querySelector(`[data-ld-card="${CSS.escape(key)}"]`);
+    if (!card) return;
+    const entry = lostDebtsCustomers.find(c => c.customer_key === key);
+    if (!entry) return;
+    card.outerHTML = renderLostDebtCard(entry);
+    wireLostDebtCard(key);
+  }
+
+  function wireLostDebtCard(key) {
+    const card = document.querySelector(`[data-ld-card="${CSS.escape(key)}"]`);
+    if (!card) return;
+    card.querySelector(`[data-ld-toggle]`)?.addEventListener("click", (e) => {
+      if (e.target.closest("[data-ld-remove]")) return;
+      if (lostDebtsExpanded.has(key)) lostDebtsExpanded.delete(key);
+      else lostDebtsExpanded.add(key);
+      lostDebtRerenderCard(key);
+    });
+    card.querySelector(`[data-ld-remove]`)?.addEventListener("click", (e) => { e.stopPropagation(); lostDebtRemoveCustomer(key); });
+    if (!lostDebtsExpanded.has(key)) return;
+    const draft = lostDebtDraft(key);
+    card.querySelectorAll("[data-ld-reason-opt]").forEach(chip => chip.addEventListener("click", () => {
+      const opt = chip.dataset.opt;
+      const opts = new Set(draft.reason.options || []);
+      if (opts.has(opt)) opts.delete(opt); else opts.add(opt);
+      draft.reason.options = [...opts];
+      chip.classList.toggle("selected");
+    }));
+    card.querySelector("[data-ld-reason-note]")?.addEventListener("input", (e) => { draft.reason.note = e.target.value; });
+    card.querySelector("[data-ld-reason-file]")?.addEventListener("click", () => lostDebtUpload(key, (att) => { draft.reason.attachments.push(att); lostDebtRerenderCard(key); }));
+    card.querySelector("[data-ld-reason-link]")?.addEventListener("click", () => { const att = lostDebtPromptLink(); if (att) { draft.reason.attachments.push(att); lostDebtRerenderCard(key); } });
+    card.querySelectorAll("[data-ld-reason-rm]").forEach(x => x.addEventListener("click", (e) => { e.preventDefault(); draft.reason.attachments.splice(Number(x.dataset.ldReasonRm), 1); lostDebtRerenderCard(key); }));
+    card.querySelectorAll("[data-ld-proc-toggle]").forEach(chip => chip.addEventListener("click", () => {
+      const opt = chip.dataset.opt;
+      const idx = draft.proceedings.findIndex(p => p.type === opt);
+      if (idx >= 0) draft.proceedings.splice(idx, 1);
+      else draft.proceedings.push({ type: opt, note: "", attachments: [] });
+      lostDebtRerenderCard(key);
+    }));
+    card.querySelectorAll("[data-ld-proc-note]").forEach(t => t.addEventListener("input", (e) => { draft.proceedings[Number(t.dataset.idx)].note = e.target.value; }));
+    card.querySelectorAll("[data-ld-proc-file]").forEach(b => b.addEventListener("click", () => { const i = Number(b.dataset.idx); lostDebtUpload(key, (att) => { draft.proceedings[i].attachments.push(att); lostDebtRerenderCard(key); }); }));
+    card.querySelectorAll("[data-ld-proc-link]").forEach(b => b.addEventListener("click", () => { const i = Number(b.dataset.idx); const att = lostDebtPromptLink(); if (att) { draft.proceedings[i].attachments.push(att); lostDebtRerenderCard(key); } }));
+    card.querySelectorAll("[data-ld-proc-rm]").forEach(x => x.addEventListener("click", (e) => {
+      e.preventDefault();
+      const wrap = x.closest("[data-ld-proc-attachments]");
+      draft.proceedings[Number(wrap.dataset.idx)].attachments.splice(Number(x.dataset.ldProcRm), 1);
+      lostDebtRerenderCard(key);
+    }));
+    card.querySelectorAll("[data-ld-contact]").forEach(inp => inp.addEventListener("input", (e) => { draft.contacts[Number(inp.dataset.idx)][inp.dataset.field] = e.target.value; }));
+    card.querySelectorAll("[data-ld-contact-rm]").forEach(b => b.addEventListener("click", () => { draft.contacts.splice(Number(b.dataset.idx), 1); lostDebtRerenderCard(key); }));
+    card.querySelector("[data-ld-contact-add]")?.addEventListener("click", () => { draft.contacts.push({ name: "", role: "", phone: "", email: "" }); lostDebtRerenderCard(key); });
+    card.querySelector("[data-ld-save]")?.addEventListener("click", () => lostDebtSaveCustomer(key));
+  }
+
+  function lostDebtPromptLink() {
+    const url = window.prompt("הדבק קישור (למשל לקובץ בדרייב, מייל, או מסמך):");
+    if (!url || !url.trim()) return null;
+    return { kind: "link", name: url.trim(), url: url.trim(), drive_file_id: "", drive_url: "" };
+  }
+
+  async function lostDebtUpload(key, onDone) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".pdf,.jpg,.jpeg,.png,.webp,.heic,.doc,.docx,.xls,.xlsx";
+    input.onchange = async () => {
+      const file = input.files && input.files[0];
+      if (!file) return;
+      const entry = lostDebtsCustomers.find(c => c.customer_key === key) || {};
+      const fd = new FormData();
+      fd.append("file", file);
+      showToast("info", "מעלה קובץ...", file.name);
+      try {
+        const res = await fetch(`/lost-debts-upload?customer_key=${encodeURIComponent(key)}&customer_name=${encodeURIComponent(entry.customer_name || "")}`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "העלאה נכשלה");
+        onDone(data.attachment);
+        showToast("success", "הקובץ הועלה", file.name);
+      } catch (err) {
+        showToast("error", "העלאה נכשלה", err.message || "לא הצלחתי להעלות את הקובץ.");
+      }
+    };
+    input.click();
+  }
+
+  async function lostDebtSaveCustomer(key) {
+    const draft = lostDebtDraft(key);
+    try {
+      const res = await fetch("/lost-debts-save-customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer_key: key, reason: draft.reason, proceedings: draft.proceedings, contacts: draft.contacts.filter(c => c.name || c.phone || c.email) }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "שמירה נכשלה");
+      lostDebtsCustomers = data.customers || [];
+      delete lostDebtsDrafts[key];
+      renderLostDebts();
+      showToast("success", "נשמר", "פרטי החוב עודכנו.");
+    } catch (err) {
+      showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור.");
+    }
+  }
+
+  async function lostDebtRemoveCustomer(key) {
+    const entry = lostDebtsCustomers.find(c => c.customer_key === key);
+    if (!window.confirm(`להחזיר את "${entry?.customer_name || "הלקוח"}" לטבלת הגבייה? שורות החוב יחזרו למועד הגבייה חלף.`)) return;
+    try {
+      const res = await fetch("/lost-debts-remove-customer", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer_key: key }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "הפעולה נכשלה");
+      lostDebtsCustomers = data.customers || [];
+      lostDebtsExpanded.delete(key);
+      delete lostDebtsDrafts[key];
+      if (Array.isArray(data.all_rows)) renderPaymentsTransferState(data);
+      else renderLostDebts();
+      showToast("success", "הוחזר לגבייה", "הלקוח והשורות חזרו לטבלת הגבייה.");
+    } catch (err) {
+      showToast("error", "נכשל", err.message || "לא הצלחתי להסיר את הלקוח.");
+    }
+  }
+
+  function lostDebtOverdueCustomers() {
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const map = new Map();
+    (paymentTransferState.payments_2026_collection || []).forEach(r => {
+      if (String(r.paid || "").toUpperCase() === "TRUE") return;
+      const parts = String(r.due_date || "").split("/");
+      if (parts.length !== 3) return;
+      const due = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      if (due >= today) return;
+      const name = String(r.customer_name || "").trim();
+      if (!name) return;
+      map.set(name, (map.get(name) || 0) + lostDebtParseAmount(r.amount));
+    });
+    return [...map.entries()].sort((a, b) => b[1] - a[1]);
+  }
+
+  function openLostDebtAddPanel() {
+    const panel = document.getElementById("lostDebtsAddPanel");
+    const select = document.getElementById("lostDebtsAddSelect");
+    if (!panel || !select) return;
+    const overdue = lostDebtOverdueCustomers();
+    if (!overdue.length) {
+      showToast("info", "אין מועמדים", "אין כרגע לקוחות עם שורות שמועד הגבייה שלהן חלף.");
+      return;
+    }
+    select.innerHTML = `<option value="">— בחר לקוח —</option>` + overdue.map(([name, total]) =>
+      `<option value="${escapeHtml(name)}">${escapeHtml(name)} — ${escapeHtml(formatCurrency(total))}</option>`).join("");
+    panel.hidden = false;
+  }
+
+  async function lostDebtMoveCustomer(customerName) {
+    try {
+      const res = await fetch("/lost-debts-move-customer", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer_name: customerName }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "ההעברה נכשלה");
+      lostDebtsCustomers = data.customers || [];
+      const panel = document.getElementById("lostDebtsAddPanel");
+      if (panel) panel.hidden = true;
+      if (Array.isArray(data.all_rows)) renderPaymentsTransferState(data);
+      else renderLostDebts();
+      showToast("success", "הועבר לחובות אבודים", `${customerName} · ${data.moved_rows || 0} שורות.`);
+      getPaymentsSectionByScope("lost-debts")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (err) {
+      showToast("error", "ההעברה נכשלה", err.message || "לא הצלחתי להעביר את הלקוח.");
+    }
+  }
+
+  document.getElementById("lostDebtsAddButton")?.addEventListener("click", openLostDebtAddPanel);
+  document.getElementById("lostDebtsAddCancel")?.addEventListener("click", () => { const p = document.getElementById("lostDebtsAddPanel"); if (p) p.hidden = true; });
+  document.getElementById("lostDebtsAddConfirm")?.addEventListener("click", () => {
+    const select = document.getElementById("lostDebtsAddSelect");
+    const name = select?.value || "";
+    if (!name) { showToast("info", "בחר לקוח", "יש לבחור לקוח מהרשימה."); return; }
+    lostDebtMoveCustomer(name);
+  });
+
   paymentsSearchColumn?.addEventListener("change", applyPaymentsSearch);
   paymentsSearchInput?.addEventListener("input", applyPaymentsSearch);
   paymentsSearchClearButton?.addEventListener("click", clearPaymentsSearch);

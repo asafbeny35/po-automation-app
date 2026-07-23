@@ -1115,6 +1115,225 @@ def _save_payments_receipt_sync_meta(meta: dict) -> dict:
     return payload
 
 
+# ============================================================================
+# חובות אבודים / נדרשים — סקשן ניהול חובות בטאב תשלומים והעברות
+# לקוח → שורות חוב שהועברו ממועד הגבייה חלף + סיבה, הליכים, אסמכתאות, אנשי קשר
+# ============================================================================
+LOST_DEBTS_REASON_OPTIONS = ["ניתוק קשר", "סירוב לתשלום", "צ׳ק חזר"]
+LOST_DEBTS_PROCEEDING_OPTIONS = ["דרישה לתשלום", "מייל", "דואר", "הודעה"]
+
+
+def _default_lost_debts_state() -> dict:
+    return {"customers": [], "updated_at": ""}
+
+
+def _lost_debt_customer_key(name: str) -> str:
+    canonical = _canonical_income_customer_name(str(name or "").strip())
+    return f"name:{canonical}" if canonical else ""
+
+
+def _lost_debt_attachment_shape(item: dict) -> dict:
+    item = dict(item or {})
+    return {
+        "kind": "link" if str(item.get("kind") or "").strip() == "link" else "file",
+        "name": str(item.get("name") or "").strip(),
+        "url": str(item.get("url") or "").strip(),
+        "drive_file_id": str(item.get("drive_file_id") or "").strip(),
+        "drive_url": str(item.get("drive_url") or "").strip(),
+    }
+
+
+def _lost_debt_row_shape(row: dict) -> dict:
+    row = dict(row or {})
+    return {
+        "customer_name": str(row.get("customer_name") or "").strip(),
+        "invoice_date": str(row.get("invoice_date") or "").strip(),
+        "amount": str(row.get("amount") or "").strip(),
+        "po_number": str(row.get("po_number") or "").strip(),
+        "delivery_number": str(row.get("delivery_number") or "").strip(),
+        "tax_invoice_number": str(row.get("tax_invoice_number") or "").strip(),
+        "due_date": str(row.get("due_date") or "").strip(),
+        "sheet_title": str(row.get("_sheet_title") or row.get("sheet_title") or "").strip(),
+        "sheet_row": str(row.get("_sheet_row") or row.get("sheet_row") or "").strip(),
+    }
+
+
+def _lost_debt_row_match_keys(row: dict) -> set[str]:
+    """מזהי התאמה לשורת חוב — מזהה גיליון וגם טביעת אצבע עסקית, לעמידות בהזזת שורות."""
+    keys: set[str] = set()
+    sheet_title = str(row.get("_sheet_title") or row.get("sheet_title") or "").strip()
+    sheet_row = str(row.get("_sheet_row") or row.get("sheet_row") or "").strip()
+    if sheet_title and sheet_row:
+        keys.add(f"sheet::{sheet_title}::{sheet_row}")
+    invoice = str(row.get("tax_invoice_number") or "").strip()
+    amount = re.sub(r"[^\d.]", "", str(row.get("amount") or "").strip())
+    if invoice:
+        keys.add(f"inv::{invoice}::{amount}")
+    return keys
+
+
+def _normalize_lost_debt_customer(entry: dict) -> dict:
+    entry = dict(entry or {})
+    name = str(entry.get("customer_name") or "").strip()
+    key = str(entry.get("customer_key") or "").strip() or _lost_debt_customer_key(name)
+    reason = dict(entry.get("reason") or {})
+    reason_selected = [opt for opt in (reason.get("options") or []) if str(opt or "").strip() in LOST_DEBTS_REASON_OPTIONS]
+    proceedings = []
+    for proc in entry.get("proceedings") or []:
+        proc = dict(proc or {})
+        proc_type = str(proc.get("type") or "").strip()
+        if proc_type not in LOST_DEBTS_PROCEEDING_OPTIONS:
+            continue
+        proceedings.append({
+            "proceeding_id": str(proc.get("proceeding_id") or "").strip() or f"proc_{uuid.uuid4().hex[:10]}",
+            "type": proc_type,
+            "note": str(proc.get("note") or "").strip(),
+            "attachments": [_lost_debt_attachment_shape(a) for a in (proc.get("attachments") or [])],
+            "created_at": str(proc.get("created_at") or datetime.now().isoformat(timespec="seconds")),
+        })
+    contacts = []
+    for contact in entry.get("contacts") or []:
+        contact = dict(contact or {})
+        if not any(str(contact.get(f) or "").strip() for f in ("name", "phone", "email")):
+            continue
+        contacts.append({
+            "contact_id": str(contact.get("contact_id") or "").strip() or f"contact_{uuid.uuid4().hex[:10]}",
+            "name": str(contact.get("name") or "").strip(),
+            "role": str(contact.get("role") or "").strip(),
+            "phone": str(contact.get("phone") or "").strip(),
+            "email": str(contact.get("email") or "").strip(),
+        })
+    references = []
+    seen_refs: set[str] = set()
+    for ref in entry.get("references") or []:
+        ref = dict(ref or {})
+        ref_id = str(ref.get("drive_file_id") or "").strip() or f"{ref.get('po_number')}|{ref.get('delivery_number')}|{ref.get('name')}"
+        if ref_id in seen_refs:
+            continue
+        seen_refs.add(ref_id)
+        references.append({
+            "name": str(ref.get("name") or "").strip(),
+            "po_number": str(ref.get("po_number") or "").strip(),
+            "delivery_number": str(ref.get("delivery_number") or "").strip(),
+            "drive_file_id": str(ref.get("drive_file_id") or "").strip(),
+            "drive_url": str(ref.get("drive_url") or "").strip(),
+        })
+    return {
+        "customer_key": key,
+        "customer_name": name,
+        "created_at": str(entry.get("created_at") or datetime.now().isoformat(timespec="seconds")),
+        "updated_at": str(entry.get("updated_at") or datetime.now().isoformat(timespec="seconds")),
+        "debt_rows": [_lost_debt_row_shape(r) for r in (entry.get("debt_rows") or [])],
+        "reason": {
+            "options": reason_selected,
+            "note": str(reason.get("note") or "").strip(),
+            "attachments": [_lost_debt_attachment_shape(a) for a in (reason.get("attachments") or [])],
+        },
+        "proceedings": proceedings,
+        "references": references,
+        "contacts": contacts,
+    }
+
+
+def _load_lost_debts_state() -> dict:
+    try:
+        supabase_payload = _load_supabase_app_state("app_lost_debts")
+        if isinstance(supabase_payload, dict) and isinstance(supabase_payload.get("customers"), list):
+            state = _default_lost_debts_state()
+            state["customers"] = [_normalize_lost_debt_customer(c) for c in supabase_payload.get("customers") or []]
+            state["updated_at"] = str(supabase_payload.get("updated_at") or "").strip()
+            return state
+        if LOST_DEBTS_STATE_FILE.exists():
+            payload = json.loads(LOST_DEBTS_STATE_FILE.read_text(encoding="utf-8"))
+            if isinstance(payload, dict) and isinstance(payload.get("customers"), list):
+                state = _default_lost_debts_state()
+                state["customers"] = [_normalize_lost_debt_customer(c) for c in payload.get("customers") or []]
+                state["updated_at"] = str(payload.get("updated_at") or "").strip()
+                return state
+    except Exception as exc:
+        log_handled_error("load lost debts state failed", exc)
+    return _default_lost_debts_state()
+
+
+def _save_lost_debts_state(state: dict) -> dict:
+    payload = _default_lost_debts_state()
+    payload["customers"] = [_normalize_lost_debt_customer(c) for c in (state or {}).get("customers") or []]
+    payload["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    _save_supabase_app_state("app_lost_debts", payload)
+    try:
+        LOST_DEBTS_STATE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+    return payload
+
+
+def _lost_debts_moved_match_keys(state: dict) -> set[str]:
+    keys: set[str] = set()
+    for customer in (state or {}).get("customers") or []:
+        for row in customer.get("debt_rows") or []:
+            keys |= _lost_debt_row_match_keys(row)
+    return keys
+
+
+def _apply_lost_debts_filter(payload: dict) -> dict:
+    """מסיר משורות התשלומים את שורות החוב שהועברו לסקשן חובות אבודים, ומצרף את מצב הסקשן."""
+    lost_state = _load_lost_debts_state()
+    moved_keys = _lost_debts_moved_match_keys(lost_state)
+    payload["lost_debts"] = lost_state.get("customers") or []
+    if not moved_keys:
+        return payload
+
+    def _is_moved(row: dict) -> bool:
+        return bool(_lost_debt_row_match_keys(row) & moved_keys)
+
+    for bucket_name in ("all_rows", "payments_2026_collection", "payments_2026_payment"):
+        bucket = payload.get(bucket_name)
+        if isinstance(bucket, list):
+            payload[bucket_name] = [row for row in bucket if not (isinstance(row, dict) and _is_moved(row))]
+    return payload
+
+
+def _lost_debts_drive_folder(customer_name: str) -> str:
+    root_id = ensure_child_folder(managed_storage_root_folder_id(), "חובות אבודים ונדרשים")
+    safe_name = _guess_customer_folder_name(customer_name) or _safe_folder_name(customer_name) or "לקוח"
+    return ensure_child_folder(root_id, safe_name)
+
+
+def _lost_debts_collect_references(customer_name: str, debt_rows: list[dict]) -> list[dict]:
+    """אוסף אוטומטית את תעודות המשלוח החתומות של ההזמנות שהועברו לחובות אבודים."""
+    references: list[dict] = []
+    seen: set[str] = set()
+    try:
+        conf_rows = load_delivery_confirmation_rows()
+    except Exception as exc:
+        log_handled_error("lost debts references load failed", exc)
+        return references
+    target_pos = {str(r.get("po_number") or "").strip() for r in debt_rows if str(r.get("po_number") or "").strip()}
+    target_deliveries = {str(r.get("delivery_number") or "").strip() for r in debt_rows if str(r.get("delivery_number") or "").strip()}
+    canonical_customer = _canonical_income_customer_name(customer_name)
+    for conf in conf_rows:
+        conf_po = str(conf.get("po_number") or "").strip()
+        conf_delivery = str(conf.get("delivery_document_number") or "").strip()
+        conf_customer = _canonical_income_customer_name(str(conf.get("company") or ""))
+        matches = (conf_po and conf_po in target_pos) or (conf_delivery and conf_delivery in target_deliveries)
+        if not matches and canonical_customer and conf_customer == canonical_customer:
+            matches = True
+        if not matches:
+            continue
+        drive_id = str(conf.get("signed_delivery_drive_file_id") or "").strip()
+        if not drive_id or drive_id in seen:
+            continue
+        seen.add(drive_id)
+        references.append({
+            "name": str(conf.get("signed_delivery_name") or f"ת.משלוח {conf_delivery}").strip(),
+            "po_number": conf_po,
+            "delivery_number": conf_delivery,
+            "drive_file_id": drive_id,
+            "drive_url": _drive_file_view_link(drive_id) if drive_id else "",
+        })
+    return references
+
+
 def _mark_payments_receipt_sync_pending() -> dict:
     meta = _load_payments_receipt_sync_meta()
     meta["pending_sync"] = True
@@ -11936,6 +12155,11 @@ def _payments_state_payload(state: dict | None, request: Request | None = None, 
     current_user_id, current_user_name = _payments_current_user_identity(request)
     payload["current_user_id"] = current_user_id
     payload["current_user_name"] = current_user_name
+    try:
+        payload = _apply_lost_debts_filter(payload)
+    except Exception as exc:
+        log_handled_error("apply lost debts filter failed", exc)
+        payload.setdefault("lost_debts", [])
     return payload
 
 
@@ -12247,6 +12471,7 @@ MARKETING_PIPELINE_HIDDEN_FILE = RUNTIME_ROOT / "marketing_pipeline_hidden.json"
 INVENTORY_PURCHASE_ORDERS_HIDDEN_FILE = RUNTIME_ROOT / "inventory_purchase_orders_hidden.json"
 CUSTOMERS_HIDDEN_FILE = RUNTIME_ROOT / "customers_hidden.json"
 PAYMENTS_RECEIPT_SYNC_META_FILE = RUNTIME_ROOT / "payments_receipt_sync_meta.json"
+LOST_DEBTS_STATE_FILE = RUNTIME_ROOT / "lost_debts_cache.json"
 LOGS_DIR = RUNTIME_ROOT / "logs"
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 APP_ERROR_LOG = LOGS_DIR / "app_errors.log"
@@ -22597,6 +22822,174 @@ async def payments_transfer_state(request: Request):
     except Exception as exc:
         log_handled_error("payments_transfer_state failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לטעון את נתוני התשלומים וההעברות: {exc}"}, status_code=500)
+
+
+@app.get("/lost-debts-state")
+async def lost_debts_state():
+    try:
+        state = _load_lost_debts_state()
+        return JSONResponse({"status": "ok", "customers": state.get("customers") or [], "updated_at": state.get("updated_at") or ""})
+    except Exception as exc:
+        log_handled_error("lost_debts_state failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לטעון את חובות האבודים: {exc}"}, status_code=500)
+
+
+@app.post("/lost-debts-move-customer")
+async def lost_debts_move_customer(request: Request):
+    """מעביר לקוח לסקשן חובות אבודים יחד עם שורות הגבייה שעבר מועדן."""
+    try:
+        body = await request.json()
+        customer_name = str(body.get("customer_name") or "").strip()
+        if not customer_name:
+            return JSONResponse({"error": "חסר שם לקוח להעברה."}, status_code=400)
+        state_payload = load_payment_transfer_rows(force_refresh=False, repair_schema=False) or {}
+        collection_rows = state_payload.get("payments_2026_collection") or []
+        canonical = _canonical_income_customer_name(customer_name)
+        today = date.today()
+
+        def _is_overdue(row: dict) -> bool:
+            if str(row.get("paid") or "").strip().upper() == "TRUE":
+                return False
+            due_raw = str(row.get("due_date") or "").strip()
+            try:
+                return datetime.strptime(due_raw, "%d/%m/%Y").date() < today
+            except ValueError:
+                return False
+
+        selected_keys = body.get("row_keys") or []
+        matching_rows = []
+        for row in collection_rows:
+            if _canonical_income_customer_name(str(row.get("customer_name") or "")) != canonical:
+                continue
+            if selected_keys:
+                if str(row.get("_sheet_row") or "") in {str(k) for k in selected_keys}:
+                    matching_rows.append(row)
+            elif _is_overdue(row):
+                matching_rows.append(row)
+        if not matching_rows:
+            return JSONResponse({"error": "לא נמצאו שורות גבייה שעבר מועדן עבור הלקוח הזה."}, status_code=404)
+
+        debt_rows = [_lost_debt_row_shape(r) for r in matching_rows]
+        references = _lost_debts_collect_references(customer_name, debt_rows)
+
+        lost_state = _load_lost_debts_state()
+        customers = lost_state.get("customers") or []
+        key = _lost_debt_customer_key(customer_name)
+        existing = next((c for c in customers if c.get("customer_key") == key), None)
+        if existing:
+            existing_row_keys = set()
+            for r in existing.get("debt_rows") or []:
+                existing_row_keys |= _lost_debt_row_match_keys(r)
+            for r in debt_rows:
+                if not (_lost_debt_row_match_keys(r) & existing_row_keys):
+                    existing.setdefault("debt_rows", []).append(r)
+            ref_ids = {rf.get("drive_file_id") for rf in existing.get("references") or []}
+            for rf in references:
+                if rf.get("drive_file_id") not in ref_ids:
+                    existing.setdefault("references", []).append(rf)
+            existing["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        else:
+            customers.append({
+                "customer_key": key,
+                "customer_name": customer_name,
+                "created_at": datetime.now().isoformat(timespec="seconds"),
+                "updated_at": datetime.now().isoformat(timespec="seconds"),
+                "debt_rows": debt_rows,
+                "reason": {"options": [], "note": "", "attachments": []},
+                "proceedings": [],
+                "references": references,
+                "contacts": [],
+            })
+        lost_state["customers"] = customers
+        saved = _save_lost_debts_state(lost_state)
+        await _log_activity(request, action="העברה", tab="תשלומים", description=f"העברת {customer_name} לחובות אבודים ({len(debt_rows)} שורות)", entity_id=key)
+        return JSONResponse({"status": "ok", "customers": saved.get("customers") or [], "moved_rows": len(debt_rows), **_payments_state_payload(state_payload, request)})
+    except Exception as exc:
+        log_handled_error("lost_debts_move_customer failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להעביר את הלקוח לחובות אבודים: {exc}"}, status_code=500)
+
+
+@app.post("/lost-debts-save-customer")
+async def lost_debts_save_customer(request: Request):
+    """שומר סיבה / הליכים / אנשי קשר של לקוח בחובות אבודים."""
+    try:
+        body = await request.json()
+        customer_key = str(body.get("customer_key") or "").strip()
+        if not customer_key:
+            return JSONResponse({"error": "חסר מזהה לקוח."}, status_code=400)
+        lost_state = _load_lost_debts_state()
+        customers = lost_state.get("customers") or []
+        entry = next((c for c in customers if c.get("customer_key") == customer_key), None)
+        if entry is None:
+            return JSONResponse({"error": "הלקוח לא נמצא בחובות אבודים."}, status_code=404)
+        if isinstance(body.get("reason"), dict):
+            entry["reason"] = body.get("reason")
+        if isinstance(body.get("proceedings"), list):
+            entry["proceedings"] = body.get("proceedings")
+        if isinstance(body.get("contacts"), list):
+            entry["contacts"] = body.get("contacts")
+        entry["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        lost_state["customers"] = customers
+        saved = _save_lost_debts_state(lost_state)
+        return JSONResponse({"status": "ok", "customers": saved.get("customers") or []})
+    except Exception as exc:
+        log_handled_error("lost_debts_save_customer failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לשמור את פרטי החוב: {exc}"}, status_code=500)
+
+
+@app.post("/lost-debts-remove-customer")
+async def lost_debts_remove_customer(request: Request):
+    """מסיר לקוח מחובות אבודים — שורות החוב חוזרות אוטומטית לטבלת הגבייה."""
+    try:
+        body = await request.json()
+        customer_key = str(body.get("customer_key") or "").strip()
+        if not customer_key:
+            return JSONResponse({"error": "חסר מזהה לקוח."}, status_code=400)
+        lost_state = _load_lost_debts_state()
+        before = lost_state.get("customers") or []
+        after = [c for c in before if c.get("customer_key") != customer_key]
+        if len(after) == len(before):
+            return JSONResponse({"error": "הלקוח לא נמצא בחובות אבודים."}, status_code=404)
+        lost_state["customers"] = after
+        saved = _save_lost_debts_state(lost_state)
+        state_payload = load_payment_transfer_rows(force_refresh=False, repair_schema=False) or {}
+        await _log_activity(request, action="מחיקה", tab="תשלומים", description="החזרת לקוח מחובות אבודים לטבלת הגבייה", entity_id=customer_key)
+        return JSONResponse({"status": "ok", "customers": saved.get("customers") or [], **_payments_state_payload(state_payload, request)})
+    except Exception as exc:
+        log_handled_error("lost_debts_remove_customer failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להסיר את הלקוח: {exc}"}, status_code=500)
+
+
+@app.post("/lost-debts-upload")
+async def lost_debts_upload(request: Request, file: UploadFile = File(...)):
+    """מעלה קובץ אסמכתא/הליך לתיקיית ה-Drive של הלקוח בחובות אבודים."""
+    temp_path: Path | None = None
+    try:
+        customer_key = str(request.query_params.get("customer_key") or "").strip()
+        customer_name = str(request.query_params.get("customer_name") or "").strip()
+        if not customer_name:
+            lost_state = _load_lost_debts_state()
+            entry = next((c for c in (lost_state.get("customers") or []) if c.get("customer_key") == customer_key), None)
+            customer_name = str((entry or {}).get("customer_name") or "").strip() or "לקוח"
+        temp_path, _ = await _store_uploaded_any_file(file, UPLOADS_DIR / "lost_debts", fallback_name="lost-debt-file")
+        folder_id = _lost_debts_drive_folder(customer_name)
+        suffix = Path(temp_path.name).suffix or ""
+        base_name = _sanitize_upload_filename(file.filename or "", f"מסמך{suffix}")
+        uploaded = upload_file_to_folder(folder_id, temp_path, drive_name=base_name)
+        drive_file_id = str(uploaded.get("id") or "").strip()
+        drive_url = str(uploaded.get("web_view_link") or uploaded.get("webViewLink") or "").strip() or (_drive_file_view_link(drive_file_id) if drive_file_id else "")
+        return JSONResponse({"status": "ok", "attachment": {"kind": "file", "name": base_name, "drive_file_id": drive_file_id, "drive_url": drive_url, "url": ""}})
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        log_handled_error("lost_debts_upload failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להעלות את הקובץ: {exc}"}, status_code=500)
+    finally:
+        if temp_path and temp_path.exists():
+            try:
+                temp_path.unlink()
+            except Exception:
+                pass
 
 
 @app.post("/payments-transfer-refresh-start")
