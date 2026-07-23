@@ -43244,7 +43244,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : `<p style="color:#9a8b73;font-size:13px;margin:0;">לא נמצאו תעודות משלוח חתומות להזמנות שהועברו לכאן. הן ייאספו אוטומטית כשיהיו זמינות.</p>`;
     return `
       <div class="lost-debts-block">
-        <div class="lost-debts-block-title"><span class="ldb-dot"></span> אסמכתאות <small style="font-weight:400;color:#a98a68;">(תעודות משלוח חתומות — נאספות אוטומטית)</small></div>
+        <div class="lost-debts-block-title"><span class="ldb-dot"></span> אסמכתאות <small style="font-weight:400;color:#a98a68;">(תעודות משלוח חתומות, חשבוניות זיכוי ומסמכים תומכים)</small></div>
         ${body}
       </div>`;
   }
@@ -43391,16 +43391,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function lostDebtOverdueCustomers() {
-    const today = new Date(); today.setHours(0, 0, 0, 0);
+    // רק לקוחות עם שורות גבייה שמועדן חלף (בדיוק ההגדרה של "מועד הגבייה חלף" בטבלה),
+    // ורק כאלה שעדיין לא נמצאים בחובות אבודים.
+    const alreadyMoved = new Set(lostDebtsCustomers.map(c => customerCanonicalNameForUi(c.customer_name || "")));
     const map = new Map();
     (paymentTransferState.payments_2026_collection || []).forEach(r => {
-      if (String(r.paid || "").toUpperCase() === "TRUE") return;
-      const parts = String(r.due_date || "").split("/");
-      if (parts.length !== 3) return;
-      const due = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
-      if (due >= today) return;
+      if (!isPaymentOverdue(r)) return;
       const name = String(r.customer_name || "").trim();
       if (!name) return;
+      if (alreadyMoved.has(customerCanonicalNameForUi(name))) return;
       map.set(name, (map.get(name) || 0) + lostDebtParseAmount(r.amount));
     });
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
