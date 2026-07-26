@@ -212,21 +212,47 @@ def parse(text: str, pdf_path=None):
     # using word coordinates to avoid mixing with the company name (far-right column)
     delivery_address = _extract_delivery_address(pdf_path) if pdf_path else ""
 
-    # Office orderer (ניצן גולן) — kept in extra, not the field contact
+    # Office orderer (שם המזמין, e.g. ניצן גולן) — kept in extra, NEVER the field contact.
     orderer_reversed = _first(r"(.+?)\s*:ןימזמה םש", flat)
     orderer_name = _unheb(orderer_reversed) if orderer_reversed else ""
-    contact_name = ""
 
-    # Field contact: ויקטור — phone is glued to the reversed name "רוטקיו"
-    # Raw pattern: "050-2898973רוטקיו"
-    victor_match = re.search(r"(0\d{2}-\d{6,7})רוטקיו", flat)
-    if victor_match:
-        contact_name = "ויקטור"
-        logistics_phone = victor_match.group(1)
-    else:
-        # fallback: first mobile in document
-        phones = re.findall(r"0\d{1,2}-\d{6,7}", flat)
-        logistics_phone = phones[0] if phones else ""
+    # Field/delivery contact. Danya writes it in several layouts and the person
+    # differs each order (חמד / ויקטור / …), so extract it generically — never
+    # hardcode a name. Require a *mobile* (05X) so we skip Danya's own landline/fax,
+    # and reject "נייד" (the label "cell") and our own number (054-7720142).
+    #  A) "טלפון: <שם> <נייד>" under the delivery address — reversed "<נייד><שם> :ןופלט"
+    #     (name may be glued to the phone). Also "בטלפון: …".
+    #  B) "איש קשר: <שם> | טל': <נייד>" — reversed "<שם> :רשק שיא" + "<נייד> :'לט".
+    OUR_PHONE = "0547720142"
+
+    def _is_noise_name(name: str) -> bool:
+        return not name or name in {"נייד", "טלפון", "פקס", "טל"}
+
+    contact_name = ""
+    logistics_phone = ""
+
+    m_a = re.search(r"(05\d-?\d{6,7})\s*([א-ת][א-ת'\"]{1,})\s+:ןופלטב?", flat)
+    if m_a and m_a.group(1).replace("-", "") != OUR_PHONE:
+        candidate = _unheb(m_a.group(2))
+        if not _is_noise_name(candidate):
+            logistics_phone = m_a.group(1)
+            contact_name = candidate
+
+    if not contact_name:
+        name_c = re.search(r"([א-ת][א-ת'\"]{1,})\s+:רשק שיא", flat)
+        phone_c = re.search(r"(05\d-?\d{6,7})\s+:'?לט", flat)
+        if name_c:
+            candidate = _unheb(name_c.group(1))
+            if not _is_noise_name(candidate):
+                contact_name = candidate
+                logistics_phone = phone_c.group(1) if phone_c else ""
+
+    if not logistics_phone:
+        # last resort: first mobile that is neither ours nor a hyphenated helper number
+        for mob in re.findall(r"05\d-?\d{6,7}", flat):
+            if mob.replace("-", "") != OUR_PHONE:
+                logistics_phone = mob
+                break
 
     # Logistics helper: "054-544-7208 :ןופלטב ןינקעו ףסוי :יטסיגול רזוע"
     logistics_note = ""
