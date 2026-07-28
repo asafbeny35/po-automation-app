@@ -8674,6 +8674,78 @@ body.panel-only .shell {
   font-weight: 800;
 }
 
+/* ===== מחשבון רגיל (full width) ===== */
+.std-calc-card { margin-top: 18px; width: 100%; }
+.std-calc { max-width: 640px; margin: 0 auto; }
+.std-calc-display {
+  background: #101828;
+  border-radius: 16px;
+  padding: 20px 22px;
+  text-align: left;
+  direction: ltr;
+  margin-bottom: 16px;
+  box-shadow: inset 0 2px 10px rgba(0,0,0,0.25);
+}
+.std-calc-expression {
+  color: #94a3b8;
+  font-size: 18px;
+  min-height: 22px;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+.std-calc-value {
+  color: #fff;
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+.std-calc-keys {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  direction: ltr; /* פריסת מקשים סטנדרטית של מחשבון (7 8 9 משמאל לימין, פעולות מימין) */
+}
+.std-calc-key {
+  border: none;
+  border-radius: 16px;
+  background: #f1f5f9;
+  color: #1f2937;
+  font-size: 26px;
+  font-weight: 700;
+  height: 74px;
+  cursor: pointer;
+  transition: transform .06s ease, background .15s ease, box-shadow .15s ease;
+  box-shadow: 0 2px 4px rgba(15,23,42,0.08);
+  user-select: none;
+}
+.std-calc-key:hover { background: #e2e8f0; }
+.std-calc-key:active { transform: translateY(1px) scale(0.98); }
+.std-calc-key.std-calc-fn { background: #e5e7eb; color: #475569; font-size: 24px; }
+.std-calc-key.std-calc-fn:hover { background: #d1d5db; }
+.std-calc-key.std-calc-op {
+  background: linear-gradient(135deg, #ff8a2b 0%, #ff7d12 100%);
+  color: #fff;
+  font-size: 30px;
+}
+.std-calc-key.std-calc-op:hover { filter: brightness(1.05); }
+.std-calc-key.std-calc-op.is-active {
+  background: #fff;
+  color: #ff7d12;
+  box-shadow: inset 0 0 0 2px #ff7d12;
+}
+.std-calc-key.std-calc-equals {
+  background: linear-gradient(135deg, #163e83 0%, #2452aa 100%);
+  color: #fff;
+  font-size: 30px;
+}
+.std-calc-key.std-calc-equals:hover { filter: brightness(1.08); }
+@media (max-width: 560px) {
+  .std-calc-key { height: 64px; font-size: 22px; }
+  .std-calc-value { font-size: 36px; }
+}
+
 .admin-copy-btn {
   justify-self: start;
   border: none;
@@ -18314,6 +18386,45 @@ input:focus {
             </div>
           </article>
         </div>
+
+        <article class="office-calculator-card std-calc-card">
+          <div class="office-calculator-head">
+            <h3>מחשבון רגיל</h3>
+            <span class="office-calculator-kicker">חישוב מהיר</span>
+          </div>
+          <div class="std-calc">
+            <div class="std-calc-display">
+              <div id="stdCalcExpression" class="std-calc-expression">&nbsp;</div>
+              <div id="stdCalcValue" class="std-calc-value">0</div>
+            </div>
+            <div class="std-calc-keys">
+              <button type="button" class="std-calc-key std-calc-fn" data-calc-action="clear">C</button>
+              <button type="button" class="std-calc-key std-calc-fn" data-calc-action="sign">±</button>
+              <button type="button" class="std-calc-key std-calc-fn" data-calc-action="percent">%</button>
+              <button type="button" class="std-calc-key std-calc-op" data-calc-op="/">÷</button>
+
+              <button type="button" class="std-calc-key" data-calc-digit="7">7</button>
+              <button type="button" class="std-calc-key" data-calc-digit="8">8</button>
+              <button type="button" class="std-calc-key" data-calc-digit="9">9</button>
+              <button type="button" class="std-calc-key std-calc-op" data-calc-op="*">×</button>
+
+              <button type="button" class="std-calc-key" data-calc-digit="4">4</button>
+              <button type="button" class="std-calc-key" data-calc-digit="5">5</button>
+              <button type="button" class="std-calc-key" data-calc-digit="6">6</button>
+              <button type="button" class="std-calc-key std-calc-op" data-calc-op="-">−</button>
+
+              <button type="button" class="std-calc-key" data-calc-digit="1">1</button>
+              <button type="button" class="std-calc-key" data-calc-digit="2">2</button>
+              <button type="button" class="std-calc-key" data-calc-digit="3">3</button>
+              <button type="button" class="std-calc-key std-calc-op" data-calc-op="+">+</button>
+
+              <button type="button" class="std-calc-key" data-calc-action="backspace">⌫</button>
+              <button type="button" class="std-calc-key" data-calc-digit="0">0</button>
+              <button type="button" class="std-calc-key" data-calc-action="dot">.</button>
+              <button type="button" class="std-calc-key std-calc-equals" data-calc-action="equals">=</button>
+            </div>
+          </div>
+        </article>
       </section>
     </section>
   </section>
@@ -29929,6 +30040,135 @@ document.addEventListener("DOMContentLoaded", () => {
       officeShamratzafDetail.innerHTML = lines.join("<br>");
     }
   }
+
+  // ===== מחשבון רגיל (phone-style) =====
+  const stdCalc = { current: "0", stored: null, operator: null, waiting: false, justEvaluated: false };
+  const stdCalcValueEl = document.getElementById("stdCalcValue");
+  const stdCalcExprEl = document.getElementById("stdCalcExpression");
+
+  function stdCalcFormat(num) {
+    if (!isFinite(num)) return "שגיאה";
+    const rounded = Math.round((num + Number.EPSILON) * 1e10) / 1e10;
+    if (Object.is(rounded, -0)) return "0";
+    let s = String(rounded);
+    if (s.includes("e") || Math.abs(rounded) >= 1e15) return rounded.toPrecision(12).replace(/\.?0+$/, "");
+    return s;
+  }
+
+  const STD_CALC_OP_SYMBOL = { "+": "+", "-": "−", "*": "×", "/": "÷" };
+
+  function stdCalcRender() {
+    if (stdCalcValueEl) {
+      const val = stdCalc.current === "שגיאה" ? "שגיאה" : Number(stdCalc.current).toLocaleString("en-US", { maximumFractionDigits: 10 });
+      stdCalcValueEl.textContent = (stdCalc.current.endsWith(".") ? val + "." : val) || "0";
+    }
+    if (stdCalcExprEl) {
+      stdCalcExprEl.innerHTML = (stdCalc.stored !== null && stdCalc.operator)
+        ? `${Number(stdCalc.stored).toLocaleString("en-US", { maximumFractionDigits: 10 })} ${STD_CALC_OP_SYMBOL[stdCalc.operator]}`
+        : "&nbsp;";
+    }
+    document.querySelectorAll("[data-calc-op]").forEach(b => {
+      b.classList.toggle("is-active", stdCalc.waiting && b.dataset.calcOp === stdCalc.operator);
+    });
+  }
+
+  function stdCalcCompute(a, b, op) {
+    switch (op) {
+      case "+": return a + b;
+      case "-": return a - b;
+      case "*": return a * b;
+      case "/": return b === 0 ? Infinity : a / b;
+      default: return b;
+    }
+  }
+
+  function stdCalcInputDigit(d) {
+    if (stdCalc.current === "שגיאה" || stdCalc.justEvaluated) { stdCalc.current = "0"; stdCalc.justEvaluated = false; }
+    if (stdCalc.waiting) { stdCalc.current = d; stdCalc.waiting = false; }
+    else stdCalc.current = stdCalc.current === "0" ? d : stdCalc.current + d;
+    stdCalcRender();
+  }
+  function stdCalcInputDot() {
+    if (stdCalc.current === "שגיאה" || stdCalc.justEvaluated) { stdCalc.current = "0"; stdCalc.justEvaluated = false; }
+    if (stdCalc.waiting) { stdCalc.current = "0."; stdCalc.waiting = false; }
+    else if (!stdCalc.current.includes(".")) stdCalc.current += ".";
+    stdCalcRender();
+  }
+  function stdCalcSetOperator(op) {
+    if (stdCalc.current === "שגיאה") return;
+    if (stdCalc.operator && !stdCalc.waiting) {
+      const result = stdCalcCompute(Number(stdCalc.stored), Number(stdCalc.current), stdCalc.operator);
+      stdCalc.stored = isFinite(result) ? result : null;
+      stdCalc.current = stdCalcFormat(result);
+    } else if (stdCalc.stored === null) {
+      stdCalc.stored = Number(stdCalc.current);
+    }
+    stdCalc.operator = op;
+    stdCalc.waiting = true;
+    stdCalc.justEvaluated = false;
+    stdCalcRender();
+  }
+  function stdCalcEquals() {
+    if (stdCalc.operator === null || stdCalc.stored === null || stdCalc.current === "שגיאה") return;
+    const result = stdCalcCompute(Number(stdCalc.stored), Number(stdCalc.current), stdCalc.operator);
+    stdCalc.current = stdCalcFormat(result);
+    stdCalc.stored = null;
+    stdCalc.operator = null;
+    stdCalc.waiting = false;
+    stdCalc.justEvaluated = true;
+    stdCalcRender();
+  }
+  function stdCalcClear() {
+    stdCalc.current = "0"; stdCalc.stored = null; stdCalc.operator = null; stdCalc.waiting = false; stdCalc.justEvaluated = false;
+    stdCalcRender();
+  }
+  function stdCalcBackspace() {
+    if (stdCalc.current === "שגיאה") { stdCalcClear(); return; }
+    if (stdCalc.waiting || stdCalc.justEvaluated) return;
+    stdCalc.current = stdCalc.current.length > 1 ? stdCalc.current.slice(0, -1) : "0";
+    stdCalcRender();
+  }
+  function stdCalcPercent() {
+    if (stdCalc.current === "שגיאה") return;
+    stdCalc.current = stdCalcFormat(Number(stdCalc.current) / 100);
+    stdCalcRender();
+  }
+  function stdCalcSign() {
+    if (stdCalc.current === "שגיאה" || stdCalc.current === "0") return;
+    stdCalc.current = stdCalc.current.startsWith("-") ? stdCalc.current.slice(1) : "-" + stdCalc.current;
+    stdCalcRender();
+  }
+
+  function stdCalcHandleAction(action) {
+    if (action === "clear") stdCalcClear();
+    else if (action === "backspace") stdCalcBackspace();
+    else if (action === "percent") stdCalcPercent();
+    else if (action === "sign") stdCalcSign();
+    else if (action === "dot") stdCalcInputDot();
+    else if (action === "equals") stdCalcEquals();
+  }
+
+  document.querySelectorAll(".std-calc-key").forEach(key => {
+    key.addEventListener("click", () => {
+      if (key.dataset.calcDigit !== undefined) stdCalcInputDigit(key.dataset.calcDigit);
+      else if (key.dataset.calcOp !== undefined) stdCalcSetOperator(key.dataset.calcOp);
+      else if (key.dataset.calcAction !== undefined) stdCalcHandleAction(key.dataset.calcAction);
+    });
+  });
+  // תמיכה במקלדת כשטאב המשרד פעיל
+  document.addEventListener("keydown", (e) => {
+    const officePanel = document.querySelector('.tab-panel.active[data-tab-panel="office"]');
+    if (!officePanel) return;
+    const tag = (document.activeElement?.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    if (e.key >= "0" && e.key <= "9") { stdCalcInputDigit(e.key); e.preventDefault(); }
+    else if (e.key === ".") { stdCalcInputDot(); e.preventDefault(); }
+    else if (["+", "-", "*", "/"].includes(e.key)) { stdCalcSetOperator(e.key); e.preventDefault(); }
+    else if (e.key === "Enter" || e.key === "=") { stdCalcEquals(); e.preventDefault(); }
+    else if (e.key === "Backspace") { stdCalcBackspace(); e.preventDefault(); }
+    else if (e.key === "Escape") { stdCalcClear(); e.preventDefault(); }
+    else if (e.key === "%") { stdCalcPercent(); e.preventDefault(); }
+  });
 
   function syncInventoryMeasureMode() {
     const isLinear = inventoryMeasureMode !== "area";
