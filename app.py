@@ -13564,21 +13564,42 @@ async def _resolve_delivery_confirmation_source_po_attachment(row: dict) -> Path
     order_folder_id = str((row or {}).get("order_drive_folder_id") or "").strip()
     if order_folder_id:
         drive_files = list_folder_files(order_folder_id)
+        # כל PDF שאינו מסמך שהמערכת ייצרה (חשבונית/ת.משלוח/מדבקה/COC/כל המסמכים…) הוא
+        # הזמנת הרכש המקורית של הלקוח. מסננים אותם וזה מה שנשאר.
         candidates = [
             item
             for item in drive_files
             if str(item.get("name") or "").strip().lower().endswith(".pdf")
             and not _is_generated_delivery_confirmation_pdf_name(str(item.get("name") or "").strip(), row)
         ]
+
+        def _strip_upload_prefix(name: str) -> str:
+            return re.sub(r"^[0-9a-f]{16,}_", "", str(name or "").strip())
+
+        chosen = None
         if len(candidates) == 1:
+            chosen = candidates[0]
+        elif candidates:
+            # קודם קובץ ששמו מרמז על הזמנת רכש
+            po_named = [
+                c for c in candidates
+                if re.search(r"(הזמנת\s*רכש|purchase[\s_-]*order|\bpo[\w-]*)", str(c.get("name") or ""), re.IGNORECASE)
+            ]
+            if po_named:
+                chosen = po_named[0]
+            else:
+                # כמה עותקים — אם כולם אותו קובץ מקור (אחרי הסרת קידומת ה-uuid של ההעלאה),
+                # בוחרים את העותק ה"נקי" ללא הקידומת, אחרת פשוט את הראשון (כולם הזמנת הרכש).
+                bases = {_strip_upload_prefix(c.get("name")) for c in candidates}
+                if len(bases) == 1:
+                    clean = [c for c in candidates if _strip_upload_prefix(c.get("name")) == str(c.get("name") or "").strip()]
+                    chosen = (clean or candidates)[0]
+                else:
+                    chosen = candidates[0]
+        if chosen:
             target_dir = OUTPUT_DIR / "_delivery_confirmation_cache"
-            target_name = str(candidates[0].get("name") or f"source_po_{row.get('po_number')}.pdf").strip()
-            return download_drive_file(str(candidates[0].get("id") or "").strip(), target_dir / target_name).resolve()
-        for candidate in candidates:
-            name = str(candidate.get("name") or "").strip()
-            if re.search(r"(הזמנת\s*רכש|purchase[\s_-]*order|\bpo[\w-]*)", name, re.IGNORECASE):
-                target_dir = OUTPUT_DIR / "_delivery_confirmation_cache"
-                return download_drive_file(str(candidate.get("id") or "").strip(), target_dir / name).resolve()
+            target_name = str(chosen.get("name") or f"source_po_{row.get('po_number')}.pdf").strip()
+            return download_drive_file(str(chosen.get("id") or "").strip(), target_dir / target_name).resolve()
     raise RuntimeError("לא הצלחתי לאתר את הזמנת הרכש המקורית לצירוף.")
 
 
@@ -13654,6 +13675,25 @@ async def _fetch_valid_delivery_confirmation_invoice(row: dict, mode: str) -> tu
     return fresh, row
 
 
+def _ensure_pdf_for_merge(path: Path) -> Path:
+    """מבטיח שהקובץ הוא PDF לצורך מיזוג — אישור מסירה חתום מגיע לרוב כתמונה (JPEG),
+    ו-merge_pdfs לא יודע למזג תמונות. ממיר תמונות ל-PDF; PDF תקין מוחזר כמו שהוא."""
+    path = Path(path)
+    suffix = path.suffix.lower()
+    if suffix == ".pdf":
+        return path
+    if suffix in {".jpg", ".jpeg", ".png", ".webp", ".heic", ".bmp", ".tif", ".tiff"}:
+        try:
+            from PIL import Image
+            out = path.with_suffix(".pdf")
+            with Image.open(path) as img:
+                img.convert("RGB").save(out, "PDF", resolution=150.0)
+            return out.resolve()
+        except Exception as exc:
+            log_handled_error(f"signed confirmation image->pdf conversion failed for {path.name}", exc)
+    return path
+
+
 async def _resolve_delivery_confirmation_internal_print_attachments(row: dict, mode: str) -> tuple[dict, list[str]]:
     resolved_row = await _ensure_delivery_confirmation_drive_assets(row, mode)
     invoice_attachment: Path | None = None
@@ -13674,6 +13714,9 @@ async def _resolve_delivery_confirmation_internal_print_attachments(row: dict, m
         raise RuntimeError("לא הצלחתי לאתר את אישור המסירה החתום לצירוף.")
 
     source_po_attachment = (await _resolve_delivery_confirmation_source_po_attachment(resolved_row)).resolve()
+
+    # אישור המסירה החתום מגיע לרוב כתמונה — להמיר ל-PDF כדי שהמיזוג יצליח
+    signed_attachment = _ensure_pdf_for_merge(signed_attachment)
 
     merge_inputs = [
         signed_attachment,
