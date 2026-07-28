@@ -18266,6 +18266,53 @@ input:focus {
               </div>
             </div>
           </article>
+
+          <article class="office-calculator-card">
+            <div class="office-calculator-head">
+              <h3>מחשבון שמרצף</h3>
+              <span class="office-calculator-kicker">3.5 מ״ר / יח׳</span>
+            </div>
+            <div class="office-calculator-body">
+              <div class="office-calculator-field">
+                <strong>כיוון החישוב</strong>
+                <div id="officeShamratzafModeSwitch" class="manual-document-kind-switch" role="tablist" aria-label="בחירת כיוון חישוב שמרצף">
+                  <button type="button" id="officeShamratzafModeArea" class="manual-document-kind-btn active" aria-pressed="true">לפי שטח (מ״ר)</button>
+                  <button type="button" id="officeShamratzafModeUnits" class="manual-document-kind-btn" aria-pressed="false">לפי יחידות</button>
+                </div>
+              </div>
+              <div class="office-calculator-row">
+                <label class="office-calculator-field">
+                  <strong id="officeShamratzafPrimaryLabel">שטח לחיוב (מ״ר)</strong>
+                  <input id="officeShamratzafValue" class="office-calculator-input" type="number" min="0" step="0.01" placeholder="0.00">
+                </label>
+                <div class="office-calculator-actions">
+                  <button type="button" id="officeShamratzafCalculateButton" class="admin-link-chip office-calculator-button">חשב</button>
+                </div>
+              </div>
+              <div class="office-calculator-results">
+                <div class="office-calculator-result">
+                  <span class="office-calculator-result-label">יחידות שמרצף</span>
+                  <span id="officeShamratzafUnitsResult" class="office-calculator-result-value">—</span>
+                </div>
+                <div class="office-calculator-result">
+                  <span class="office-calculator-result-label">ספוג (מ״ר)</span>
+                  <span id="officeShamratzafSpongeResult" class="office-calculator-result-value">—</span>
+                </div>
+                <div class="office-calculator-result">
+                  <span class="office-calculator-result-label">פלטות מזונית</span>
+                  <span id="officeShamratzafPlatesResult" class="office-calculator-result-value">—</span>
+                </div>
+                <div class="office-calculator-result">
+                  <span class="office-calculator-result-label">שטח לחיוב (מ״ר)</span>
+                  <span id="officeShamratzafAreaResult" class="office-calculator-result-value">—</span>
+                </div>
+              </div>
+              <div class="office-calculator-field">
+                <strong>פירוט החישוב</strong>
+                <div id="officeShamratzafDetail" class="admin-status-note" style="margin-top:10px;">כל יחידת שמרצף = 3.5 מ״ר לחיוב, ספוג בפועל 1.6×2.3=3.68 מ״ר, ו-6 חתיכות מזונית (0.75 פלטה, כי מכל פלטת 1.22×2.44 יוצאות 8 חתיכות).</div>
+              </div>
+            </div>
+          </article>
         </div>
       </section>
     </section>
@@ -20220,6 +20267,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const officeQuietpipeUnitsResult = document.getElementById("officeQuietpipeUnitsResult");
   const officeQuietpipeCoverageResult = document.getElementById("officeQuietpipeCoverageResult");
   const officeQuietpipeDetail = document.getElementById("officeQuietpipeDetail");
+  const officeShamratzafModeArea = document.getElementById("officeShamratzafModeArea");
+  const officeShamratzafModeUnits = document.getElementById("officeShamratzafModeUnits");
+  const officeShamratzafPrimaryLabel = document.getElementById("officeShamratzafPrimaryLabel");
+  const officeShamratzafValue = document.getElementById("officeShamratzafValue");
+  const officeShamratzafCalculateButton = document.getElementById("officeShamratzafCalculateButton");
+  const officeShamratzafUnitsResult = document.getElementById("officeShamratzafUnitsResult");
+  const officeShamratzafSpongeResult = document.getElementById("officeShamratzafSpongeResult");
+  const officeShamratzafPlatesResult = document.getElementById("officeShamratzafPlatesResult");
+  const officeShamratzafAreaResult = document.getElementById("officeShamratzafAreaResult");
+  const officeShamratzafDetail = document.getElementById("officeShamratzafDetail");
   const finishInventoryDeleteModal = document.getElementById("finishInventoryDeleteModal");
   const finishInventoryDeleteCloseButton = document.getElementById("finishInventoryDeleteCloseButton");
   const finishInventoryDeleteCancelButton = document.getElementById("finishInventoryDeleteCancelButton");
@@ -29809,6 +29866,67 @@ document.addEventListener("DOMContentLoaded", () => {
         `מכל יריעה של 2×1 מ׳ מתקבלות <strong>${stripsPerUnit}</strong> רצועות, ולכן יחידה אחת מכסה בפועל <strong>${coveragePerUnit.toFixed(2)} מ׳</strong> אורך צינור.`,
         `כדי לכסות <strong>${pipeLength.toFixed(2)} מ׳</strong> צינור עם חפיפה של 3 ס״מ בין מקטעים נדרשות <strong>${unitsNeeded}</strong> יחידות קוואיטפייפ.`
       ].join("<br>");
+    }
+  }
+
+  // מחשבון שמרצף — קבועים
+  const SHAMRATZAF_BILLING_AREA_PER_UNIT = 3.5;   // מ״ר לחיוב ליחידה
+  const SHAMRATZAF_SPONGE_PER_UNIT = 1.6 * 2.3;   // 3.68 מ״ר ספוג בפועל ליחידה
+  const SHAMRATZAF_MASONITE_PIECES_PER_UNIT = 6;  // חתיכות מזונית ליחידה
+  const SHAMRATZAF_PIECES_PER_PLATE = 8;          // חתיכות מכל פלטה (1.22×2.44)
+  let officeShamratzafMode = "area";
+
+  function syncOfficeShamratzafMode() {
+    const isArea = officeShamratzafMode !== "units";
+    officeShamratzafModeArea?.classList.toggle("active", isArea);
+    officeShamratzafModeUnits?.classList.toggle("active", !isArea);
+    officeShamratzafModeArea?.setAttribute("aria-pressed", String(isArea));
+    officeShamratzafModeUnits?.setAttribute("aria-pressed", String(!isArea));
+    if (officeShamratzafPrimaryLabel) {
+      officeShamratzafPrimaryLabel.textContent = isArea ? "שטח לחיוב (מ״ר)" : "יחידות שמרצף";
+    }
+    if (officeShamratzafValue) {
+      officeShamratzafValue.step = isArea ? "0.01" : "1";
+      officeShamratzafValue.placeholder = isArea ? "0.00" : "0";
+    }
+  }
+
+  function calculateOfficeShamratzaf() {
+    const raw = Number(String(officeShamratzafValue?.value || "").replace(/,/g, ""));
+    const clear = () => {
+      [officeShamratzafUnitsResult, officeShamratzafSpongeResult, officeShamratzafPlatesResult, officeShamratzafAreaResult]
+        .forEach(el => { if (el) el.textContent = "—"; });
+    };
+    if (!(raw > 0)) {
+      clear();
+      if (officeShamratzafDetail) officeShamratzafDetail.textContent = officeShamratzafMode === "units"
+        ? "יש להזין מספר יחידות שמרצף תקין."
+        : "יש להזין שטח לחיוב תקין במ״ר.";
+      return;
+    }
+
+    // מספר היחידות — מעוגל כלפי מעלה כי אי אפשר לייצר חצי יחידה
+    const unitsExact = officeShamratzafMode === "units" ? raw : raw / SHAMRATZAF_BILLING_AREA_PER_UNIT;
+    const units = officeShamratzafMode === "units" ? Math.round(raw) : Math.ceil(unitsExact);
+    const billingArea = units * SHAMRATZAF_BILLING_AREA_PER_UNIT;
+    const sponge = units * SHAMRATZAF_SPONGE_PER_UNIT;
+    const pieces = units * SHAMRATZAF_MASONITE_PIECES_PER_UNIT;
+    const plates = Math.ceil(pieces / SHAMRATZAF_PIECES_PER_PLATE);
+
+    if (officeShamratzafUnitsResult) officeShamratzafUnitsResult.textContent = `${units.toLocaleString("he-IL")} יח׳`;
+    if (officeShamratzafSpongeResult) officeShamratzafSpongeResult.textContent = `${sponge.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר`;
+    if (officeShamratzafPlatesResult) officeShamratzafPlatesResult.textContent = `${plates.toLocaleString("he-IL")} פלטות`;
+    if (officeShamratzafAreaResult) officeShamratzafAreaResult.textContent = `${billingArea.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר`;
+    if (officeShamratzafDetail) {
+      const lines = [];
+      if (officeShamratzafMode === "area") {
+        lines.push(`שטח לחיוב של <strong>${raw.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר</strong> ÷ 3.5 מ״ר ליחידה = <strong>${unitsExact.toLocaleString("he-IL", {maximumFractionDigits: 2})}</strong> ← מעוגל ל-<strong>${units.toLocaleString("he-IL")}</strong> יחידות (מכסות ${billingArea.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר לחיוב).`);
+      } else {
+        lines.push(`<strong>${units.toLocaleString("he-IL")}</strong> יחידות × 3.5 מ״ר = <strong>${billingArea.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר</strong> לחיוב.`);
+      }
+      lines.push(`ספוג: ${units.toLocaleString("he-IL")} × 3.68 מ״ר (1.6×2.3) = <strong>${sponge.toLocaleString("he-IL", {maximumFractionDigits: 2})} מ״ר</strong>.`);
+      lines.push(`מזונית: ${units.toLocaleString("he-IL")} × 6 חתיכות = <strong>${pieces.toLocaleString("he-IL")}</strong> חתיכות ÷ 8 לפלטה = <strong>${plates.toLocaleString("he-IL")}</strong> פלטות (1.22×2.44).`);
+      officeShamratzafDetail.innerHTML = lines.join("<br>");
     }
   }
 
@@ -42947,6 +43065,11 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   officeMeasureCalculateButton?.addEventListener("click", calculateOfficeMeasure);
   officeQuietpipeCalculateButton?.addEventListener("click", calculateOfficeQuietpipe);
+  officeShamratzafModeArea?.addEventListener("click", () => { officeShamratzafMode = "area"; syncOfficeShamratzafMode(); calculateOfficeShamratzaf(); });
+  officeShamratzafModeUnits?.addEventListener("click", () => { officeShamratzafMode = "units"; syncOfficeShamratzafMode(); calculateOfficeShamratzaf(); });
+  officeShamratzafCalculateButton?.addEventListener("click", calculateOfficeShamratzaf);
+  officeShamratzafValue?.addEventListener("keydown", (e) => { if (e.key === "Enter") calculateOfficeShamratzaf(); });
+  syncOfficeShamratzafMode();
   inventoryMeasureCalculatorToggle?.addEventListener("click", () => {
     const nextOpen = !inventoryMeasureCalculatorPanel?.classList.contains("visible");
     setInventoryMeasureCalculatorOpen(nextOpen);
