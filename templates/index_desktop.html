@@ -43672,6 +43672,9 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   async function sendDeliveryConfirmationMail(testSend = false) {
     if (!currentDeliveryConfirmationRow) return;
+    // צילום מוקדם של הפרטים — currentDeliveryConfirmationRow עלול להתאפס ע"י רענון רקע
+    // אחרי השליחה, ואז קריאת .po_number בטוסט ההצלחה הפילה שגיאה למרות שהמייל נשלח.
+    const sentPoNumber = String(currentDeliveryConfirmationRow.po_number || "").trim();
     const recipients = String(deliveryMailRecipients?.value || "").trim();
     const subject = String(deliveryMailSubject?.value || "").trim();
     const message = String(deliveryMailMessage?.value || "").trim();
@@ -43722,6 +43725,7 @@ document.addEventListener("DOMContentLoaded", () => {
           const companyName = customerCanonicalNameForUi(currentDeliveryConfirmationRow?.company || "");
           let historyChanged = false;
           orderHistoryRows = orderHistoryRows.map(row => {
+            if (!row) return row;
             const rowPoNumber = normalizeDeliveryConfirmationPoForUi(row.po_number || "");
             const rowInvoiceNumber = String(row.tax_invoice_number || "").trim();
             const rowCompanyName = customerCanonicalNameForUi(row.customer_name || row.company || "");
@@ -43768,9 +43772,9 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("info", "המייל נשלח עם הערת תצוגה", postSendUiWarning);
       }
       if (testSend) {
-        showToast("success", "טסט המייל נשלח", `המייל נשלח ל־asafbeny@gmail.com עבור הזמנה ${currentDeliveryConfirmationRow.po_number}.`);
+        showToast("success", "טסט המייל נשלח", `המייל נשלח ל־asafbeny@gmail.com עבור הזמנה ${sentPoNumber}.`);
       } else {
-        showToast("success", "אישור המסירה נשלח", `המייל נפתח ונשלח עבור הזמנה ${currentDeliveryConfirmationRow.po_number}.`);
+        showToast("success", "אישור המסירה נשלח", `המייל נפתח ונשלח עבור הזמנה ${sentPoNumber}.`);
       }
       closeDeliveryMailModal();
     } catch (error) {
@@ -43787,6 +43791,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function sendDeliveryCocMail(testOnly = false) {
     if (!currentDeliveryCocRow) return;
+    const sentPoNumber = String(currentDeliveryCocRow.po_number || "").trim();
     const recipients = testOnly
       ? "asafbeny@gmail.com"
       : String(deliveryCocRecipients?.value || "").trim();
@@ -43824,8 +43829,8 @@ document.addEventListener("DOMContentLoaded", () => {
         "success",
         testOnly ? "טסט COC נשלח" : "מסמך ה־COC נשלח",
         testOnly
-          ? `מייל טסט נשלח ל־asafbeny@gmail.com עבור הזמנה ${currentDeliveryCocRow.po_number}.`
-          : `המייל נשלח עבור הזמנה ${currentDeliveryCocRow.po_number}.`
+          ? `מייל טסט נשלח ל־asafbeny@gmail.com עבור הזמנה ${sentPoNumber}.`
+          : `המייל נשלח עבור הזמנה ${sentPoNumber}.`
       );
       closeDeliveryCocModal();
     } catch (error) {
