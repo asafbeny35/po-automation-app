@@ -9503,6 +9503,41 @@ a.admin-expense-status:hover {
   color: #1f2937;
 }
 
+.admin-credit-total-split {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+  flex: 0 0 auto;
+}
+
+.admin-credit-total-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.admin-credit-total-line em {
+  font-style: normal;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.admin-credit-total-line.is-gross em { color: #b4763a; }
+
+.admin-credit-total-line.is-gross strong {
+  font-size: 16px;
+  color: #b4763a;
+}
+
+.admin-credit-summary-note {
+  margin: 10px 2px 0;
+  font-size: 12.5px;
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
 .admin-credit-docs .admin-link-chip {
   padding: 8px 11px;
   font-size: 12px;
@@ -17490,14 +17525,33 @@ input:focus {
         </div>
         <div class="admin-credit-summary-bar">
           <div class="admin-credit-summary-pill">
-            <span>סה״כ הלוואות שנותר לתשלום הוא:</span>
-            <strong class="admin-credit-total-loans">₪ 539,367.53</strong>
+            <span>סה״כ הלוואות שנותר לתשלום:</span>
+            <div class="admin-credit-total-split">
+              <div class="admin-credit-total-line">
+                <em>קרן בלבד (ללא ריבית)</em>
+                <strong class="admin-credit-total-loans">₪ 494,150.93</strong>
+              </div>
+              <div class="admin-credit-total-line is-gross">
+                <em>כולל ריבית</em>
+                <strong class="admin-credit-total-loans-gross">₪ 545,917.52</strong>
+              </div>
+            </div>
           </div>
           <div class="admin-credit-summary-pill">
-            <span>סה״כ משכנתאות שנותר לתשלום הוא:</span>
-            <strong class="admin-credit-total-mortgages">₪ 997,732.08</strong>
+            <span>סה״כ משכנתאות שנותר לתשלום:</span>
+            <div class="admin-credit-total-split">
+              <div class="admin-credit-total-line">
+                <em>קרן בלבד (ללא ריבית)</em>
+                <strong class="admin-credit-total-mortgages">₪ 978,907.77</strong>
+              </div>
+              <div class="admin-credit-total-line is-gross">
+                <em>כולל ריבית</em>
+                <strong class="admin-credit-total-mortgages-gross">₪ 1,187,139.21</strong>
+              </div>
+            </div>
           </div>
         </div>
+        <p class="admin-credit-summary-note">״קרן בלבד״ היא היתרה לסילוק היום. ״כולל ריבית״ הוא סכום כל התשלומים שנותרו (מספר התשלומים שנותר × ההחזר החודשי) לפי הריביות העדכניות.</p>
       </section>
 
       <section id="adminRealEstateSection" class="admin-section">
@@ -42674,6 +42728,19 @@ document.addEventListener("DOMContentLoaded", () => {
     return Math.max(0, normalizedBalance - principalComponent);
   }
 
+  /** סה״כ שנותר לשלם כולל ריבית = מספר התשלומים שנותרו × ההחזר החודשי. */
+  function adminCreditRemainingTotal(balance, payment, annualRate, mode) {
+    const b = Math.max(0, Number(balance) || 0);
+    const p = Math.max(0, Number(payment) || 0);
+    const r = Math.max(0, Number(annualRate) || 0) / 100 / 12;
+    if (b <= 0) return 0;
+    if (p <= 0) return b;
+    if (mode === "principal-only" || r <= 0) return Math.ceil(b / p) * p;
+    if (b * r >= p) return b; // ההחזר לא מכסה את הריבית — לא ניתן לגזור תקופה
+    const n = -Math.log(1 - (b * r) / p) / Math.log(1 + r);
+    return n * p;
+  }
+
   function syncAdminCreditCards() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -42709,17 +42776,34 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     const totalLoansNode = document.querySelector(".admin-credit-total-loans");
     const totalMortgagesNode = document.querySelector(".admin-credit-total-mortgages");
+    const totalLoansGrossNode = document.querySelector(".admin-credit-total-loans-gross");
+    const totalMortgagesGrossNode = document.querySelector(".admin-credit-total-mortgages-gross");
     let loansTotal = 0;
     let mortgagesTotal = 0;
+    let loansGrossTotal = 0;
+    let mortgagesGrossTotal = 0;
     document.querySelectorAll("[data-credit-card]").forEach(card => {
       const balanceText = card.querySelector(".admin-credit-balance-value")?.textContent || "";
       const numericBalance = Number(String(balanceText).replace(/[^\d.-]/g, ""));
       if (!Number.isFinite(numericBalance)) return;
-      if (card.dataset.creditGroup === "mortgage") mortgagesTotal += numericBalance;
-      else loansTotal += numericBalance;
+      const gross = adminCreditRemainingTotal(
+        numericBalance,
+        Number(card.dataset.creditMonthlyPayment || 0),
+        Number(card.dataset.creditAnnualRate || 0),
+        String(card.dataset.creditPaymentMode || "amortized")
+      );
+      if (card.dataset.creditGroup === "mortgage") {
+        mortgagesTotal += numericBalance;
+        mortgagesGrossTotal += gross;
+      } else {
+        loansTotal += numericBalance;
+        loansGrossTotal += gross;
+      }
     });
     if (totalLoansNode) totalLoansNode.textContent = formatAdminCreditCurrency(loansTotal);
     if (totalMortgagesNode) totalMortgagesNode.textContent = formatAdminCreditCurrency(mortgagesTotal);
+    if (totalLoansGrossNode) totalLoansGrossNode.textContent = formatAdminCreditCurrency(loansGrossTotal);
+    if (totalMortgagesGrossNode) totalMortgagesGrossNode.textContent = formatAdminCreditCurrency(mortgagesGrossTotal);
   }
 
   syncAdminCreditCards();

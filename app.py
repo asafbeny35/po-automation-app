@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import date, timedelta, datetime
 import calendar
+import math
 import shutil
 import asyncio
 import copy
@@ -16457,6 +16458,23 @@ def _admin_credit_advance_balance(balance: float, payment: float, annual_rate: f
     return max(0.0, normalized_balance - principal_component)
 
 
+def _admin_credit_remaining_total(balance: float, payment: float, annual_rate: float, mode: str) -> float:
+    """שכפול adminCreditRemainingTotal מהדסקטופ — סה״כ שנותר לשלם כולל ריבית."""
+    b = max(0.0, float(balance or 0))
+    p = max(0.0, float(payment or 0))
+    r = max(0.0, float(annual_rate or 0)) / 100 / 12
+    if b <= 0:
+        return 0.0
+    if p <= 0:
+        return b
+    if mode == "principal-only" or r <= 0:
+        return math.ceil(b / p) * p
+    if b * r >= p:
+        return b
+    n = -math.log(1 - (b * r) / p) / math.log(1 + r)
+    return n * p
+
+
 def _admin_credit_currency(value: float) -> str:
     return f"₪ {value:,.2f}"
 
@@ -16556,6 +16574,8 @@ async def mobile_admin_lending():
 
         loans_total = 0.0
         mortgages_total = 0.0
+        loans_gross_total = 0.0
+        mortgages_gross_total = 0.0
         for card in loans:
             balance = float(card.pop("balance") or 0)
             payment = float(card.pop("monthly_payment") or 0)
@@ -16592,10 +16612,13 @@ async def mobile_admin_lending():
                     fact["value"] = _admin_credit_currency(balance)
                 elif role == "next_payment" and next_payment_display:
                     fact["value"] = next_payment_display
+            gross = _admin_credit_remaining_total(balance, payment, annual_rate, mode)
             if card.get("group") == "mortgage":
                 mortgages_total += balance
+                mortgages_gross_total += gross
             else:
                 loans_total += balance
+                loans_gross_total += gross
 
         for card in vehicles:
             card["image_path"] = card["image_path"].lstrip("/")
@@ -16608,6 +16631,8 @@ async def mobile_admin_lending():
                 "totals": {
                     "loans": _admin_credit_currency(round(loans_total, 2)),
                     "mortgages": _admin_credit_currency(round(mortgages_total, 2)),
+                    "loans_with_interest": _admin_credit_currency(round(loans_gross_total, 2)),
+                    "mortgages_with_interest": _admin_credit_currency(round(mortgages_gross_total, 2)),
                 },
             }
         )
