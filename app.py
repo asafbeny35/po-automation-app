@@ -1341,6 +1341,8 @@ def _lost_debts_collect_references(customer_name: str, debt_rows: list[dict]) ->
 # כך שאין כפילות והסנכרון דו-כיווני; כאן נשמרות רק התוספות של השכר.
 # ============================================================================
 HR_INSTALLATIONS_DOOR_RATE = 14.0
+# תשלום מינימום על פי חוק — גם התקנה של פחות מ-35 דלתות משולמת כאילו הותקנו 35
+HR_INSTALLATIONS_MIN_DOORS = 35.0
 HR_INSTALLATIONS_DEFAULT_FOOD = 50.0
 HR_INSTALLATIONS_DEFAULT_FUEL = 150.0
 HR_INSTALLATIONS_MONTHS = ["2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"]
@@ -1474,6 +1476,21 @@ def _hr_installation_month_key(visit: dict) -> str:
     return f"{parsed.year:04d}-{parsed.month:02d}"
 
 
+def _hr_installation_doors_amounts(installed: float, door_rate: float) -> dict:
+    """סכום התקנת הדלתות: מחויב לפי מינימום 35 דלתות, לצד הסכום בפועל להצגה.
+
+    שורה שבה עדיין לא הותקן דבר (0) היא התקנה שטרם בוצעה ואינה מזכה בתשלום מינימום.
+    """
+    actual = float(installed or 0.0)
+    billable = max(actual, HR_INSTALLATIONS_MIN_DOORS) if actual > 0 else 0.0
+    return {
+        "billable_quantity": round(billable, 2),
+        "doors_amount": round(billable * door_rate, 2),
+        "doors_amount_actual": round(actual * door_rate, 2),
+        "is_min_applied": 0 < actual < HR_INSTALLATIONS_MIN_DOORS,
+    }
+
+
 def _build_hr_installations_payload() -> dict:
     """בונה את טבלת ההתקנות של עובדים ושכר מביקורי ההתקנה החיים + תוספות השכר."""
     state = _load_hr_installations_state()
@@ -1494,7 +1511,8 @@ def _build_hr_installations_payload() -> dict:
                 continue
             entry = _normalize_hr_installation_entry(entries.get(visit_id) or {})
             installed = _installation_number(visit.get("installed_total_quantity"))
-            doors_amount = round(installed * entry["door_rate"], 2)
+            doors = _hr_installation_doors_amounts(installed, entry["door_rate"])
+            doors_amount = doors["doors_amount"]
             total = round(doors_amount + entry["food"] + entry["fuel"] - entry["advance"], 2)
             rows_by_month.setdefault(month_key, []).append({
                 "visit_id": visit_id,
@@ -1513,6 +1531,9 @@ def _build_hr_installations_payload() -> dict:
                 "advance": entry["advance"],
                 "door_rate": entry["door_rate"],
                 "doors_amount": doors_amount,
+                "doors_amount_actual": doors["doors_amount_actual"],
+                "billable_quantity": doors["billable_quantity"],
+                "is_min_doors": doors["is_min_applied"],
                 "total": total,
                 "notes": entry["notes"],
             })
@@ -1529,7 +1550,8 @@ def _build_hr_installations_payload() -> dict:
         food = _hr_installation_number(manual_row.get("food"), HR_INSTALLATIONS_DEFAULT_FOOD)
         fuel = _hr_installation_number(manual_row.get("fuel"), HR_INSTALLATIONS_DEFAULT_FUEL)
         advance = _hr_installation_number(manual_row.get("advance"), 0.0)
-        doors_amount = round(installed * door_rate, 2)
+        doors = _hr_installation_doors_amounts(installed, door_rate)
+        doors_amount = doors["doors_amount"]
         rows_by_month.setdefault(month_key, []).append({
             "visit_id": str(manual_row.get("manual_id") or "").strip(),
             "is_manual": True,
@@ -1547,6 +1569,9 @@ def _build_hr_installations_payload() -> dict:
             "advance": advance,
             "door_rate": door_rate,
             "doors_amount": doors_amount,
+            "doors_amount_actual": doors["doors_amount_actual"],
+            "billable_quantity": doors["billable_quantity"],
+            "is_min_doors": doors["is_min_applied"],
             "total": round(doors_amount + food + fuel - advance, 2),
             "notes": str(manual_row.get("notes") or "").strip(),
         })
@@ -1565,6 +1590,7 @@ def _build_hr_installations_payload() -> dict:
             "totals": {
                 "installed_quantity": round(sum(r["installed_quantity"] for r in rows), 2),
                 "doors_amount": round(sum(r["doors_amount"] for r in rows), 2),
+                "doors_amount_actual": round(sum(r["doors_amount_actual"] for r in rows), 2),
                 "food": round(sum(r["food"] for r in rows), 2),
                 "fuel": round(sum(r["fuel"] for r in rows), 2),
                 "advance": round(sum(r["advance"] for r in rows), 2),
@@ -1588,6 +1614,7 @@ def _build_hr_installations_payload() -> dict:
             "totals": {
                 "installed_quantity": round(sum(r["installed_quantity"] for r in rows), 2),
                 "doors_amount": round(sum(r["doors_amount"] for r in rows), 2),
+                "doors_amount_actual": round(sum(r["doors_amount_actual"] for r in rows), 2),
                 "food": round(sum(r["food"] for r in rows), 2),
                 "fuel": round(sum(r["fuel"] for r in rows), 2),
                 "advance": round(sum(r["advance"] for r in rows), 2),
@@ -1599,6 +1626,7 @@ def _build_hr_installations_payload() -> dict:
     return {
         "months": months,
         "door_rate": HR_INSTALLATIONS_DOOR_RATE,
+        "min_doors": HR_INSTALLATIONS_MIN_DOORS,
         "default_food": HR_INSTALLATIONS_DEFAULT_FOOD,
         "default_fuel": HR_INSTALLATIONS_DEFAULT_FUEL,
         "orders": _hr_installations_order_options(),

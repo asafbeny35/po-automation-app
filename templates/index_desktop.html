@@ -4043,6 +4043,7 @@ table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top
 .hr-inst-input.is-date { width: 130px; }
 .hr-inst-input[readonly] { background: #f8fafc; color: #64748b; cursor: not-allowed; }
 .hr-inst-money { font-variant-numeric: tabular-nums; }
+.hr-inst-doors-actual { color: #94a3b8; font-size: 11px; font-weight: 600; white-space: nowrap; }
 .hr-inst-total { font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
 .hr-inst-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13.5px; }
 
@@ -49276,7 +49277,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== התקנות (נמשך חי מטאב ההתקנות) =====
-    let hrInstallationsData = { months: [], door_rate: 14, orders: [] };
+    let hrInstallationsData = { months: [], door_rate: 14, min_doors: 35, orders: [] };
+
+    /** תשלום התקנת דלתות: חוק תשלום מינימום — לפחות 35 דלתות, גם אם הותקנו פחות. */
+    function hrInstDoors(qty) {
+      const rate = Number(hrInstallationsData.door_rate) || 14;
+      const min = Number(hrInstallationsData.min_doors) || 35;
+      const q = Number(qty || 0) || 0;
+      // שורה ללא כמות היא התקנה שטרם בוצעה — אין עליה תשלום מינימום
+      const billable = q > 0 ? Math.max(q, min) : 0;
+      return {
+        rate, min, qty: q,
+        billed: Math.round(billable * rate * 100) / 100,
+        actual: Math.round(q * rate * 100) / 100,
+        isMin: q > 0 && q < min,
+      };
+    }
+
+    /** שורת הסיכום של עמודת הדלתות — לפי המינימום, ובסוגריים הסכום בפועל אם הופעל מינימום. */
+    function hrInstSumDoorsHtml(month) {
+      let billed = 0, actual = 0, anyMin = false;
+      (month.rows || []).forEach(r => {
+        const d = hrInstDoors(hrInstRowValue(r, "installed_quantity"));
+        billed += d.billed; actual += d.actual; if (d.isMin) anyMin = true;
+      });
+      billed = Math.round(billed * 100) / 100; actual = Math.round(actual * 100) / 100;
+      if (!anyMin) return hrInstMoney(billed);
+      return `<strong>${hrInstMoney(billed)}</strong> <span class="hr-inst-doors-actual" title="כולל תשלום מינימום של ${Number(hrInstallationsData.min_doors) || 35} דלתות בהתקנות שבהן הותקנו פחות">(${hrInstMoney(actual)})</span>`;
+    }
+
+    /** תא "התקנת דלתות": סכום המינימום, ובסוגריים הסכום לפי הכמות שהותקנה בפועל. */
+    function hrInstDoorsCellHtml(qty) {
+      const d = hrInstDoors(qty);
+      if (!d.isMin) return hrInstMoney(d.billed);
+      const title = `תשלום מינימום לפי חוק: ${d.min} דלתות × ${hrInstMoney(d.rate)}. בפועל הותקנו ${Math.round(d.qty * 100) / 100}.`;
+      return `<strong>${hrInstMoney(d.billed)}</strong> <span class="hr-inst-doors-actual" title="${escapeHtml(title)}">(${hrInstMoney(d.actual)})</span>`;
+    }
     const hrInstOpenMonths = new Set();
     const hrInstEditing = new Set();   // שורות שנמצאות כרגע במצב עריכה (אייקון העיפרון)
     const hrInstPending = {};          // rowId -> {field: value} — שינויים שטרם נשמרו
@@ -49340,7 +49376,7 @@ document.addEventListener("DOMContentLoaded", () => {
           .map(o => `<option value="${escapeHtml(o.po_number)}">${escapeHtml(o.customer_name || "")}${o.delivery_address ? " · " + escapeHtml(o.delivery_address.split("\n")[0]) : ""}</option>`)
           .join("");
         // חישוב חי לפי הערכים שעל המסך (כולל שינויים שטרם נשמרו)
-        const doors = Math.round(Number(v("installed_quantity") || 0) * (Number(hrInstallationsData.door_rate) || 14) * 100) / 100;
+        const doors = hrInstDoors(v("installed_quantity")).billed;
         const total = Math.round((doors + Number(v("food") || 0) + Number(v("fuel") || 0) - Number(v("advance") || 0)) * 100) / 100;
 
         const textCell = (field) => {
@@ -49376,7 +49412,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ${textCell("po_number")}
           ${dateCell()}
           ${qtyCell()}
-          <td class="hr-inst-money" data-hr-inst-doors>${hrInstMoney(doors)}</td>
+          <td class="hr-inst-money" data-hr-inst-doors>${hrInstDoorsCellHtml(v("installed_quantity"))}</td>
           ${numCell("food")}
           ${numCell("fuel")}
           ${numCell("advance")}
@@ -49401,7 +49437,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <tr>
                 <td colspan="4">סה״כ ${t.rows_count} התקנות</td>
                 <td data-hr-inst-sum="installed_quantity">${escapeHtml(String(t.installed_quantity ?? 0))}</td>
-                <td data-hr-inst-sum="doors_amount">${hrInstMoney(t.doors_amount)}</td>
+                <td data-hr-inst-sum="doors_amount">${hrInstSumDoorsHtml(month)}</td>
                 <td data-hr-inst-sum="food">${hrInstMoney(t.food)}</td>
                 <td data-hr-inst-sum="fuel">${hrInstMoney(t.fuel)}</td>
                 <td data-hr-inst-sum="advance">${hrInstMoney(t.advance)}</td>
@@ -49450,27 +49486,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const monthKey = card.dataset.hrInstCard || "";
       const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
       if (!month) return;
-      const doorRate = Number(hrInstallationsData.door_rate) || 14;
-      const sums = { installed_quantity: 0, doors_amount: 0, food: 0, fuel: 0, advance: 0, total: 0 };
+      const sums = { installed_quantity: 0, food: 0, fuel: 0, advance: 0, total: 0 };
       (month.rows || []).forEach(r => {
         const num = f => Number(hrInstRowValue(r, f) || 0) || 0;
         const qty = num("installed_quantity"), food = num("food"), fuel = num("fuel"), advance = num("advance");
-        const doors = Math.round(qty * doorRate * 100) / 100;
+        // חוק תשלום מינימום — הדלתות מחויבות לפי 35 גם כשהותקנו פחות
+        const doors = hrInstDoors(qty).billed;
         const total = Math.round((doors + food + fuel - advance) * 100) / 100;
         const tr = card.querySelector(`[data-hr-inst-row="${CSS.escape(String(r.visit_id || ""))}"]`);
         if (tr) {
           const doorsCell = tr.querySelector("[data-hr-inst-doors]");
           const totalCell = tr.querySelector("[data-hr-inst-total]");
-          if (doorsCell) doorsCell.textContent = hrInstMoney(doors);
+          if (doorsCell) doorsCell.innerHTML = hrInstDoorsCellHtml(qty);
           if (totalCell) totalCell.textContent = hrInstMoney(total);
         }
-        sums.installed_quantity += qty; sums.doors_amount += doors;
+        sums.installed_quantity += qty;
         sums.food += food; sums.fuel += fuel; sums.advance += advance; sums.total += total;
       });
       Object.entries(sums).forEach(([k, v]) => {
         const cell = card.querySelector(`[data-hr-inst-sum="${k}"]`);
         if (cell) cell.textContent = k === "installed_quantity" ? String(Math.round(v * 100) / 100) : hrInstMoney(v);
       });
+      const doorsSum = card.querySelector('[data-hr-inst-sum="doors_amount"]');
+      if (doorsSum) doorsSum.innerHTML = hrInstSumDoorsHtml(month);
       const grand = card.querySelector(".hr-inst-grand span");
       if (grand) grand.textContent = hrInstMoney(sums.total);
     }
@@ -49571,7 +49609,7 @@ document.addEventListener("DOMContentLoaded", () => {
             latest = data;
           }
           if (latest) {
-            hrInstallationsData = { months: latest.months || [], door_rate: latest.door_rate || 14, orders: latest.orders || hrInstallationsData.orders || [] };
+            hrInstallationsData = { months: latest.months || [], door_rate: latest.door_rate || 14, min_doors: latest.min_doors || 35, orders: latest.orders || hrInstallationsData.orders || [] };
           }
           renderHrInstallations();
           renderHours();
@@ -49589,7 +49627,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
-          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, min_doors: data.min_doors || 35, orders: data.orders || hrInstallationsData.orders || [] };
           renderHrInstallations();
           renderHours();
         } catch (err) {
@@ -49606,7 +49644,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "הפעולה נכשלה.");
-          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, min_doors: data.min_doors || 35, orders: data.orders || hrInstallationsData.orders || [] };
           hrInstOpenMonths.add(monthKey);
           renderHrInstallations();
           if (okMessage) notify(okMessage);
@@ -49643,7 +49681,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch("/hr-installations-state", { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "טעינת ההתקנות נכשלה.");
-        hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
+        hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, min_doors: data.min_doors || 35, orders: data.orders || hrInstallationsData.orders || [] };
         renderHrInstallations();
         // עמודת "שכר משוער" בטבלת השעות מוסיפה את ההתקנות שסומנו לשכר
         renderHours();
