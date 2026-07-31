@@ -49173,7 +49173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // ===== התקנות (נמשך חי מטאב ההתקנות) =====
-    let hrInstallationsData = { months: [], door_rate: 14 };
+    let hrInstallationsData = { months: [], door_rate: 14, orders: [] };
     const hrInstOpenMonths = new Set();
     const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
 
@@ -49193,7 +49193,9 @@ document.addEventListener("DOMContentLoaded", () => {
         .filter(e => String(e.active_status || "active") === "active")
         .map(e => String(e.full_name || "").trim())
         .filter(Boolean);
-      hrInstMonthsHost.innerHTML = months.map(month => renderHrInstMonthCard(month, employeeNames)).join("");
+      const customerNames = [...new Set((hrInstallationsData.orders || []).map(o => o.customer_name).filter(Boolean))];
+      const sharedLists = `<datalist id="hrInstCustomerOptions">${customerNames.map(n => `<option value="${escapeHtml(n)}"></option>`).join("")}</datalist>`;
+      hrInstMonthsHost.innerHTML = sharedLists + months.map(month => renderHrInstMonthCard(month, employeeNames)).join("");
       months.forEach(month => wireHrInstMonthCard(month.month_key));
     }
 
@@ -49207,9 +49209,26 @@ document.addEventListener("DOMContentLoaded", () => {
         : (t.rows_count ? `${t.rows_count} התקנות · ${hrInstMoney(t.total)}` : "אין התקנות");
       const rowsHtml = (month.rows || []).map(r => {
         const qtyEditable = !!r.single_item_key;
-        const textCell = (field, value) => r.is_manual
-          ? `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="${field}" value="${escapeHtml(value || "")}" placeholder="—"></td>`
-          : `<td>${escapeHtml(value || "—")}</td>`;
+        const orders = hrInstallationsData.orders || [];
+        const rowKey = String(r.visit_id || "").replace(/[^A-Za-z0-9_-]/g, "");
+        // רשימת ההזמנות מצטמצמת ללקוח שנבחר בשורה, אחרת מציגה את כל ההזמנות
+        const poPool = r.customer_name
+          ? orders.filter(o => o.customer_name === r.customer_name)
+          : orders;
+        const poOptions = poPool
+          .filter(o => o.po_number)
+          .map(o => `<option value="${escapeHtml(o.po_number)}">${escapeHtml(o.customer_name || "")}${o.delivery_address ? " · " + escapeHtml(o.delivery_address.split("\n")[0]) : ""}</option>`)
+          .join("");
+        const textCell = (field, value) => {
+          if (!r.is_manual) return `<td>${escapeHtml(value || "—")}</td>`;
+          if (field === "customer_name") {
+            return `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="customer_name" list="hrInstCustomerOptions" value="${escapeHtml(value || "")}" placeholder="בחר לקוח"></td>`;
+          }
+          if (field === "po_number") {
+            return `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="po_number" list="hrInstPo-${escapeHtml(rowKey)}" value="${escapeHtml(value || "")}" placeholder="בחר הזמנה"><datalist id="hrInstPo-${escapeHtml(rowKey)}">${poOptions}</datalist></td>`;
+          }
+          return `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="${field}" value="${escapeHtml(value || "")}" placeholder="—"></td>`;
+        };
         return `
         <tr data-hr-inst-row="${escapeHtml(r.visit_id)}"${r.is_manual ? " data-hr-inst-manual" : ""}>
           ${textCell("location", r.location)}
@@ -49319,6 +49338,23 @@ document.addEventListener("DOMContentLoaded", () => {
           const TEXT_FIELDS = ["install_date", "location", "customer_name", "po_number"];
           const body = { visit_id: visitId };
           body[field] = TEXT_FIELDS.includes(field) ? String(input.value || "") : Number(input.value || 0);
+          // בחירת הזמנה מהרשימה משלימה אוטומטית לקוח וכתובת אם הם עדיין ריקים
+          if (field === "po_number" && tr.hasAttribute("data-hr-inst-manual")) {
+            const match = (hrInstallationsData.orders || []).find(o => o.po_number === String(input.value || "").trim());
+            if (match) {
+              const custInput = tr.querySelector('[data-hr-inst-field="customer_name"]');
+              const locInput = tr.querySelector('[data-hr-inst-field="location"]');
+              if (custInput && !String(custInput.value || "").trim() && match.customer_name) {
+                custInput.value = match.customer_name;
+                body.customer_name = match.customer_name;
+              }
+              if (locInput && !String(locInput.value || "").trim() && match.delivery_address) {
+                const firstLine = String(match.delivery_address).split("\n").filter(Boolean).join(", ");
+                locInput.value = firstLine;
+                body.location = firstLine;
+              }
+            }
+          }
           input.disabled = true;
           try {
             const res = await fetch("/hr-installations-save-row", {
@@ -49331,7 +49367,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else if (data.writeback?.reason === "multi_item_case") {
               notify("הכמות לא עודכנה — בתיק הזה יש כמה פריטים, עדכן את הכמות בטאב ההתקנות.");
             }
-            hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+            hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
             renderHrInstallations();
           } catch (err) {
             notify(err.message || "לא הצלחתי לשמור את השורה.");
@@ -49347,7 +49383,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
-          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
           renderHrInstallations();
         } catch (err) {
           notify(err.message || "לא הצלחתי לשמור.");
@@ -49363,7 +49399,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "הפעולה נכשלה.");
-          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
           hrInstOpenMonths.add(monthKey);
           renderHrInstallations();
           if (okMessage) notify(okMessage);
@@ -49398,7 +49434,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch("/hr-installations-state", { cache: "no-store" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "טעינת ההתקנות נכשלה.");
-        hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+        hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
         renderHrInstallations();
       } catch (err) {
         hrInstMonthsHost.innerHTML = `<div class="hr-empty" style="padding:18px;">${escapeHtml(err.message || "לא הצלחתי לטעון את טבלאות ההתקנות.")}</div>`;
