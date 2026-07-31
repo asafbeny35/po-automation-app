@@ -4020,6 +4020,24 @@ table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top
 .hr-inst-total { font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
 .hr-inst-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13.5px; }
 
+.hr-inst-input.is-text { width: 140px; text-align: right; }
+.hr-inst-rowaction { width: 34px; text-align: center; }
+.hr-inst-del {
+  border: none; background: #fef2f2; color: #dc2626; width: 24px; height: 24px;
+  border-radius: 7px; font-size: 16px; line-height: 1; cursor: pointer; font-weight: 700;
+}
+.hr-inst-del:hover { background: #fee2e2; }
+.hr-inst-synced { color: #cbd5e1; font-size: 14px; }
+tr[data-hr-inst-manual] td { background: #fffdf7; }
+.hr-inst-add-row { margin-top: 10px; }
+.hr-inst-add-btn {
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px;
+  border: 1px dashed #cbd5e1; border-radius: 9px; background: #fff;
+  color: #475569; font: inherit; font-size: 13px; cursor: pointer;
+}
+.hr-inst-add-btn:hover { border-color: #2452aa; color: #2452aa; background: #f8fbff; }
+.hr-inst-add-btn span { font-size: 16px; font-weight: 700; line-height: 1; }
+
 .hr-inst-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
 .hr-inst-payroll-toggle { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: #334155; cursor: pointer; user-select: none; }
 .hr-inst-payroll-toggle input { width: 17px; height: 17px; cursor: pointer; accent-color: #16a34a; }
@@ -43882,7 +43900,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderLostDebts();
       showToast("success", "נשמר", "פרטי החוב עודכנו.");
     } catch (err) {
-      showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור.");
+      notify(err.message || "לא הצלחתי לשמור.");
     }
   }
 
@@ -49189,11 +49207,14 @@ document.addEventListener("DOMContentLoaded", () => {
         : (t.rows_count ? `${t.rows_count} התקנות · ${hrInstMoney(t.total)}` : "אין התקנות");
       const rowsHtml = (month.rows || []).map(r => {
         const qtyEditable = !!r.single_item_key;
+        const textCell = (field, value) => r.is_manual
+          ? `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="${field}" value="${escapeHtml(value || "")}" placeholder="—"></td>`
+          : `<td>${escapeHtml(value || "—")}</td>`;
         return `
-        <tr data-hr-inst-row="${escapeHtml(r.visit_id)}">
-          <td>${escapeHtml(r.location || "—")}</td>
-          <td>${escapeHtml(r.customer_name || "—")}</td>
-          <td>${escapeHtml(r.po_number || "—")}</td>
+        <tr data-hr-inst-row="${escapeHtml(r.visit_id)}"${r.is_manual ? " data-hr-inst-manual" : ""}>
+          ${textCell("location", r.location)}
+          ${textCell("customer_name", r.customer_name)}
+          ${textCell("po_number", r.po_number)}
           <td><input type="date" class="hr-inst-input is-date" data-hr-inst-field="install_date" value="${escapeHtml(r.install_date || "")}"></td>
           <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="installed_quantity" value="${escapeHtml(String(r.installed_quantity ?? 0))}" ${qtyEditable ? "" : "readonly title=\"בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות\""}></td>
           <td class="hr-inst-money" data-hr-inst-doors>${hrInstMoney(r.doors_amount)}</td>
@@ -49201,6 +49222,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="fuel" value="${escapeHtml(String(r.fuel ?? 0))}"></td>
           <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="advance" value="${escapeHtml(String(r.advance ?? 0))}"></td>
           <td class="hr-inst-total" data-hr-inst-total>${hrInstMoney(r.total)}</td>
+          <td class="hr-inst-rowaction">${r.is_manual ? `<button type="button" class="hr-inst-del" data-hr-inst-delete title="מחק שורה ידנית">×</button>` : `<span class="hr-inst-synced" title="נמשך מטאב ההתקנות">⇄</span>`}</td>
         </tr>`;
       }).join("");
       const tableHtml = (month.rows || []).length ? `
@@ -49209,7 +49231,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <thead>
               <tr>
                 <th>מיקום</th><th>לקוח</th><th>הזמנה</th><th>תאריך התקנה</th><th>הותקנו</th>
-                <th>התקנת דלתות</th><th>אוכל</th><th>דלק</th><th>מפרעה</th><th>סיכום</th>
+                <th>התקנת דלתות</th><th>אוכל</th><th>דלק</th><th>מפרעה</th><th>סיכום</th><th></th>
               </tr>
             </thead>
             <tbody>${rowsHtml}</tbody>
@@ -49222,10 +49244,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td data-hr-inst-sum="fuel">${hrInstMoney(t.fuel)}</td>
                 <td data-hr-inst-sum="advance">${hrInstMoney(t.advance)}</td>
                 <td class="hr-inst-total" data-hr-inst-sum="total">${hrInstMoney(t.total)}</td>
+                <td></td>
               </tr>
             </tfoot>
           </table>
-        </div>` : `<div class="hr-inst-empty">אין התקנות שתועדו בחודש הזה. התקנות שתתאם או תדווח בטאב ההתקנות יופיעו כאן אוטומטית.</div>`;
+        </div>` : `<div class="hr-inst-empty">אין התקנות שתועדו בחודש הזה. התקנות שתתאם או תדווח בטאב ההתקנות יופיעו כאן אוטומטית, ואפשר להוסיף התקנה ידנית בכפתור למטה.</div>`;
       return `
         <div class="hr-inst-card${open ? " is-open" : ""}" data-hr-inst-card="${escapeHtml(key)}">
           <div class="hr-inst-card-head" data-hr-inst-toggle>
@@ -49241,6 +49264,9 @@ document.addEventListener("DOMContentLoaded", () => {
               <datalist id="hrInstEmployeeOptions">${employeeNames.map(n => `<option value="${escapeHtml(n)}"></option>`).join("")}</datalist>
             </div>
             ${tableHtml}
+            <div class="hr-inst-add-row">
+              <button type="button" class="hr-inst-add-btn" data-hr-inst-add><span>+</span> הוסף התקנה ידנית</button>
+            </div>
             <div class="hr-inst-footer-row">
               <label class="hr-inst-payroll-toggle">
                 <input type="checkbox" data-hr-inst-payroll ${month.include_in_payroll ? "checked" : ""}>
@@ -49290,8 +49316,9 @@ document.addEventListener("DOMContentLoaded", () => {
           const visitId = tr?.dataset.hrInstRow;
           const field = input.dataset.hrInstField;
           if (!visitId || !field) return;
+          const TEXT_FIELDS = ["install_date", "location", "customer_name", "po_number"];
           const body = { visit_id: visitId };
-          body[field] = field === "install_date" ? String(input.value || "") : Number(input.value || 0);
+          body[field] = TEXT_FIELDS.includes(field) ? String(input.value || "") : Number(input.value || 0);
           input.disabled = true;
           try {
             const res = await fetch("/hr-installations-save-row", {
@@ -49300,14 +49327,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
             if (data.writeback?.status === "error") {
-              showToast("error", "לא נשמר בטאב ההתקנות", data.writeback.error || "");
+              notify(`לא נשמר בטאב ההתקנות: ${data.writeback.error || ""}`);
             } else if (data.writeback?.reason === "multi_item_case") {
-              showToast("info", "הכמות לא עודכנה", "בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות.");
+              notify("הכמות לא עודכנה — בתיק הזה יש כמה פריטים, עדכן את הכמות בטאב ההתקנות.");
             }
             hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
             renderHrInstallations();
           } catch (err) {
-            showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור את השורה.");
+            notify(err.message || "לא הצלחתי לשמור את השורה.");
             input.disabled = false;
           }
         });
@@ -49323,11 +49350,46 @@ document.addEventListener("DOMContentLoaded", () => {
           hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
           renderHrInstallations();
         } catch (err) {
-          showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור.");
+          notify(err.message || "לא הצלחתי לשמור.");
         }
       };
       card.querySelector("[data-hr-inst-employee]")?.addEventListener("change", (e) => saveMonth({ employee_name: e.target.value }));
       card.querySelector("[data-hr-inst-payroll]")?.addEventListener("change", (e) => saveMonth({ include_in_payroll: e.target.checked }));
+
+      const postHrInst = async (url, body, okMessage) => {
+        try {
+          const res = await fetch(url, {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "הפעולה נכשלה.");
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+          hrInstOpenMonths.add(monthKey);
+          renderHrInstallations();
+          if (okMessage) notify(okMessage);
+          return data;
+        } catch (err) {
+          notify(err.message || "לא הצלחתי לבצע את הפעולה.");
+          return null;
+        }
+      };
+
+      card.querySelector("[data-hr-inst-add]")?.addEventListener("click", async () => {
+        const data = await postHrInst("/hr-installations-add-manual", { month_key: monthKey }, "נוספה שורת התקנה");
+        if (!data?.manual_id) return;
+        // מיקוד אוטומטי בשדה המיקום של השורה החדשה
+        const newInput = hrInstMonthsHost?.querySelector(`[data-hr-inst-row="${CSS.escape(data.manual_id)}"] [data-hr-inst-field="location"]`);
+        newInput?.focus();
+      });
+
+      card.querySelectorAll("[data-hr-inst-delete]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const visitId = btn.closest("[data-hr-inst-row]")?.dataset.hrInstRow;
+          if (!visitId) return;
+          if (!window.confirm("למחוק את שורת ההתקנה הידנית הזו?")) return;
+          await postHrInst("/hr-installations-delete-manual", { manual_id: visitId }, "השורה נמחקה");
+        });
+      });
     }
 
     async function loadHrInstallations() {

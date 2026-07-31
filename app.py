@@ -1347,7 +1347,27 @@ HR_INSTALLATIONS_MONTHS = ["2026-07", "2026-08", "2026-09", "2026-10", "2026-11"
 
 
 def _default_hr_installations_state() -> dict:
-    return {"entries": {}, "months": {}, "updated_at": ""}
+    return {"entries": {}, "months": {}, "manual": {}, "updated_at": ""}
+
+
+def _normalize_hr_installation_manual(row: dict) -> dict:
+    """שורת התקנה שנוספה ידנית — לא מגיעה מטאב ההתקנות ולכן כל השדות שלה נשמרים כאן."""
+    row = dict(row or {})
+    return {
+        "manual_id": str(row.get("manual_id") or "").strip() or f"manual_{uuid.uuid4().hex[:12]}",
+        "month_key": str(row.get("month_key") or "").strip(),
+        "location": str(row.get("location") or "").strip(),
+        "customer_name": str(row.get("customer_name") or "").strip(),
+        "po_number": str(row.get("po_number") or "").strip(),
+        "install_date": str(row.get("install_date") or "").strip(),
+        "installed_quantity": _hr_installation_number(row.get("installed_quantity"), 0.0),
+        "food": _hr_installation_number(row.get("food"), HR_INSTALLATIONS_DEFAULT_FOOD),
+        "fuel": _hr_installation_number(row.get("fuel"), HR_INSTALLATIONS_DEFAULT_FUEL),
+        "advance": _hr_installation_number(row.get("advance"), 0.0),
+        "door_rate": _hr_installation_number(row.get("door_rate"), HR_INSTALLATIONS_DOOR_RATE),
+        "notes": str(row.get("notes") or "").strip(),
+        "created_at": str(row.get("created_at") or datetime.now().isoformat(timespec="seconds")),
+    }
 
 
 def _hr_installation_number(value, fallback: float = 0.0) -> float:
@@ -1401,6 +1421,13 @@ def _load_hr_installations_state() -> dict:
                     for key, value in months.items()
                     if isinstance(value, dict)
                 }
+            manual = payload.get("manual")
+            if isinstance(manual, dict):
+                state["manual"] = {
+                    str(key): _normalize_hr_installation_manual({**value, "manual_id": key})
+                    for key, value in manual.items()
+                    if isinstance(value, dict)
+                }
             state["updated_at"] = str(payload.get("updated_at") or "").strip()
             return state
     except Exception as exc:
@@ -1418,6 +1445,11 @@ def _save_hr_installations_state(state: dict) -> dict:
     payload["months"] = {
         str(key): _normalize_hr_installation_month(value)
         for key, value in ((state or {}).get("months") or {}).items()
+        if isinstance(value, dict)
+    }
+    payload["manual"] = {
+        str(key): _normalize_hr_installation_manual({**value, "manual_id": key})
+        for key, value in ((state or {}).get("manual") or {}).items()
         if isinstance(value, dict)
     }
     payload["updated_at"] = datetime.now().isoformat(timespec="seconds")
@@ -1466,6 +1498,7 @@ def _build_hr_installations_payload() -> dict:
             total = round(doors_amount + entry["food"] + entry["fuel"] - entry["advance"], 2)
             rows_by_month.setdefault(month_key, []).append({
                 "visit_id": visit_id,
+                "is_manual": False,
                 "installation_id": str(case.get("installation_id") or "").strip(),
                 "location": str(case.get("delivery_address") or "").strip(),
                 "customer_name": str(case.get("customer_name") or "").strip(),
@@ -1483,6 +1516,40 @@ def _build_hr_installations_payload() -> dict:
                 "total": total,
                 "notes": entry["notes"],
             })
+
+    # שורות שנוספו ידנית — לא מגיעות מטאב ההתקנות, נשמרות כאן במלואן
+    for manual_row in (state.get("manual") or {}).values():
+        month_key = str(manual_row.get("month_key") or "").strip() or _hr_installation_month_key(
+            {"visit_date": manual_row.get("install_date")}
+        )
+        if not month_key:
+            continue
+        installed = _hr_installation_number(manual_row.get("installed_quantity"), 0.0)
+        door_rate = _hr_installation_number(manual_row.get("door_rate"), HR_INSTALLATIONS_DOOR_RATE)
+        food = _hr_installation_number(manual_row.get("food"), HR_INSTALLATIONS_DEFAULT_FOOD)
+        fuel = _hr_installation_number(manual_row.get("fuel"), HR_INSTALLATIONS_DEFAULT_FUEL)
+        advance = _hr_installation_number(manual_row.get("advance"), 0.0)
+        doors_amount = round(installed * door_rate, 2)
+        rows_by_month.setdefault(month_key, []).append({
+            "visit_id": str(manual_row.get("manual_id") or "").strip(),
+            "is_manual": True,
+            "installation_id": "",
+            "location": str(manual_row.get("location") or "").strip(),
+            "customer_name": str(manual_row.get("customer_name") or "").strip(),
+            "po_number": str(manual_row.get("po_number") or "").strip(),
+            "install_date": str(manual_row.get("install_date") or "").strip(),
+            "has_actual_date": bool(str(manual_row.get("install_date") or "").strip()),
+            "installed_quantity": installed,
+            "single_item_key": "manual",
+            "visit_status": "ידני",
+            "food": food,
+            "fuel": fuel,
+            "advance": advance,
+            "door_rate": door_rate,
+            "doors_amount": doors_amount,
+            "total": round(doors_amount + food + fuel - advance, 2),
+            "notes": str(manual_row.get("notes") or "").strip(),
+        })
 
     months: list[dict] = []
     for month_key in HR_INSTALLATIONS_MONTHS:
@@ -26023,6 +26090,26 @@ async def hr_installations_save_row(request: Request):
             return JSONResponse({"error": "חסר מזהה ביקור."}, status_code=400)
 
         state = _load_hr_installations_state()
+
+        # שורה ידנית — כל השדות שלה נשמרות כאן, בלי כתיבה חזרה לטאב ההתקנות
+        manual_rows = state.get("manual") or {}
+        if visit_id in manual_rows:
+            manual_row = dict(manual_rows[visit_id])
+            for field in ("location", "customer_name", "po_number", "install_date", "notes"):
+                if field in body:
+                    manual_row[field] = str(body.get(field) or "").strip()
+            for field in ("installed_quantity", "food", "fuel", "advance", "door_rate"):
+                if field in body:
+                    manual_row[field] = _hr_installation_number(body.get(field), manual_row.get(field))
+            if "install_date" in body:
+                parsed = _hr_parse_iso_date(str(body.get("install_date") or "").strip())
+                if parsed:
+                    manual_row["month_key"] = f"{parsed.year:04d}-{parsed.month:02d}"
+            manual_rows[visit_id] = _normalize_hr_installation_manual({**manual_row, "manual_id": visit_id})
+            state["manual"] = manual_rows
+            _save_hr_installations_state(state)
+            return JSONResponse({"status": "ok", "writeback": {"status": "manual"}, **_build_hr_installations_payload()})
+
         entries = state.get("entries") or {}
         current = _normalize_hr_installation_entry(entries.get(visit_id) or {})
         for field in ("food", "fuel", "advance", "door_rate"):
@@ -26085,6 +26172,60 @@ async def hr_installations_save_row(request: Request):
     except Exception as exc:
         log_handled_error("hr_installations_save_row failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לשמור את שורת ההתקנה: {exc}"}, status_code=500)
+
+
+@app.post("/hr-installations-add-manual")
+async def hr_installations_add_manual(request: Request):
+    """מוסיף שורת התקנה ידנית לחודש — להתקנות שאין להן תיק בטאב ההתקנות."""
+    try:
+        body = await request.json()
+        month_key = str(body.get("month_key") or "").strip()
+        if not month_key:
+            return JSONResponse({"error": "חסר מזהה חודש."}, status_code=400)
+        default_date = str(body.get("install_date") or "").strip()
+        if not default_date:
+            try:
+                year, month = month_key.split("-")
+                default_date = f"{int(year):04d}-{int(month):02d}-01"
+            except Exception:
+                default_date = ""
+        manual_row = _normalize_hr_installation_manual({
+            "month_key": month_key,
+            "location": str(body.get("location") or "").strip(),
+            "customer_name": str(body.get("customer_name") or "").strip(),
+            "po_number": str(body.get("po_number") or "").strip(),
+            "install_date": default_date,
+            "installed_quantity": body.get("installed_quantity", 0),
+        })
+        state = _load_hr_installations_state()
+        manual_rows = state.get("manual") or {}
+        manual_rows[manual_row["manual_id"]] = manual_row
+        state["manual"] = manual_rows
+        _save_hr_installations_state(state)
+        return JSONResponse({"status": "ok", "manual_id": manual_row["manual_id"], **_build_hr_installations_payload()})
+    except Exception as exc:
+        log_handled_error("hr_installations_add_manual failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להוסיף שורת התקנה: {exc}"}, status_code=500)
+
+
+@app.post("/hr-installations-delete-manual")
+async def hr_installations_delete_manual(request: Request):
+    try:
+        body = await request.json()
+        manual_id = str(body.get("manual_id") or body.get("visit_id") or "").strip()
+        if not manual_id:
+            return JSONResponse({"error": "חסר מזהה שורה למחיקה."}, status_code=400)
+        state = _load_hr_installations_state()
+        manual_rows = state.get("manual") or {}
+        if manual_id not in manual_rows:
+            return JSONResponse({"error": "אפשר למחוק רק שורות שנוספו ידנית."}, status_code=400)
+        manual_rows.pop(manual_id, None)
+        state["manual"] = manual_rows
+        _save_hr_installations_state(state)
+        return JSONResponse({"status": "ok", **_build_hr_installations_payload()})
+    except Exception as exc:
+        log_handled_error("hr_installations_delete_manual failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי למחוק את השורה: {exc}"}, status_code=500)
 
 
 @app.post("/hr-installations-save-month")
