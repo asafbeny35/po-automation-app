@@ -1629,18 +1629,26 @@ def _build_hr_installations_payload() -> dict:
         "min_doors": HR_INSTALLATIONS_MIN_DOORS,
         "default_food": HR_INSTALLATIONS_DEFAULT_FOOD,
         "default_fuel": HR_INSTALLATIONS_DEFAULT_FUEL,
-        "orders": _hr_installations_order_options(),
+        "orders": _hr_installations_order_options(installations),
     }
 
 
-def _hr_installations_order_options() -> list[dict]:
-    """לקוחות והזמנות מטאב ההזמנות — לבחירה בשורות התקנה ידניות."""
-    rows = get_cached_order_history_rows() or load_order_history_rows(force_refresh=False)
+def _hr_installations_order_options(installations: dict | None = None) -> list[dict]:
+    """לקוחות והזמנות לבחירה בשורות התקנה ידניות.
+
+    רק הזמנות שסומן עליהן "כולל התקנה" ולכן יש להן תיק בטאב ההתקנות — לא כל
+    היסטוריית ההזמנות. תיקים שנמחקו מדף ההתקנות לא מוצעים.
+    """
+    if installations is None:
+        installations = _build_installations_payload()
+    hidden_ids = _installation_hidden_case_ids()
     seen: set[tuple[str, str]] = set()
     options: list[dict] = []
-    for row in rows or []:
-        customer = str((row or {}).get("customer_name") or "").strip()
-        po_number = str((row or {}).get("po_number") or "").strip()
+    for case in installations.get("rows") or []:
+        if str((case or {}).get("installation_id") or "").strip() in hidden_ids:
+            continue
+        customer = str((case or {}).get("customer_name") or "").strip()
+        po_number = str((case or {}).get("po_number") or "").strip()
         if not customer and not po_number:
             continue
         key = (customer, po_number)
@@ -1650,8 +1658,8 @@ def _hr_installations_order_options() -> list[dict]:
         options.append({
             "customer_name": customer,
             "po_number": po_number,
-            "delivery_address": normalize_ws(str((row or {}).get("delivery_address") or "")),
-            "po_date": str((row or {}).get("po_date") or "").strip(),
+            "delivery_address": normalize_ws(str((case or {}).get("delivery_address") or "")),
+            "po_date": str((case or {}).get("po_date") or "").strip(),
         })
     options.sort(key=lambda o: (o["customer_name"], o["po_number"]))
     return options

@@ -49491,6 +49491,33 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===== התקנות (נמשך חי מטאב ההתקנות) =====
     let hrInstallationsData = { months: [], door_rate: 14, min_doors: 35, orders: [] };
 
+    function hrInstPoOptionsHtml(pool) {
+      return (pool || [])
+        .filter(o => o.po_number)
+        .map(o => `<option value="${escapeHtml(o.po_number)}">${escapeHtml(o.customer_name || "")}${o.delivery_address ? " · " + escapeHtml(o.delivery_address.split("\n")[0]) : ""}</option>`)
+        .join("");
+    }
+
+    /** מרענן את רשימת ההזמנות של השורה מיד כששם הלקוח משתנה, בלי רינדור מחדש. */
+    function refreshHrInstPoDatalist(tr) {
+      const list = tr?.querySelector('[data-hr-inst-field="po_number"]')?.getAttribute("list");
+      const datalist = list ? tr.querySelector(`#${CSS.escape(list)}`) : null;
+      if (!datalist) return;
+      const customer = tr.querySelector('[data-hr-inst-field="customer_name"]')?.value || "";
+      datalist.innerHTML = hrInstPoOptionsHtml(hrInstOrdersForCustomer(customer));
+    }
+
+    /** ההזמנות של לקוח מסוים בלבד. התאמה מדויקת, ואם הוקלד שם חלקי — לפי הכלה. */
+    function hrInstOrdersForCustomer(customerName) {
+      const orders = hrInstallationsData.orders || [];
+      const name = String(customerName || "").trim();
+      if (!name) return orders;
+      const exact = orders.filter(o => String(o.customer_name || "").trim() === name);
+      if (exact.length) return exact;
+      const needle = name.toLowerCase();
+      return orders.filter(o => String(o.customer_name || "").trim().toLowerCase().includes(needle));
+    }
+
     /** תשלום התקנת דלתות: חוק תשלום מינימום — לפחות 35 דלתות, גם אם הותקנו פחות. */
     function hrInstDoors(qty) {
       const rate = Number(hrInstallationsData.door_rate) || 14;
@@ -49579,14 +49606,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const qtyEditable = !!r.single_item_key;
         const orders = hrInstallationsData.orders || [];
         const rowKey = id.replace(/[^A-Za-z0-9_-]/g, "");
-        // רשימת ההזמנות מצטמצמת ללקוח שנבחר בשורה, אחרת מציגה את כל ההזמנות
-        const poPool = v("customer_name")
-          ? orders.filter(o => o.customer_name === v("customer_name"))
-          : orders;
-        const poOptions = poPool
-          .filter(o => o.po_number)
-          .map(o => `<option value="${escapeHtml(o.po_number)}">${escapeHtml(o.customer_name || "")}${o.delivery_address ? " · " + escapeHtml(o.delivery_address.split("\n")[0]) : ""}</option>`)
-          .join("");
+        // רשימת ההזמנות מצטמצמת להזמנות של הלקוח שבשורה בלבד. גם הקלדה חלקית של
+        // שם הלקוח מצמצמת, כדי שלא יוצעו הזמנות של לקוח אחר.
+        const poPool = hrInstOrdersForCustomer(v("customer_name"));
+        const poOptions = hrInstPoOptionsHtml(poPool);
         // חישוב חי לפי הערכים שעל המסך (כולל שינויים שטרם נשמרו)
         const doors = hrInstDoors(v("installed_quantity")).billed;
         const total = Math.round((doors + Number(v("food") || 0) + Number(v("fuel") || 0) - Number(v("advance") || 0)) * 100) / 100;
@@ -49763,6 +49786,8 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!rowId || !field) return;
           const pending = hrInstPending[rowId] || (hrInstPending[rowId] = {});
           pending[field] = TEXT_FIELDS.includes(field) ? String(input.value || "") : Number(input.value || 0);
+          // שינוי לקוח מצמצם מיד את רשימת ההזמנות המוצעת לאותו לקוח
+          if (field === "customer_name") refreshHrInstPoDatalist(tr);
           // בחירת הזמנה מהרשימה משלימה לקוח וכתובת אם הם עדיין ריקים
           if (field === "po_number" && tr.hasAttribute("data-hr-inst-manual")) {
             const match = (hrInstallationsData.orders || []).find(o => o.po_number === String(input.value || "").trim());
