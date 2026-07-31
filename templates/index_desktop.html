@@ -3969,6 +3969,32 @@ body.panel-only .shell {
   font-size: 13px;
 }
 
+/* ===== מתג תצוגה: עובדים פעילים / עובדי עבר ===== */
+.hr-view-switch { display: inline-flex; gap: 6px; padding: 5px; background: #f1f5f9; border-radius: 13px; margin-bottom: 14px; }
+.hr-view-btn {
+  display: flex; align-items: center; gap: 8px; padding: 9px 18px; border: none;
+  border-radius: 10px; background: transparent; color: #64748b; font: inherit;
+  font-size: 14px; font-weight: 600; cursor: pointer; transition: all .15s ease;
+}
+.hr-view-btn:hover { color: #0f172a; }
+.hr-view-btn.active { background: #fff; color: #0f172a; box-shadow: 0 1px 3px rgba(15,23,42,0.12); }
+.hr-view-btn-count {
+  min-width: 22px; height: 22px; padding: 0 7px; border-radius: 999px;
+  background: #e2e8f0; color: #475569; font-size: 12px; font-weight: 700;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.hr-view-btn.active .hr-view-btn-count { background: #2452aa; color: #fff; }
+.hr-view-btn[data-hr-view="former"].active .hr-view-btn-count { background: #64748b; }
+.hr-former-banner {
+  margin-bottom: 14px; padding: 11px 16px; border-radius: 11px;
+  background: #f8fafc; border: 1px solid #e2e8f0; color: #475569; font-size: 13.5px;
+}
+.hr-employee-card.is-former { background: #fafafa; border-color: #e2e8f0; }
+.hr-former-tag {
+  display: inline-block; vertical-align: middle; margin-inline-start: 7px; padding: 2px 9px;
+  border-radius: 999px; background: #e2e8f0; color: #475569; font-size: 11.5px; font-weight: 700;
+}
+
 /* ===== התקנות בעובדים ושכר ===== */
 .hr-installations-wrap { margin-top: 26px; padding-top: 20px; border-top: 2px dashed #e2e8f0; }
 .hr-installations-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
@@ -16396,6 +16422,20 @@ input:focus {
         </div>
         <div id="hrLoadProgressMessage" class="receipts-progress-message">מכין את נתוני העובדים, השכר, ההפרשות והשעות להצגה.</div>
       </div>
+      <div class="hr-view-switch" role="tablist" aria-label="בחירת תצוגת עובדים">
+        <button type="button" class="hr-view-btn active" data-hr-view="active" aria-pressed="true">
+          <span class="hr-view-btn-title">עובדים פעילים</span>
+          <span class="hr-view-btn-count" data-hr-view-count="active">—</span>
+        </button>
+        <button type="button" class="hr-view-btn" data-hr-view="former" aria-pressed="false">
+          <span class="hr-view-btn-title">עובדי עבר</span>
+          <span class="hr-view-btn-count" data-hr-view-count="former">—</span>
+        </button>
+      </div>
+      <div id="hrFormerBanner" class="hr-former-banner" hidden>
+        אתה צופה ב<strong>עובדי עבר</strong> — כל הטבלאות בדף מציגות רק עובדים שסיימו העסקה. לחזרה לחץ על <strong>עובדים פעילים</strong>.
+      </div>
+
       <div id="hrSummaryCards" class="hr-summary-cards">
         <div class="hr-summary-card"><div class="hr-summary-label">עובדים פעילים</div><div class="hr-summary-value">0</div><div class="hr-summary-meta">הנתונים ייטענו בלחיצה על טען נתונים.</div></div>
         <div class="hr-summary-card"><div class="hr-summary-label">גלובליים</div><div class="hr-summary-value">0</div><div class="hr-summary-meta">חלוקה בין גלובלי לשעתי.</div></div>
@@ -48775,7 +48815,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const summary = hrState.summary || {};
       summaryCards.innerHTML = `
         <div class="hr-summary-card">
-          <div class="hr-summary-label">עובדים פעילים</div>
+          <div class="hr-summary-label">${hrViewMode === "former" ? "עובדי עבר" : "עובדים פעילים"}</div>
           <div class="hr-summary-value">${escapeHtml(summary.employees_total || 0)}</div>
           <div class="hr-summary-meta">כרגע יש ${escapeHtml(summary.employees_global || 0)} גלובליים ו־${escapeHtml(summary.employees_hourly || 0)} שעתי.</div>
         </div>
@@ -48810,12 +48850,14 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       overviewGrid.innerHTML = employees.map(employee => `
-        <article class="hr-employee-card ${employee.employment_type === "hourly" ? "hourly" : ""}">
-          <h3>${escapeHtml(employee.full_name || "עובד")}</h3>
+        <article class="hr-employee-card ${employee.employment_type === "hourly" ? "hourly" : ""}${hrEmployeeIsFormer(employee) ? " is-former" : ""}">
+          <h3>${escapeHtml(employee.full_name || "עובד")}${hrEmployeeIsFormer(employee) ? ` <span class="hr-former-tag">עובד עבר</span>` : ""}</h3>
           <div class="hr-employee-card-meta">
             <div><strong>סוג העסקה:</strong> ${escapeHtml(employee.employment_type === "hourly" ? "שעתי" : "גלובלי")}</div>
             <div><strong>ת.ז:</strong> ${escapeHtml(employee.id_number || "—")}</div>
             <div><strong>תחילת עבודה:</strong> ${escapeHtml(hrDateDisplay(employee.start_date || ""))}</div>
+            ${hrEmployeeIsFormer(employee) ? `<div><strong>סיום העסקה:</strong> ${escapeHtml(hrDateDisplay(employee.end_date || ""))}</div>
+            <div><strong>סיבת עזיבה:</strong> ${escapeHtml(employee.leave_reason || "—")}</div>` : ""}
             <div><strong>שכר גלובלי:</strong> ${escapeHtml(employee.base_salary ? formatCurrency(employee.base_salary) : "—")}</div>
             <div><strong>שכר לשעה:</strong> ${escapeHtml(employee.hourly_rate ? `${Number(employee.hourly_rate).toFixed(2)} ₪` : "—")}</div>
             <div><strong>קרן פנסיה:</strong> ${escapeHtml(employee.pension_fund || "—")}</div>
@@ -49443,19 +49485,59 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("hrInstallationsRefresh")?.addEventListener("click", loadHrInstallations);
 
-    function applyState(payload) {
+    // ===== תצוגת עובדים פעילים מול עובדי עבר =====
+    // הדף אחד, אבל כל הטבלאות מסוננות לפי קבוצת העובדים הנבחרת, כך שעובדי עבר
+    // לא מופיעים בשום מקום בתצוגה הרגילה.
+    let hrViewMode = "active";
+    let hrStateAll = null;
+
+    function hrEmployeeIsFormer(employee) {
+      return String(employee?.active_status || "active").trim().toLowerCase() === "inactive";
+    }
+
+    function applyHrViewFilter() {
+      if (!hrStateAll) return;
+      const wantFormer = hrViewMode === "former";
+      const employees = (hrStateAll.employees || []).filter(e => hrEmployeeIsFormer(e) === wantFormer);
+      const allowedIds = new Set(employees.map(e => String(e.employee_id || "")));
+      const byEmployee = rows => (rows || []).filter(r => allowedIds.has(String(r.employee_id || "")));
+      const payrollRows = byEmployee(hrStateAll.payroll_rows);
+      const contributionRows = byEmployee(hrStateAll.contribution_rows);
+      const num = v => Number(String(v ?? "").replace(/[^\d.-]/g, "")) || 0;
       hrState = {
-        employees: Array.isArray(payload.employees) ? payload.employees.slice() : [],
-        payroll_rows: Array.isArray(payload.payroll_rows) ? payload.payroll_rows.slice() : [],
-        contribution_rows: Array.isArray(payload.contribution_rows) ? payload.contribution_rows.slice() : [],
-        hours_rows: Array.isArray(payload.hours_rows) ? payload.hours_rows.slice() : [],
-        document_rows: Array.isArray(payload.document_rows) ? payload.document_rows.slice() : [],
-        sick_note_rows: Array.isArray(payload.sick_note_rows) ? payload.sick_note_rows.slice() : [],
-        prep_history_rows: Array.isArray(payload.prep_history_rows) ? payload.prep_history_rows.slice() : [],
-        full_time_hours_reference: Array.isArray(payload.full_time_hours_reference) ? payload.full_time_hours_reference.slice() : [],
-        summary: payload.summary || {},
+        employees,
+        payroll_rows: payrollRows,
+        contribution_rows: contributionRows,
+        hours_rows: byEmployee(hrStateAll.hours_rows),
+        document_rows: byEmployee(hrStateAll.document_rows),
+        sick_note_rows: byEmployee(hrStateAll.sick_note_rows),
+        prep_history_rows: wantFormer ? [] : (hrStateAll.prep_history_rows || []),
+        full_time_hours_reference: hrStateAll.full_time_hours_reference || [],
+        summary: {
+          ...(hrStateAll.summary || {}),
+          employees_total: employees.length,
+          employees_global: employees.filter(e => String(e.employment_type) !== "hourly").length,
+          employees_hourly: employees.filter(e => String(e.employment_type) === "hourly").length,
+          salary_paid_rows: payrollRows.filter(r => String(r.salary_paid || "").toUpperCase() === "TRUE").length,
+          monthly_payroll_total: payrollRows.reduce((s, r) => s + num(r.gross_amount), 0),
+          monthly_contribution_total: contributionRows.reduce((s, r) => s + num(r.employee_contribution) + num(r.employer_contribution), 0),
+          contributions_paid_rows: contributionRows.filter(r => String(r.paid || "").toUpperCase() === "TRUE").length,
+        },
       };
-      hrLoaded = true;
+      const activeCount = (hrStateAll.employees || []).filter(e => !hrEmployeeIsFormer(e)).length;
+      const formerCount = (hrStateAll.employees || []).filter(hrEmployeeIsFormer).length;
+      const activeCountEl = document.querySelector('[data-hr-view-count="active"]');
+      const formerCountEl = document.querySelector('[data-hr-view-count="former"]');
+      if (activeCountEl) activeCountEl.textContent = String(activeCount);
+      if (formerCountEl) formerCountEl.textContent = String(formerCount);
+      document.querySelectorAll("[data-hr-view]").forEach(btn => {
+        const isActive = btn.dataset.hrView === hrViewMode;
+        btn.classList.toggle("active", isActive);
+        btn.setAttribute("aria-pressed", String(isActive));
+      });
+      const banner = document.getElementById("hrFormerBanner");
+      if (banner) banner.hidden = !wantFormer;
+
       clearAllRowEditing();
       renderSummary();
       renderOverview();
@@ -49469,6 +49551,32 @@ document.addEventListener("DOMContentLoaded", () => {
       renderFullTimeHoursReference();
       renderHrPayslipPrepHistory();
       loadHrInstallations();
+    }
+
+    document.querySelectorAll("[data-hr-view]").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const next = btn.dataset.hrView === "former" ? "former" : "active";
+        if (next === hrViewMode) return;
+        hrViewMode = next;
+        applyHrViewFilter();
+      });
+    });
+
+    function applyState(payload) {
+      hrStateAll = {
+        employees: Array.isArray(payload.employees) ? payload.employees.slice() : [],
+        payroll_rows: Array.isArray(payload.payroll_rows) ? payload.payroll_rows.slice() : [],
+        contribution_rows: Array.isArray(payload.contribution_rows) ? payload.contribution_rows.slice() : [],
+        hours_rows: Array.isArray(payload.hours_rows) ? payload.hours_rows.slice() : [],
+        document_rows: Array.isArray(payload.document_rows) ? payload.document_rows.slice() : [],
+        sick_note_rows: Array.isArray(payload.sick_note_rows) ? payload.sick_note_rows.slice() : [],
+        prep_history_rows: Array.isArray(payload.prep_history_rows) ? payload.prep_history_rows.slice() : [],
+        full_time_hours_reference: Array.isArray(payload.full_time_hours_reference) ? payload.full_time_hours_reference.slice() : [],
+        summary: payload.summary || {},
+      };
+      hrLoaded = true;
+      // applyHrViewFilter מגדיר את hrState המסונן (פעילים / עובדי עבר) ומרנדר הכול
+      applyHrViewFilter();
       persistHrStateLocal();
     }
 

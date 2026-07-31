@@ -68,6 +68,8 @@ EMPLOYEE_HEADERS = [
     "אימייל",
     "קרן פנסיה",
     "הערות",
+    "תאריך סיום העסקה",
+    "סיבת עזיבה",
     "מזהה תיקיית דרייב",
     "קישור תיקיית דרייב",
     "עודכן לאחרונה",
@@ -86,6 +88,8 @@ EMPLOYEE_FIELDS = [
     "email",
     "pension_fund",
     "notes",
+    "end_date",
+    "leave_reason",
     "drive_folder_id",
     "drive_folder_url",
     "updated_at",
@@ -469,6 +473,8 @@ def _normalize_employee_row(row: dict) -> dict:
     normalized["email"] = str(normalized.get("email") or "").strip()
     normalized["pension_fund"] = re.sub(r"\s+", " ", str(normalized.get("pension_fund") or "").strip())
     normalized["notes"] = str(normalized.get("notes") or "").strip()
+    normalized["end_date"] = str(normalized.get("end_date") or "").strip()
+    normalized["leave_reason"] = str(normalized.get("leave_reason") or "").strip()
     normalized["drive_folder_id"] = str(normalized.get("drive_folder_id") or "").strip()
     normalized["drive_folder_url"] = str(normalized.get("drive_folder_url") or "").strip()
     normalized["updated_at"] = str(normalized.get("updated_at") or datetime.now().isoformat(timespec="seconds"))
