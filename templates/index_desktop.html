@@ -3969,6 +3969,63 @@ body.panel-only .shell {
   font-size: 13px;
 }
 
+/* ===== התקנות בעובדים ושכר ===== */
+.hr-installations-wrap { margin-top: 26px; padding-top: 20px; border-top: 2px dashed #e2e8f0; }
+.hr-installations-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
+.hr-installations-title { margin: 0 0 4px; font-size: 17px; font-weight: 800; color: #0f172a; }
+.hr-installations-sub { margin: 0; color: #64748b; font-size: 13px; line-height: 1.65; max-width: 900px; }
+.hr-installations-months { display: flex; flex-direction: column; gap: 10px; }
+
+.hr-inst-card { border: 1px solid #e6e9ef; border-radius: 14px; background: #fff; overflow: hidden; }
+.hr-inst-card.is-open { box-shadow: 0 2px 10px rgba(15,23,42,0.06); }
+.hr-inst-card-head {
+  display: flex; align-items: center; gap: 12px; padding: 13px 16px;
+  cursor: pointer; background: #f8fafc;
+}
+.hr-inst-card-head:hover { background: #f1f5f9; }
+.hr-inst-toggle {
+  flex: 0 0 28px; width: 28px; height: 28px; border-radius: 8px; border: 1px solid #cbd5e1;
+  background: #fff; color: #475569; font-size: 18px; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+.hr-inst-card.is-open .hr-inst-toggle { background: #2452aa; border-color: #2452aa; color: #fff; }
+.hr-inst-card-title { flex: 1 1 auto; font-size: 15px; font-weight: 700; color: #0f172a; }
+.hr-inst-card-chip {
+  flex: 0 0 auto; font-size: 12.5px; color: #64748b; background: #eef2f7;
+  border-radius: 999px; padding: 4px 12px;
+}
+.hr-inst-card-chip.has-rows { background: #e7f0ff; color: #1e40af; font-weight: 600; }
+.hr-inst-card-chip.in-payroll { background: #dcfce7; color: #15803d; font-weight: 700; }
+.hr-inst-card-body { display: none; padding: 14px 16px 18px; }
+.hr-inst-card.is-open .hr-inst-card-body { display: block; }
+
+.hr-inst-employee-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+.hr-inst-employee-row label { font-size: 13px; color: #475569; font-weight: 600; }
+.hr-inst-employee-row input { min-width: 220px; padding: 8px 11px; border: 1px solid #cbd5e1; border-radius: 9px; font: inherit; }
+
+.hr-inst-table-wrap { overflow-x: auto; border: 1px solid #eef1f5; border-radius: 10px; }
+table.hr-inst-table { width: 100%; border-collapse: collapse; font-size: 13px; white-space: nowrap; }
+table.hr-inst-table th { background: #f8fafc; color: #475569; font-weight: 600; padding: 9px 10px; text-align: right; border-bottom: 1px solid #e6e9ef; }
+table.hr-inst-table td { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; color: #0f172a; }
+table.hr-inst-table tbody tr:last-child td { border-bottom: none; }
+table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top: 2px solid #e2e8f0; padding: 11px 10px; }
+.hr-inst-input {
+  width: 82px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 7px;
+  font: inherit; font-size: 13px; text-align: center;
+}
+.hr-inst-input:focus { outline: none; border-color: #2452aa; box-shadow: 0 0 0 2px rgba(36,82,170,0.12); }
+.hr-inst-input.is-date { width: 130px; }
+.hr-inst-input[readonly] { background: #f8fafc; color: #64748b; cursor: not-allowed; }
+.hr-inst-money { font-variant-numeric: tabular-nums; }
+.hr-inst-total { font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
+.hr-inst-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13.5px; }
+
+.hr-inst-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 12px; }
+.hr-inst-payroll-toggle { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: #334155; cursor: pointer; user-select: none; }
+.hr-inst-payroll-toggle input { width: 17px; height: 17px; cursor: pointer; accent-color: #16a34a; }
+.hr-inst-grand { font-size: 16px; font-weight: 800; color: #0f172a; }
+.hr-inst-grand span { color: #15803d; }
+
 .hr-fulltime-grid {
   margin-top: 16px;
   display: grid;
@@ -16440,6 +16497,19 @@ input:focus {
           </div>
         </div>
         <div id="hrFullTimeHoursGrid" class="hr-fulltime-grid"></div>
+
+        <div class="hr-installations-wrap">
+          <div class="hr-installations-head">
+            <div>
+              <h3 class="hr-installations-title">התקנות</h3>
+              <p class="hr-installations-sub">הטבלאות נמשכות חי מטאב ההתקנות — כל ביקור התקנה מופיע כאן לפי החודש שלו. שינוי תאריך או כמות כאן נשמר גם בטאב ההתקנות, ולהיפך. התקנת דלתות מחושבת אוטומטית לפי <strong>₪14</strong> לדלת.</p>
+            </div>
+            <button type="button" id="hrInstallationsRefresh" class="ghost-btn">רענן</button>
+          </div>
+          <div id="hrInstallationsMonths" class="hr-installations-months">
+            <div class="hr-empty" style="padding:18px;">טוען את טבלאות ההתקנות…</div>
+          </div>
+        </div>
       </section>
 
       <section id="hrSectionPayroll" class="hr-subpanel" data-hr-subpanel="payroll">
@@ -49084,6 +49154,197 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    // ===== התקנות (נמשך חי מטאב ההתקנות) =====
+    let hrInstallationsData = { months: [], door_rate: 14 };
+    const hrInstOpenMonths = new Set();
+    const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
+
+    function hrInstMoney(value) {
+      const n = Number(value) || 0;
+      return `₪ ${n.toLocaleString("he-IL", { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+    }
+
+    function renderHrInstallations() {
+      if (!hrInstMonthsHost) return;
+      const months = hrInstallationsData.months || [];
+      if (!months.length) {
+        hrInstMonthsHost.innerHTML = `<div class="hr-empty" style="padding:18px;">אין עדיין התקנות להצגה.</div>`;
+        return;
+      }
+      const employeeNames = (hrState.employees || [])
+        .filter(e => String(e.active_status || "active") === "active")
+        .map(e => String(e.full_name || "").trim())
+        .filter(Boolean);
+      hrInstMonthsHost.innerHTML = months.map(month => renderHrInstMonthCard(month, employeeNames)).join("");
+      months.forEach(month => wireHrInstMonthCard(month.month_key));
+    }
+
+    function renderHrInstMonthCard(month, employeeNames) {
+      const key = month.month_key;
+      const open = hrInstOpenMonths.has(key);
+      const t = month.totals || {};
+      const chipClass = month.include_in_payroll ? "in-payroll" : (t.rows_count ? "has-rows" : "");
+      const chipText = month.include_in_payroll
+        ? `נכלל בשכר · ${hrInstMoney(t.total)}`
+        : (t.rows_count ? `${t.rows_count} התקנות · ${hrInstMoney(t.total)}` : "אין התקנות");
+      const rowsHtml = (month.rows || []).map(r => {
+        const qtyEditable = !!r.single_item_key;
+        return `
+        <tr data-hr-inst-row="${escapeHtml(r.visit_id)}">
+          <td>${escapeHtml(r.location || "—")}</td>
+          <td>${escapeHtml(r.customer_name || "—")}</td>
+          <td>${escapeHtml(r.po_number || "—")}</td>
+          <td><input type="date" class="hr-inst-input is-date" data-hr-inst-field="install_date" value="${escapeHtml(r.install_date || "")}"></td>
+          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="installed_quantity" value="${escapeHtml(String(r.installed_quantity ?? 0))}" ${qtyEditable ? "" : "readonly title=\"בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות\""}></td>
+          <td class="hr-inst-money" data-hr-inst-doors>${hrInstMoney(r.doors_amount)}</td>
+          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="food" value="${escapeHtml(String(r.food ?? 0))}"></td>
+          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="fuel" value="${escapeHtml(String(r.fuel ?? 0))}"></td>
+          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="advance" value="${escapeHtml(String(r.advance ?? 0))}"></td>
+          <td class="hr-inst-total" data-hr-inst-total>${hrInstMoney(r.total)}</td>
+        </tr>`;
+      }).join("");
+      const tableHtml = (month.rows || []).length ? `
+        <div class="hr-inst-table-wrap">
+          <table class="hr-inst-table">
+            <thead>
+              <tr>
+                <th>מיקום</th><th>לקוח</th><th>הזמנה</th><th>תאריך התקנה</th><th>הותקנו</th>
+                <th>התקנת דלתות</th><th>אוכל</th><th>דלק</th><th>מפרעה</th><th>סיכום</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+            <tfoot>
+              <tr>
+                <td colspan="4">סה״כ ${t.rows_count} התקנות</td>
+                <td data-hr-inst-sum="installed_quantity">${escapeHtml(String(t.installed_quantity ?? 0))}</td>
+                <td data-hr-inst-sum="doors_amount">${hrInstMoney(t.doors_amount)}</td>
+                <td data-hr-inst-sum="food">${hrInstMoney(t.food)}</td>
+                <td data-hr-inst-sum="fuel">${hrInstMoney(t.fuel)}</td>
+                <td data-hr-inst-sum="advance">${hrInstMoney(t.advance)}</td>
+                <td class="hr-inst-total" data-hr-inst-sum="total">${hrInstMoney(t.total)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>` : `<div class="hr-inst-empty">אין התקנות שתועדו בחודש הזה. התקנות שתתאם או תדווח בטאב ההתקנות יופיעו כאן אוטומטית.</div>`;
+      return `
+        <div class="hr-inst-card${open ? " is-open" : ""}" data-hr-inst-card="${escapeHtml(key)}">
+          <div class="hr-inst-card-head" data-hr-inst-toggle>
+            <button type="button" class="hr-inst-toggle" aria-label="פתח/סגור">${open ? "−" : "+"}</button>
+            <div class="hr-inst-card-title">${escapeHtml(month.label)}</div>
+            <div class="hr-inst-card-chip ${chipClass}">${escapeHtml(chipText)}</div>
+          </div>
+          <div class="hr-inst-card-body">
+            <div class="hr-inst-employee-row">
+              <label for="hrInstEmp-${escapeHtml(key)}">שם העובד</label>
+              <input id="hrInstEmp-${escapeHtml(key)}" list="hrInstEmployeeOptions" data-hr-inst-employee
+                     value="${escapeHtml(month.employee_name || "")}" placeholder="בחר מהרשימה או הקלד">
+              <datalist id="hrInstEmployeeOptions">${employeeNames.map(n => `<option value="${escapeHtml(n)}"></option>`).join("")}</datalist>
+            </div>
+            ${tableHtml}
+            <div class="hr-inst-footer-row">
+              <label class="hr-inst-payroll-toggle">
+                <input type="checkbox" data-hr-inst-payroll ${month.include_in_payroll ? "checked" : ""}>
+                <span>הוסף לחישובי שכר לחודש זה</span>
+              </label>
+              <div class="hr-inst-grand">סה״כ לתשלום: <span>${hrInstMoney(t.total)}</span></div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function recalcHrInstMonthCard(card) {
+      const doorRate = Number(hrInstallationsData.door_rate) || 14;
+      let sums = { installed_quantity: 0, doors_amount: 0, food: 0, fuel: 0, advance: 0, total: 0 };
+      card.querySelectorAll("[data-hr-inst-row]").forEach(tr => {
+        const num = f => Number(tr.querySelector(`[data-hr-inst-field="${f}"]`)?.value || 0) || 0;
+        const qty = num("installed_quantity"), food = num("food"), fuel = num("fuel"), advance = num("advance");
+        const doors = Math.round(qty * doorRate * 100) / 100;
+        const total = Math.round((doors + food + fuel - advance) * 100) / 100;
+        const doorsCell = tr.querySelector("[data-hr-inst-doors]");
+        const totalCell = tr.querySelector("[data-hr-inst-total]");
+        if (doorsCell) doorsCell.textContent = hrInstMoney(doors);
+        if (totalCell) totalCell.textContent = hrInstMoney(total);
+        sums.installed_quantity += qty; sums.doors_amount += doors;
+        sums.food += food; sums.fuel += fuel; sums.advance += advance; sums.total += total;
+      });
+      Object.entries(sums).forEach(([k, v]) => {
+        const cell = card.querySelector(`[data-hr-inst-sum="${k}"]`);
+        if (cell) cell.textContent = k === "installed_quantity" ? String(Math.round(v * 100) / 100) : hrInstMoney(v);
+      });
+      const grand = card.querySelector(".hr-inst-grand span");
+      if (grand) grand.textContent = hrInstMoney(sums.total);
+    }
+
+    function wireHrInstMonthCard(monthKey) {
+      const card = hrInstMonthsHost?.querySelector(`[data-hr-inst-card="${CSS.escape(monthKey)}"]`);
+      if (!card) return;
+      card.querySelector("[data-hr-inst-toggle]")?.addEventListener("click", () => {
+        if (hrInstOpenMonths.has(monthKey)) hrInstOpenMonths.delete(monthKey);
+        else hrInstOpenMonths.add(monthKey);
+        renderHrInstallations();
+      });
+      card.querySelectorAll("[data-hr-inst-field]").forEach(input => {
+        input.addEventListener("input", () => recalcHrInstMonthCard(card));
+        input.addEventListener("change", async () => {
+          const tr = input.closest("[data-hr-inst-row]");
+          const visitId = tr?.dataset.hrInstRow;
+          const field = input.dataset.hrInstField;
+          if (!visitId || !field) return;
+          const body = { visit_id: visitId };
+          body[field] = field === "install_date" ? String(input.value || "") : Number(input.value || 0);
+          input.disabled = true;
+          try {
+            const res = await fetch("/hr-installations-save-row", {
+              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
+            if (data.writeback?.status === "error") {
+              showToast("error", "לא נשמר בטאב ההתקנות", data.writeback.error || "");
+            } else if (data.writeback?.reason === "multi_item_case") {
+              showToast("info", "הכמות לא עודכנה", "בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות.");
+            }
+            hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+            renderHrInstallations();
+          } catch (err) {
+            showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור את השורה.");
+            input.disabled = false;
+          }
+        });
+      });
+      const saveMonth = async (payload) => {
+        try {
+          const res = await fetch("/hr-installations-save-month", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ month_key: monthKey, ...payload }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
+          hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+          renderHrInstallations();
+        } catch (err) {
+          showToast("error", "שמירה נכשלה", err.message || "לא הצלחתי לשמור.");
+        }
+      };
+      card.querySelector("[data-hr-inst-employee]")?.addEventListener("change", (e) => saveMonth({ employee_name: e.target.value }));
+      card.querySelector("[data-hr-inst-payroll]")?.addEventListener("change", (e) => saveMonth({ include_in_payroll: e.target.checked }));
+    }
+
+    async function loadHrInstallations() {
+      if (!hrInstMonthsHost) return;
+      try {
+        const res = await fetch("/hr-installations-state", { cache: "no-store" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "טעינת ההתקנות נכשלה.");
+        hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14 };
+        renderHrInstallations();
+      } catch (err) {
+        hrInstMonthsHost.innerHTML = `<div class="hr-empty" style="padding:18px;">${escapeHtml(err.message || "לא הצלחתי לטעון את טבלאות ההתקנות.")}</div>`;
+      }
+    }
+
+    document.getElementById("hrInstallationsRefresh")?.addEventListener("click", loadHrInstallations);
+
     function applyState(payload) {
       hrState = {
         employees: Array.isArray(payload.employees) ? payload.employees.slice() : [],
@@ -49109,6 +49370,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderHoursDetails();
       renderFullTimeHoursReference();
       renderHrPayslipPrepHistory();
+      loadHrInstallations();
       persistHrStateLocal();
     }
 

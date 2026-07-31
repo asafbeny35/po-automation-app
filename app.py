@@ -1335,6 +1335,223 @@ def _lost_debts_collect_references(customer_name: str, debt_rows: list[dict]) ->
     return references
 
 
+# ============================================================================
+# התקנות בעובדים ושכר — טבלת התקנות חודשית שמושכת חי מטאב ההתקנות
+# הנתונים הבסיסיים (מיקום/לקוח/הזמנה/תאריך/כמות) נגזרים מביקורי ההתקנה עצמם,
+# כך שאין כפילות והסנכרון דו-כיווני; כאן נשמרות רק התוספות של השכר.
+# ============================================================================
+HR_INSTALLATIONS_DOOR_RATE = 14.0
+HR_INSTALLATIONS_DEFAULT_FOOD = 50.0
+HR_INSTALLATIONS_DEFAULT_FUEL = 150.0
+HR_INSTALLATIONS_MONTHS = ["2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"]
+
+
+def _default_hr_installations_state() -> dict:
+    return {"entries": {}, "months": {}, "updated_at": ""}
+
+
+def _hr_installation_number(value, fallback: float = 0.0) -> float:
+    raw = str(value if value is not None else "").strip()
+    if raw == "":
+        return fallback
+    try:
+        return round(float(raw.replace(",", "")), 2)
+    except Exception:
+        return fallback
+
+
+def _normalize_hr_installation_entry(entry: dict) -> dict:
+    entry = dict(entry or {})
+    return {
+        "food": _hr_installation_number(entry.get("food"), HR_INSTALLATIONS_DEFAULT_FOOD),
+        "fuel": _hr_installation_number(entry.get("fuel"), HR_INSTALLATIONS_DEFAULT_FUEL),
+        "advance": _hr_installation_number(entry.get("advance"), 0.0),
+        "door_rate": _hr_installation_number(entry.get("door_rate"), HR_INSTALLATIONS_DOOR_RATE),
+        "notes": str(entry.get("notes") or "").strip(),
+    }
+
+
+def _normalize_hr_installation_month(month: dict) -> dict:
+    month = dict(month or {})
+    return {
+        "employee_name": str(month.get("employee_name") or "").strip(),
+        "employee_id": str(month.get("employee_id") or "").strip(),
+        "include_in_payroll": bool(month.get("include_in_payroll")),
+    }
+
+
+def _load_hr_installations_state() -> dict:
+    try:
+        payload = _load_supabase_app_state("app_hr_installations")
+        if not isinstance(payload, dict) and HR_INSTALLATIONS_STATE_FILE.exists():
+            payload = json.loads(HR_INSTALLATIONS_STATE_FILE.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            state = _default_hr_installations_state()
+            entries = payload.get("entries")
+            months = payload.get("months")
+            if isinstance(entries, dict):
+                state["entries"] = {
+                    str(key): _normalize_hr_installation_entry(value)
+                    for key, value in entries.items()
+                    if isinstance(value, dict)
+                }
+            if isinstance(months, dict):
+                state["months"] = {
+                    str(key): _normalize_hr_installation_month(value)
+                    for key, value in months.items()
+                    if isinstance(value, dict)
+                }
+            state["updated_at"] = str(payload.get("updated_at") or "").strip()
+            return state
+    except Exception as exc:
+        log_handled_error("load hr installations state failed", exc)
+    return _default_hr_installations_state()
+
+
+def _save_hr_installations_state(state: dict) -> dict:
+    payload = _default_hr_installations_state()
+    payload["entries"] = {
+        str(key): _normalize_hr_installation_entry(value)
+        for key, value in ((state or {}).get("entries") or {}).items()
+        if isinstance(value, dict)
+    }
+    payload["months"] = {
+        str(key): _normalize_hr_installation_month(value)
+        for key, value in ((state or {}).get("months") or {}).items()
+        if isinstance(value, dict)
+    }
+    payload["updated_at"] = datetime.now().isoformat(timespec="seconds")
+    _save_supabase_app_state("app_hr_installations", payload)
+    try:
+        HR_INSTALLATIONS_STATE_FILE.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+    except Exception:
+        pass
+    return payload
+
+
+def _hr_installation_date_is_past(value: str) -> bool:
+    parsed = _hr_parse_iso_date(str(value or "").strip())
+    return bool(parsed and parsed <= date.today())
+
+
+def _hr_installation_month_key(visit: dict) -> str:
+    raw = str((visit or {}).get("visit_date") or "").strip() or str((visit or {}).get("scheduled_date") or "").strip()
+    parsed = _hr_parse_iso_date(raw) if raw else None
+    if not parsed:
+        return ""
+    return f"{parsed.year:04d}-{parsed.month:02d}"
+
+
+def _build_hr_installations_payload() -> dict:
+    """בונה את טבלת ההתקנות של עובדים ושכר מביקורי ההתקנה החיים + תוספות השכר."""
+    state = _load_hr_installations_state()
+    entries = state.get("entries") or {}
+    months_state = state.get("months") or {}
+    installations = _build_installations_payload()
+
+    rows_by_month: dict[str, list[dict]] = {}
+    for case in installations.get("rows") or []:
+        case_items = case.get("install_items") or []
+        single_item_key = str(case_items[0].get("item_key") or "").strip() if len(case_items) == 1 else ""
+        for visit in case.get("visits") or []:
+            visit_id = str(visit.get("visit_id") or "").strip()
+            if not visit_id:
+                continue
+            month_key = _hr_installation_month_key(visit)
+            if not month_key:
+                continue
+            entry = _normalize_hr_installation_entry(entries.get(visit_id) or {})
+            installed = _installation_number(visit.get("installed_total_quantity"))
+            doors_amount = round(installed * entry["door_rate"], 2)
+            total = round(doors_amount + entry["food"] + entry["fuel"] - entry["advance"], 2)
+            rows_by_month.setdefault(month_key, []).append({
+                "visit_id": visit_id,
+                "installation_id": str(case.get("installation_id") or "").strip(),
+                "location": str(case.get("delivery_address") or "").strip(),
+                "customer_name": str(case.get("customer_name") or "").strip(),
+                "po_number": str(case.get("po_number") or "").strip(),
+                "install_date": str(visit.get("visit_date") or "").strip() or str(visit.get("scheduled_date") or "").strip(),
+                "has_actual_date": bool(str(visit.get("visit_date") or "").strip()),
+                "installed_quantity": installed,
+                "single_item_key": single_item_key,
+                "visit_status": str(visit.get("status") or "").strip(),
+                "food": entry["food"],
+                "fuel": entry["fuel"],
+                "advance": entry["advance"],
+                "door_rate": entry["door_rate"],
+                "doors_amount": doors_amount,
+                "total": total,
+                "notes": entry["notes"],
+            })
+
+    months: list[dict] = []
+    for month_key in HR_INSTALLATIONS_MONTHS:
+        rows = sorted(rows_by_month.get(month_key) or [], key=lambda r: (r.get("install_date") or "", r.get("customer_name") or ""))
+        month_meta = _normalize_hr_installation_month(months_state.get(month_key) or {})
+        months.append({
+            "month_key": month_key,
+            "label": _hr_installations_month_label(month_key),
+            "employee_name": month_meta["employee_name"],
+            "employee_id": month_meta["employee_id"],
+            "include_in_payroll": month_meta["include_in_payroll"],
+            "rows": rows,
+            "totals": {
+                "installed_quantity": round(sum(r["installed_quantity"] for r in rows), 2),
+                "doors_amount": round(sum(r["doors_amount"] for r in rows), 2),
+                "food": round(sum(r["food"] for r in rows), 2),
+                "fuel": round(sum(r["fuel"] for r in rows), 2),
+                "advance": round(sum(r["advance"] for r in rows), 2),
+                "total": round(sum(r["total"] for r in rows), 2),
+                "rows_count": len(rows),
+            },
+        })
+    # חודשים עם ביקורים מחוץ לטווח המוגדר — מוצגים גם הם כדי שלא ייעלמו נתונים
+    for month_key in sorted(rows_by_month):
+        if month_key in HR_INSTALLATIONS_MONTHS:
+            continue
+        rows = sorted(rows_by_month[month_key], key=lambda r: (r.get("install_date") or "", r.get("customer_name") or ""))
+        month_meta = _normalize_hr_installation_month(months_state.get(month_key) or {})
+        months.append({
+            "month_key": month_key,
+            "label": _hr_installations_month_label(month_key),
+            "employee_name": month_meta["employee_name"],
+            "employee_id": month_meta["employee_id"],
+            "include_in_payroll": month_meta["include_in_payroll"],
+            "rows": rows,
+            "totals": {
+                "installed_quantity": round(sum(r["installed_quantity"] for r in rows), 2),
+                "doors_amount": round(sum(r["doors_amount"] for r in rows), 2),
+                "food": round(sum(r["food"] for r in rows), 2),
+                "fuel": round(sum(r["fuel"] for r in rows), 2),
+                "advance": round(sum(r["advance"] for r in rows), 2),
+                "total": round(sum(r["total"] for r in rows), 2),
+                "rows_count": len(rows),
+            },
+        })
+    months.sort(key=lambda m: m["month_key"])
+    return {
+        "months": months,
+        "door_rate": HR_INSTALLATIONS_DOOR_RATE,
+        "default_food": HR_INSTALLATIONS_DEFAULT_FOOD,
+        "default_fuel": HR_INSTALLATIONS_DEFAULT_FUEL,
+    }
+
+
+_HR_INSTALLATIONS_MONTH_NAMES = [
+    "ינואר", "פברואר", "מרץ", "אפריל", "מאי", "יוני",
+    "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
+]
+
+
+def _hr_installations_month_label(month_key: str) -> str:
+    try:
+        year, month = str(month_key or "").split("-")
+        name = _HR_INSTALLATIONS_MONTH_NAMES[int(month) - 1]
+        return f"התקנות {name} {year}"
+    except Exception:
+        return f"התקנות {month_key}"
+
+
 def _mark_payments_receipt_sync_pending() -> dict:
     meta = _load_payments_receipt_sync_meta()
     meta["pending_sync"] = True
@@ -12473,6 +12690,7 @@ INVENTORY_PURCHASE_ORDERS_HIDDEN_FILE = RUNTIME_ROOT / "inventory_purchase_order
 CUSTOMERS_HIDDEN_FILE = RUNTIME_ROOT / "customers_hidden.json"
 PAYMENTS_RECEIPT_SYNC_META_FILE = RUNTIME_ROOT / "payments_receipt_sync_meta.json"
 LOST_DEBTS_STATE_FILE = RUNTIME_ROOT / "lost_debts_cache.json"
+HR_INSTALLATIONS_STATE_FILE = RUNTIME_ROOT / "hr_installations_cache.json"
 LOGS_DIR = RUNTIME_ROOT / "logs"
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 APP_ERROR_LOG = LOGS_DIR / "app_errors.log"
@@ -18643,18 +18861,17 @@ async def installations_case_update(request: Request):
         return JSONResponse({"error": f"לא הצלחתי לעדכן את תיק ההתקנה: {exc}"}, status_code=500)
 
 
-@app.post("/installations-visit-save")
-async def installations_visit_save(request: Request):
+async def _installations_visit_save_core(visit_payload: dict) -> dict:
+    """שמירת ביקור התקנה — לוגיקה משותפת ל-/installations-visit-save ולטבלת
+    ההתקנות בעובדים ושכר (סנכרון דו-כיווני). מחזיר {"status": "ok"|"error", ...}."""
     try:
-        body = await request.json()
-        visit_payload = body.get("visit") if isinstance(body.get("visit"), dict) else body
         installation_id = str(visit_payload.get("installation_id") or "").strip()
         if not installation_id:
-            return JSONResponse({"error": "חסר מזהה תיק התקנה לביקור."}, status_code=400)
+            return {"status": "error", "error": "חסר מזהה תיק התקנה לביקור.", "code": 400}
         case_rows = load_installation_case_rows(force_refresh=True)
         target_case = next((row for row in case_rows if str(row.get("installation_id") or "").strip() == installation_id), None)
         if not target_case:
-            return JSONResponse({"error": "תיק ההתקנה לא נמצא."}, status_code=404)
+            return {"status": "error", "error": "תיק ההתקנה לא נמצא.", "code": 404}
         visit_id = str(visit_payload.get("visit_id") or "").strip()
         visit_rows = load_installation_visit_rows(force_refresh=True)
         existing_visit = next((row for row in visit_rows if str(row.get("visit_id") or "").strip() == visit_id), None) if visit_id else None
@@ -18663,7 +18880,7 @@ async def installations_visit_save(request: Request):
         except Exception:
             case_items = []
         if not isinstance(case_items, list) or not case_items:
-            return JSONResponse({"error": "לא נמצאו פריטי התקנה לתיק הזה."}, status_code=400)
+            return {"status": "error", "error": "לא נמצאו פריטי התקנה לתיק הזה.", "code": 400}
         requested_items_raw = visit_payload.get("installed_items")
         if isinstance(requested_items_raw, dict):
             requested_items = [
@@ -18724,10 +18941,11 @@ async def installations_visit_save(request: Request):
             if quantity > max_allowed + 0.001:
                 item_meta = metadata_by_key.get(item_key) or {}
                 label = str(item_meta.get("size_label") or item_meta.get("description") or item_key).strip()
-                return JSONResponse(
-                    {"error": f"הכמות שסימנת עבור {label} חורגת מהכמות שעוד נשארה להתקנה."},
-                    status_code=400,
-                )
+                return {
+                    "status": "error",
+                    "error": f"הכמות שסימנת עבור {label} חורגת מהכמות שעוד נשארה להתקנה.",
+                    "code": 400,
+                }
             item_meta = metadata_by_key.get(item_key) or {}
             normalized_requested_items.append(
                 {
@@ -18746,7 +18964,7 @@ async def installations_visit_save(request: Request):
         visit_date = str(visit_payload.get("visit_date") or "").strip()
         scheduled_date = str(visit_payload.get("scheduled_date") or "").strip()
         if not visit_date and not scheduled_date:
-            return JSONResponse({"error": "חסר תאריך ביקור או תאריך מתוכנן."}, status_code=400)
+            return {"status": "error", "error": "חסר תאריך ביקור או תאריך מתוכנן.", "code": 400}
 
         visit_status = str(visit_payload.get("status") or "").strip() or ("הותקן חלקית" if installed_total_quantity > 0 else "תואם")
         visit_row = {
@@ -18764,10 +18982,20 @@ async def installations_visit_save(request: Request):
         }
         upsert_installation_visit_row(visit_row)
         sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+        return {"status": "ok", "payload": _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))}
     except Exception as exc:
         log_handled_error("installations_visit_save failed", exc)
-        return JSONResponse({"error": f"לא הצלחתי לשמור את ביקור ההתקנה: {exc}"}, status_code=500)
+        return {"status": "error", "error": f"לא הצלחתי לשמור את ביקור ההתקנה: {exc}", "code": 500}
+
+
+@app.post("/installations-visit-save")
+async def installations_visit_save(request: Request):
+    body = await request.json()
+    visit_payload = body.get("visit") if isinstance(body.get("visit"), dict) else body
+    result = await _installations_visit_save_core(visit_payload)
+    if result.get("status") != "ok":
+        return JSONResponse({"error": result.get("error") or "שמירת הביקור נכשלה."}, status_code=int(result.get("code") or 500))
+    return JSONResponse({"status": "ok", **(result.get("payload") or {})})
 
 
 @app.post("/installations-visit-delete")
@@ -25773,6 +26001,115 @@ async def hr_employee_save(request: Request):
     except Exception as exc:
         log_handled_error("hr_employee_save failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לשמור את העובד: {exc}"}, status_code=500)
+
+
+@app.get("/hr-installations-state")
+async def hr_installations_state():
+    try:
+        return JSONResponse({"status": "ok", **_build_hr_installations_payload()})
+    except Exception as exc:
+        log_handled_error("hr_installations_state failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לטעון את טבלת ההתקנות: {exc}"}, status_code=500)
+
+
+@app.post("/hr-installations-save-row")
+async def hr_installations_save_row(request: Request):
+    """שומר את תוספות השכר של שורת התקנה, ואם נשלחו תאריך/כמות — כותב אותם
+    בחזרה לביקור בטאב ההתקנות כדי לשמור על סנכרון דו-כיווני."""
+    try:
+        body = await request.json()
+        visit_id = str(body.get("visit_id") or "").strip()
+        if not visit_id:
+            return JSONResponse({"error": "חסר מזהה ביקור."}, status_code=400)
+
+        state = _load_hr_installations_state()
+        entries = state.get("entries") or {}
+        current = _normalize_hr_installation_entry(entries.get(visit_id) or {})
+        for field in ("food", "fuel", "advance", "door_rate"):
+            if field in body:
+                current[field] = _hr_installation_number(body.get(field), current[field])
+        if "notes" in body:
+            current["notes"] = str(body.get("notes") or "").strip()
+        entries[visit_id] = current
+        state["entries"] = entries
+        _save_hr_installations_state(state)
+
+        # כתיבה חזרה לטאב ההתקנות (תאריך / כמות שהותקנה)
+        writeback = {"status": "skipped"}
+        wants_writeback = "install_date" in body or "installed_quantity" in body
+        if wants_writeback:
+            visit_rows = load_installation_visit_rows(force_refresh=True)
+            visit = next((r for r in visit_rows if str(r.get("visit_id") or "").strip() == visit_id), None)
+            if visit is None:
+                writeback = {"status": "error", "error": "הביקור לא נמצא בטאב ההתקנות."}
+            else:
+                installation_id = str(visit.get("installation_id") or "").strip()
+                case_rows = load_installation_case_rows(force_refresh=False)
+                case = next((c for c in case_rows if str(c.get("installation_id") or "").strip() == installation_id), None)
+                try:
+                    case_items = json.loads(str((case or {}).get("install_items_json") or "[]"))
+                except Exception:
+                    case_items = []
+                payload = {
+                    "installation_id": installation_id,
+                    "visit_id": visit_id,
+                    "visit_date": str(visit.get("visit_date") or "").strip(),
+                    "scheduled_date": str(visit.get("scheduled_date") or "").strip(),
+                    "status": str(visit.get("status") or "").strip(),
+                    "notes": str(visit.get("notes") or "").strip(),
+                }
+                if "install_date" in body:
+                    new_date = str(body.get("install_date") or "").strip()
+                    # תאריך שכבר עבר נשמר כביקור שבוצע, אחרת כתאריך מתוכנן
+                    if str(visit.get("visit_date") or "").strip() or _hr_installation_date_is_past(new_date):
+                        payload["visit_date"] = new_date
+                        payload["scheduled_date"] = ""
+                    else:
+                        payload["scheduled_date"] = new_date
+                        payload["visit_date"] = ""
+                if "installed_quantity" in body and len(case_items) == 1:
+                    item_key = str(case_items[0].get("item_key") or "").strip()
+                    payload["installed_items"] = {item_key: _hr_installation_number(body.get("installed_quantity"), 0.0)}
+                elif "installed_quantity" in body:
+                    writeback = {"status": "skipped", "reason": "multi_item_case"}
+                if "installed_items" in payload or payload.get("visit_date") != str(visit.get("visit_date") or "").strip() or payload.get("scheduled_date") != str(visit.get("scheduled_date") or "").strip():
+                    try:
+                        existing_items = json.loads(str(visit.get("installed_items_json") or "[]"))
+                    except Exception:
+                        existing_items = []
+                    payload.setdefault("installed_items", existing_items)
+                    saved = await _installations_visit_save_core(payload)
+                    writeback = {"status": "ok"} if saved.get("status") == "ok" else {"status": "error", "error": saved.get("error", "")}
+
+        return JSONResponse({"status": "ok", "writeback": writeback, **_build_hr_installations_payload()})
+    except Exception as exc:
+        log_handled_error("hr_installations_save_row failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לשמור את שורת ההתקנה: {exc}"}, status_code=500)
+
+
+@app.post("/hr-installations-save-month")
+async def hr_installations_save_month(request: Request):
+    try:
+        body = await request.json()
+        month_key = str(body.get("month_key") or "").strip()
+        if not month_key:
+            return JSONResponse({"error": "חסר מזהה חודש."}, status_code=400)
+        state = _load_hr_installations_state()
+        months = state.get("months") or {}
+        current = _normalize_hr_installation_month(months.get(month_key) or {})
+        if "employee_name" in body:
+            current["employee_name"] = str(body.get("employee_name") or "").strip()
+        if "employee_id" in body:
+            current["employee_id"] = str(body.get("employee_id") or "").strip()
+        if "include_in_payroll" in body:
+            current["include_in_payroll"] = bool(body.get("include_in_payroll"))
+        months[month_key] = current
+        state["months"] = months
+        _save_hr_installations_state(state)
+        return JSONResponse({"status": "ok", **_build_hr_installations_payload()})
+    except Exception as exc:
+        log_handled_error("hr_installations_save_month failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לשמור את הגדרות החודש: {exc}"}, status_code=500)
 
 
 @app.post("/hr-payroll-save")
