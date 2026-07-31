@@ -4055,7 +4055,27 @@ table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top
 .hr-inst-del:hover { background: #fee2e2; }
 .hr-inst-synced { color: #cbd5e1; font-size: 14px; }
 tr[data-hr-inst-manual] td { background: #fffdf7; }
-.hr-inst-add-row { margin-top: 10px; }
+.hr-inst-edit {
+  border: none; background: #eef2ff; color: #4338ca; width: 24px; height: 24px;
+  border-radius: 7px; font-size: 13px; line-height: 1; cursor: pointer; margin-inline-end: 4px;
+}
+.hr-inst-edit:hover { background: #e0e7ff; }
+.hr-inst-edit.is-active { background: #16a34a; color: #fff; }
+tr[data-hr-inst-editing] td { background: #f8fbff; }
+tr[data-hr-inst-dirty] td { background: #fffbeb; }
+tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
+.hr-inst-add-row { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.hr-inst-save-area { display: flex; align-items: center; gap: 10px; }
+.hr-inst-dirty-note { font-size: 12.5px; color: #b45309; font-weight: 600; }
+.hr-inst-save-btn {
+  padding: 9px 20px; border: none; border-radius: 9px; background: #e2e8f0; color: #94a3b8;
+  font: inherit; font-size: 13.5px; font-weight: 700; cursor: not-allowed;
+}
+.hr-inst-save-btn.is-dirty {
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); color: #fff; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(22,163,74,0.28);
+}
+.hr-inst-save-btn.is-dirty:hover { filter: brightness(1.06); }
 .hr-inst-add-btn {
   display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px;
   border: 1px dashed #cbd5e1; border-radius: 9px; background: #fff;
@@ -16482,6 +16502,10 @@ input:focus {
           <button type="button" class="hr-subtab" data-hr-subtab="sick-notes">
             <span class="hr-subtab-title">אישורי מחלה</span>
             <span class="hr-subtab-copy">העלה לפי עובד ולפי חודש אישורי מחלה, ביקורים ומסמכים תומכים שישורשרו אוטומטית לחבילת השכר לרו״ח.</span>
+          </button>
+          <button type="button" class="hr-subtab" data-hr-jump-installations>
+            <span class="hr-subtab-title">התקנות</span>
+            <span class="hr-subtab-copy">טבלת התקנות חודשית שנמשכת מטאב ההתקנות, עם אוכל, דלק, תשלום לדלת, מפרעות וצירוף לחישובי השכר.</span>
           </button>
         </div>
       </div>
@@ -49228,7 +49252,19 @@ document.addEventListener("DOMContentLoaded", () => {
     // ===== התקנות (נמשך חי מטאב ההתקנות) =====
     let hrInstallationsData = { months: [], door_rate: 14, orders: [] };
     const hrInstOpenMonths = new Set();
+    const hrInstEditing = new Set();   // שורות שנמצאות כרגע במצב עריכה (אייקון העיפרון)
+    const hrInstPending = {};          // rowId -> {field: value} — שינויים שטרם נשמרו
     const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
+
+    /** הערך להצגה: מה שנערך ועדיין לא נשמר גובר על מה שהגיע מהשרת. */
+    function hrInstRowValue(row, field) {
+      const pending = hrInstPending[String(row.visit_id || "")];
+      return (pending && Object.prototype.hasOwnProperty.call(pending, field)) ? pending[field] : row[field];
+    }
+
+    function hrInstMonthPendingCount(month) {
+      return (month.rows || []).filter(r => hrInstPending[String(r.visit_id || "")]).length;
+    }
 
     function hrInstMoney(value) {
       const n = Number(value) || 0;
@@ -49257,23 +49293,33 @@ document.addEventListener("DOMContentLoaded", () => {
       const open = hrInstOpenMonths.has(key);
       const t = month.totals || {};
       const chipClass = month.include_in_payroll ? "in-payroll" : (t.rows_count ? "has-rows" : "");
+      const pendingCount = hrInstMonthPendingCount(month);
       const chipText = month.include_in_payroll
         ? `נכלל בשכר · ${hrInstMoney(t.total)}`
         : (t.rows_count ? `${t.rows_count} התקנות · ${hrInstMoney(t.total)}` : "אין התקנות");
       const rowsHtml = (month.rows || []).map(r => {
+        const id = String(r.visit_id || "");
+        const editing = hrInstEditing.has(id);
+        const dirty = !!hrInstPending[id];
+        const v = f => hrInstRowValue(r, f);
         const qtyEditable = !!r.single_item_key;
         const orders = hrInstallationsData.orders || [];
-        const rowKey = String(r.visit_id || "").replace(/[^A-Za-z0-9_-]/g, "");
+        const rowKey = id.replace(/[^A-Za-z0-9_-]/g, "");
         // רשימת ההזמנות מצטמצמת ללקוח שנבחר בשורה, אחרת מציגה את כל ההזמנות
-        const poPool = r.customer_name
-          ? orders.filter(o => o.customer_name === r.customer_name)
+        const poPool = v("customer_name")
+          ? orders.filter(o => o.customer_name === v("customer_name"))
           : orders;
         const poOptions = poPool
           .filter(o => o.po_number)
           .map(o => `<option value="${escapeHtml(o.po_number)}">${escapeHtml(o.customer_name || "")}${o.delivery_address ? " · " + escapeHtml(o.delivery_address.split("\n")[0]) : ""}</option>`)
           .join("");
-        const textCell = (field, value) => {
-          if (!r.is_manual) return `<td>${escapeHtml(value || "—")}</td>`;
+        // חישוב חי לפי הערכים שעל המסך (כולל שינויים שטרם נשמרו)
+        const doors = Math.round(Number(v("installed_quantity") || 0) * (Number(hrInstallationsData.door_rate) || 14) * 100) / 100;
+        const total = Math.round((doors + Number(v("food") || 0) + Number(v("fuel") || 0) - Number(v("advance") || 0)) * 100) / 100;
+
+        const textCell = (field) => {
+          const value = v(field);
+          if (!editing || (!r.is_manual && field !== "install_date")) return `<td>${escapeHtml(value || "—")}</td>`;
           if (field === "customer_name") {
             return `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="customer_name" list="hrInstCustomerOptions" value="${escapeHtml(value || "")}" placeholder="בחר לקוח"></td>`;
           }
@@ -49282,19 +49328,37 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           return `<td><input type="text" class="hr-inst-input is-text" data-hr-inst-field="${field}" value="${escapeHtml(value || "")}" placeholder="—"></td>`;
         };
+        const numCell = (field) => {
+          const value = v(field);
+          if (!editing) return `<td class="hr-inst-money">${hrInstMoney(value)}</td>`;
+          return `<td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="${field}" value="${escapeHtml(String(value ?? 0))}"></td>`;
+        };
+        const dateCell = () => {
+          const value = v("install_date");
+          if (!editing) return `<td>${escapeHtml(hrDateDisplay(value || "") || "—")}</td>`;
+          return `<td><input type="date" class="hr-inst-input is-date" data-hr-inst-field="install_date" value="${escapeHtml(value || "")}"></td>`;
+        };
+        const qtyCell = () => {
+          const value = v("installed_quantity");
+          if (!editing) return `<td>${escapeHtml(String(value ?? 0))}</td>`;
+          return `<td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="installed_quantity" value="${escapeHtml(String(value ?? 0))}" ${qtyEditable ? "" : "readonly title=\"בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות\""}></td>`;
+        };
         return `
-        <tr data-hr-inst-row="${escapeHtml(r.visit_id)}"${r.is_manual ? " data-hr-inst-manual" : ""}>
-          ${textCell("location", r.location)}
-          ${textCell("customer_name", r.customer_name)}
-          ${textCell("po_number", r.po_number)}
-          <td><input type="date" class="hr-inst-input is-date" data-hr-inst-field="install_date" value="${escapeHtml(r.install_date || "")}"></td>
-          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="installed_quantity" value="${escapeHtml(String(r.installed_quantity ?? 0))}" ${qtyEditable ? "" : "readonly title=\"בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות\""}></td>
-          <td class="hr-inst-money" data-hr-inst-doors>${hrInstMoney(r.doors_amount)}</td>
-          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="food" value="${escapeHtml(String(r.food ?? 0))}"></td>
-          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="fuel" value="${escapeHtml(String(r.fuel ?? 0))}"></td>
-          <td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="advance" value="${escapeHtml(String(r.advance ?? 0))}"></td>
-          <td class="hr-inst-total" data-hr-inst-total>${hrInstMoney(r.total)}</td>
-          <td class="hr-inst-rowaction">${r.is_manual ? `<button type="button" class="hr-inst-del" data-hr-inst-delete title="מחק שורה ידנית">×</button>` : `<span class="hr-inst-synced" title="נמשך מטאב ההתקנות">⇄</span>`}</td>
+        <tr data-hr-inst-row="${escapeHtml(id)}"${r.is_manual ? " data-hr-inst-manual" : ""}${editing ? " data-hr-inst-editing" : ""}${dirty ? " data-hr-inst-dirty" : ""}>
+          ${textCell("location")}
+          ${textCell("customer_name")}
+          ${textCell("po_number")}
+          ${dateCell()}
+          ${qtyCell()}
+          <td class="hr-inst-money" data-hr-inst-doors>${hrInstMoney(doors)}</td>
+          ${numCell("food")}
+          ${numCell("fuel")}
+          ${numCell("advance")}
+          <td class="hr-inst-total" data-hr-inst-total>${hrInstMoney(total)}</td>
+          <td class="hr-inst-rowaction">
+            <button type="button" class="hr-inst-edit${editing ? " is-active" : ""}" data-hr-inst-edit title="${editing ? "סיים עריכה" : "ערוך את השורה"}">${editing ? "✓" : "✎"}</button>
+            ${r.is_manual ? `<button type="button" class="hr-inst-del" data-hr-inst-delete title="מחק שורה ידנית">×</button>` : `<span class="hr-inst-synced" title="נמשך מטאב ההתקנות">⇄</span>`}
+          </td>
         </tr>`;
       }).join("");
       const tableHtml = (month.rows || []).length ? `
@@ -49338,6 +49402,10 @@ document.addEventListener("DOMContentLoaded", () => {
             ${tableHtml}
             <div class="hr-inst-add-row">
               <button type="button" class="hr-inst-add-btn" data-hr-inst-add><span>+</span> הוסף התקנה ידנית</button>
+              <div class="hr-inst-save-area">
+                ${pendingCount ? `<span class="hr-inst-dirty-note">${pendingCount} שורות עם שינויים שלא נשמרו</span>` : ""}
+                <button type="button" class="hr-inst-save-btn${pendingCount ? " is-dirty" : ""}" data-hr-inst-save ${pendingCount ? "" : "disabled"}>שמור שינויים</button>
+              </div>
             </div>
             <div class="hr-inst-footer-row">
               <label class="hr-inst-payroll-toggle">
@@ -49351,17 +49419,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function recalcHrInstMonthCard(card) {
+      // מחושב מהנתונים + השינויים שטרם נשמרו, ולא מתוך שדות ה-DOM — שורות שאינן
+      // במצב עריכה הן טקסט בלבד ואין להן inputs, וקריאה מה-DOM הייתה מאפסת אותן.
+      const monthKey = card.dataset.hrInstCard || "";
+      const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
+      if (!month) return;
       const doorRate = Number(hrInstallationsData.door_rate) || 14;
-      let sums = { installed_quantity: 0, doors_amount: 0, food: 0, fuel: 0, advance: 0, total: 0 };
-      card.querySelectorAll("[data-hr-inst-row]").forEach(tr => {
-        const num = f => Number(tr.querySelector(`[data-hr-inst-field="${f}"]`)?.value || 0) || 0;
+      const sums = { installed_quantity: 0, doors_amount: 0, food: 0, fuel: 0, advance: 0, total: 0 };
+      (month.rows || []).forEach(r => {
+        const num = f => Number(hrInstRowValue(r, f) || 0) || 0;
         const qty = num("installed_quantity"), food = num("food"), fuel = num("fuel"), advance = num("advance");
         const doors = Math.round(qty * doorRate * 100) / 100;
         const total = Math.round((doors + food + fuel - advance) * 100) / 100;
-        const doorsCell = tr.querySelector("[data-hr-inst-doors]");
-        const totalCell = tr.querySelector("[data-hr-inst-total]");
-        if (doorsCell) doorsCell.textContent = hrInstMoney(doors);
-        if (totalCell) totalCell.textContent = hrInstMoney(total);
+        const tr = card.querySelector(`[data-hr-inst-row="${CSS.escape(String(r.visit_id || ""))}"]`);
+        if (tr) {
+          const doorsCell = tr.querySelector("[data-hr-inst-doors]");
+          const totalCell = tr.querySelector("[data-hr-inst-total]");
+          if (doorsCell) doorsCell.textContent = hrInstMoney(doors);
+          if (totalCell) totalCell.textContent = hrInstMoney(total);
+        }
         sums.installed_quantity += qty; sums.doors_amount += doors;
         sums.food += food; sums.fuel += fuel; sums.advance += advance; sums.total += total;
       });
@@ -49373,6 +49449,26 @@ document.addEventListener("DOMContentLoaded", () => {
       if (grand) grand.textContent = hrInstMoney(sums.total);
     }
 
+    function refreshHrInstSaveButton(card, monthKey) {
+      const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
+      const count = month ? hrInstMonthPendingCount(month) : 0;
+      const btn = card.querySelector("[data-hr-inst-save]");
+      const note = card.querySelector(".hr-inst-dirty-note");
+      if (btn) {
+        btn.disabled = count === 0;
+        btn.classList.toggle("is-dirty", count > 0);
+      }
+      if (note) {
+        note.textContent = count ? `${count} שורות עם שינויים שלא נשמרו` : "";
+        note.style.display = count ? "" : "none";
+      } else if (count && btn) {
+        const span = document.createElement("span");
+        span.className = "hr-inst-dirty-note";
+        span.textContent = `${count} שורות עם שינויים שלא נשמרו`;
+        btn.parentElement?.insertBefore(span, btn);
+      }
+    }
+
     function wireHrInstMonthCard(monthKey) {
       const card = hrInstMonthsHost?.querySelector(`[data-hr-inst-card="${CSS.escape(monthKey)}"]`);
       if (!card) return;
@@ -49381,17 +49477,17 @@ document.addEventListener("DOMContentLoaded", () => {
         else hrInstOpenMonths.add(monthKey);
         renderHrInstallations();
       });
+      const TEXT_FIELDS = ["install_date", "location", "customer_name", "po_number"];
+      // עריכה נאספת ל-hrInstPending ונשמרת רק בלחיצה על "שמור שינויים"
       card.querySelectorAll("[data-hr-inst-field]").forEach(input => {
-        input.addEventListener("input", () => recalcHrInstMonthCard(card));
-        input.addEventListener("change", async () => {
+        input.addEventListener("input", () => {
           const tr = input.closest("[data-hr-inst-row]");
-          const visitId = tr?.dataset.hrInstRow;
+          const rowId = tr?.dataset.hrInstRow;
           const field = input.dataset.hrInstField;
-          if (!visitId || !field) return;
-          const TEXT_FIELDS = ["install_date", "location", "customer_name", "po_number"];
-          const body = { visit_id: visitId };
-          body[field] = TEXT_FIELDS.includes(field) ? String(input.value || "") : Number(input.value || 0);
-          // בחירת הזמנה מהרשימה משלימה אוטומטית לקוח וכתובת אם הם עדיין ריקים
+          if (!rowId || !field) return;
+          const pending = hrInstPending[rowId] || (hrInstPending[rowId] = {});
+          pending[field] = TEXT_FIELDS.includes(field) ? String(input.value || "") : Number(input.value || 0);
+          // בחירת הזמנה מהרשימה משלימה לקוח וכתובת אם הם עדיין ריקים
           if (field === "po_number" && tr.hasAttribute("data-hr-inst-manual")) {
             const match = (hrInstallationsData.orders || []).find(o => o.po_number === String(input.value || "").trim());
             if (match) {
@@ -49399,34 +49495,64 @@ document.addEventListener("DOMContentLoaded", () => {
               const locInput = tr.querySelector('[data-hr-inst-field="location"]');
               if (custInput && !String(custInput.value || "").trim() && match.customer_name) {
                 custInput.value = match.customer_name;
-                body.customer_name = match.customer_name;
+                pending.customer_name = match.customer_name;
               }
               if (locInput && !String(locInput.value || "").trim() && match.delivery_address) {
                 const firstLine = String(match.delivery_address).split("\n").filter(Boolean).join(", ");
                 locInput.value = firstLine;
-                body.location = firstLine;
+                pending.location = firstLine;
               }
             }
           }
-          input.disabled = true;
-          try {
+          tr.setAttribute("data-hr-inst-dirty", "");
+          recalcHrInstMonthCard(card);
+          refreshHrInstSaveButton(card, monthKey);
+        });
+      });
+
+      card.querySelectorAll("[data-hr-inst-edit]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const rowId = btn.closest("[data-hr-inst-row]")?.dataset.hrInstRow;
+          if (!rowId) return;
+          if (hrInstEditing.has(rowId)) hrInstEditing.delete(rowId);
+          else hrInstEditing.add(rowId);
+          renderHrInstallations();
+        });
+      });
+
+      card.querySelector("[data-hr-inst-save]")?.addEventListener("click", async () => {
+        const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
+        const dirtyIds = (month?.rows || [])
+          .map(r => String(r.visit_id || ""))
+          .filter(id => hrInstPending[id]);
+        if (!dirtyIds.length) return;
+        const saveBtn = card.querySelector("[data-hr-inst-save]");
+        if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "שומר..."; }
+        const warnings = [];
+        try {
+          let latest = null;
+          for (const rowId of dirtyIds) {
             const res = await fetch("/hr-installations-save-row", {
-              method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ visit_id: rowId, ...hrInstPending[rowId] }),
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
-            if (data.writeback?.status === "error") {
-              notify(`לא נשמר בטאב ההתקנות: ${data.writeback.error || ""}`);
-            } else if (data.writeback?.reason === "multi_item_case") {
-              notify("הכמות לא עודכנה — בתיק הזה יש כמה פריטים, עדכן את הכמות בטאב ההתקנות.");
-            }
-            hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
-            renderHrInstallations();
-          } catch (err) {
-            notify(err.message || "לא הצלחתי לשמור את השורה.");
-            input.disabled = false;
+            if (data.writeback?.status === "error") warnings.push(data.writeback.error || "");
+            else if (data.writeback?.reason === "multi_item_case") warnings.push("הכמות לא עודכנה בתיק מרובה פריטים — עדכן אותה בטאב ההתקנות.");
+            delete hrInstPending[rowId];
+            hrInstEditing.delete(rowId);
+            latest = data;
           }
-        });
+          if (latest) {
+            hrInstallationsData = { months: latest.months || [], door_rate: latest.door_rate || 14, orders: latest.orders || hrInstallationsData.orders || [] };
+          }
+          renderHrInstallations();
+          notify(warnings.length ? `נשמר. ${warnings.join(" ")}` : `השינויים נשמרו (${dirtyIds.length} שורות).`);
+        } catch (err) {
+          notify(err.message || "לא הצלחתי לשמור את השינויים.");
+          renderHrInstallations();
+        }
       });
       const saveMonth = async (payload) => {
         try {
@@ -49464,10 +49590,12 @@ document.addEventListener("DOMContentLoaded", () => {
       };
 
       card.querySelector("[data-hr-inst-add]")?.addEventListener("click", async () => {
-        const data = await postHrInst("/hr-installations-add-manual", { month_key: monthKey }, "נוספה שורת התקנה");
-        if (!data?.manual_id) return;
-        // מיקוד אוטומטי בשדה המיקום של השורה החדשה
-        const newInput = hrInstMonthsHost?.querySelector(`[data-hr-inst-row="${CSS.escape(data.manual_id)}"] [data-hr-inst-field="location"]`);
+        // השורה החדשה נפתחת ישר במצב עריכה כדי שאפשר יהיה למלא אותה מיד
+        const pre = await postHrInst("/hr-installations-add-manual", { month_key: monthKey }, "נוספה שורת התקנה");
+        if (!pre?.manual_id) return;
+        hrInstEditing.add(String(pre.manual_id));
+        renderHrInstallations();
+        const newInput = hrInstMonthsHost?.querySelector(`[data-hr-inst-row="${CSS.escape(pre.manual_id)}"] [data-hr-inst-field="location"]`);
         newInput?.focus();
       });
 
@@ -50317,6 +50445,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     loadButton?.addEventListener("click", () => loadState(true));
     subtabButtons.forEach(button => button.addEventListener("click", () => setSubtab(button.dataset.hrSubtab || "overview")));
+    // כרטיסיית "התקנות" — הרכיב יושב בתוך מסך השעות, אז עוברים אליו וגוללים אליו
+    panel.querySelector("[data-hr-jump-installations]")?.addEventListener("click", () => {
+      setSubtab("hours");
+      subtabButtons.forEach(b => b.classList.remove("active"));
+      panel.querySelector("[data-hr-jump-installations]")?.classList.add("active");
+      window.requestAnimationFrame(() => {
+        document.querySelector(".hr-installations-wrap")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
     hrNewEmployeeButton?.addEventListener("click", openHrCreateEmployeeModal);
     addHoursRowButton?.addEventListener("click", () => addSectionRow("hours"));
     addPayrollRowButton?.addEventListener("click", () => addSectionRow("payroll"));
