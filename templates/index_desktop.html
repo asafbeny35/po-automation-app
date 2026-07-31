@@ -22881,6 +22881,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (safeTabName === "activity-log") {
       loadActivityLog();
     }
+    if (safeTabName === "employees-hr") {
+      window.__hrEnsureFreshState?.();
+    }
     try {
       localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, safeTabName);
     } catch (error) {
@@ -48472,7 +48475,9 @@ document.addEventListener("DOMContentLoaded", () => {
   function initHrPanel() {
     const panel = document.querySelector('[data-tab-panel="employees-hr"]');
     if (!panel) return;
-    const HR_STATE_STORAGE_KEY = "poAutomationHrStateCache";
+    // v2 — הסכימה כוללת עכשיו end_date/leave_reason ותצוגת עובדי עבר; מפתח חדש
+    // מבטיח שמטמון ישן (שבו עובדי עבר עדיין סומנו כפעילים) לא ישוחזר.
+    const HR_STATE_STORAGE_KEY = "poAutomationHrStateCacheV2";
     const statusBar = document.getElementById("statusBar");
     const loadButton = document.getElementById("hrLoadButton");
     const hrLoadProgress = document.getElementById("hrLoadProgress");
@@ -49189,9 +49194,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function persistHrStateLocal() {
       try {
+        // שומרים את המצב המלא (hrStateAll) ולא את התצוגה המסוננת, אחרת המטמון
+        // היה מחזיק רק את קבוצת העובדים שהוצגה והתצוגה השנייה הייתה חוזרת ריקה.
         window.localStorage.setItem(HR_STATE_STORAGE_KEY, JSON.stringify({
           saved_at: Date.now(),
-          state: hrState,
+          state: hrStateAll || hrState,
         }));
       } catch (error) {
         console.warn("Failed to cache HR state locally", error);
@@ -49200,13 +49207,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function restoreHrStateLocal() {
       try {
+        // ניקוי מטמונים ישנים מגרסאות קודמות של הסכימה
+        ["poAutomationHrStateCache"].forEach(key => {
+          try { window.localStorage.removeItem(key); } catch (e) {}
+        });
         const raw = window.localStorage.getItem(HR_STATE_STORAGE_KEY);
         if (!raw) return false;
         const parsed = JSON.parse(raw);
         const cachedState = parsed && typeof parsed === "object" ? parsed.state : null;
         if (!cachedState || typeof cachedState !== "object") return false;
         applyState(cachedState);
-        notify("נתוני העובדים והשכר שוחזרו מהמטמון המקומי.");
+        notify("נתוני העובדים והשכר שוחזרו מהמטמון המקומי. לחץ על טען נתונים לרענון מלא.");
         return true;
       } catch (error) {
         console.warn("Failed to restore HR state locally", error);
@@ -50329,6 +50340,17 @@ document.addEventListener("DOMContentLoaded", () => {
       renderDocuments();
     });
     restoreHrStateLocal();
+    // רענון אוטומטי חד-פעמי בכניסה לטאב — כך שמטמון מקומי ישן (למשל מלפני שעובד
+    // סומן כעובד עבר) מתקן את עצמו בלי שצריך ללחוץ "טען נתונים".
+    let hrAutoRefreshed = false;
+    window.__hrEnsureFreshState = () => {
+      if (hrAutoRefreshed) return;
+      hrAutoRefreshed = true;
+      loadState(true).catch(error => console.warn("hr auto refresh failed", error));
+    };
+    if (document.querySelector('.tab-panel.active[data-tab-panel="employees-hr"]')) {
+      window.__hrEnsureFreshState();
+    }
     panel.querySelectorAll("[data-hr-ingest-trigger]").forEach(button => {
       button.addEventListener("click", () => {
         const inputId = button.getAttribute("data-hr-ingest-trigger") || "";
