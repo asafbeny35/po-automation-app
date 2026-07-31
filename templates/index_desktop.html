@@ -4055,6 +4055,10 @@ table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top
 .hr-inst-del:hover { background: #fee2e2; }
 .hr-inst-synced { color: #cbd5e1; font-size: 14px; }
 tr[data-hr-inst-manual] td { background: #fffdf7; }
+.hr-hours-total-stack { display: flex; flex-direction: column; gap: 2px; }
+.hr-hours-total-stack strong { color: #15803d; font-size: 14px; }
+.hr-hours-total-stack small { color: #94a3b8; font-size: 11.5px; white-space: nowrap; }
+
 .hr-inst-edit {
   border: none; background: #eef2ff; color: #4338ca; width: 24px; height: 24px;
   border-radius: 7px; font-size: 13px; line-height: 1; cursor: pointer; margin-inline-end: 4px;
@@ -49008,6 +49012,28 @@ document.addEventListener("DOMContentLoaded", () => {
       renderHoursDetails();
     }
 
+    /** סכום ההתקנות שסומנו "הוסף לחישובי שכר" לאותו עובד ואותו חודש. */
+    function hrInstallationsPayrollAmount(employeeName, monthKey) {
+      const name = String(employeeName || "").trim();
+      const key = String(monthKey || "").trim();
+      if (!name || !key) return 0;
+      const month = (hrInstallationsData.months || []).find(m => m.month_key === key);
+      if (!month || !month.include_in_payroll) return 0;
+      if (String(month.employee_name || "").trim() !== name) return 0;
+      return Number(month.totals?.total || 0) || 0;
+    }
+
+    /** תא "שכר משוער": שעות × תעריף, ובתוספת ההתקנות של אותו חודש אם סומנו לשכר. */
+    function hrHoursTotalCellHtml(row) {
+      const hoursAmount = Number(row.total_estimate || 0) || 0;
+      const installations = hrInstallationsPayrollAmount(row.employee_name, row.month_key);
+      if (!installations) return escapeHtml(formatCurrency(hoursAmount));
+      return `<div class="hr-hours-total-stack">
+        <strong>${escapeHtml(formatCurrency(hoursAmount + installations))}</strong>
+        <small>${escapeHtml(formatCurrency(hoursAmount))} שעות + ${escapeHtml(formatCurrency(installations))} התקנות</small>
+      </div>`;
+    }
+
     function renderHours() {
       if (!hoursBody) return;
       const selectedEmployeeId = hoursEmployeeSelect?.value || "";
@@ -49054,7 +49080,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${overtimeCellHtml}</td>
           <td>${hourlyRateCellHtml}</td>
           <td><span class="hr-inline-value">${escapeHtml(hoursGapDisplay || "—")}</span></td>
-          <td>${escapeHtml(formatCurrency(row.total_estimate || 0))}</td>
+          <td>${hrHoursTotalCellHtml(row)}</td>
           <td>${row.hours_drive_url ? `<span class="hr-file-cell"><a class="hr-link" href="${escapeHtml(row.hours_drive_url)}" target="_blank" rel="noopener">${escapeHtml(fileDisplayName(row.hours_file_name || "", row.month_key || ""))}</a><button type="button" class="hr-icon-btn" data-hr-hours-detail="${escapeHtml(rowId)}" data-hr-month-key="${escapeHtml(row.month_key || "")}" aria-label="${isDetailOpen ? "הסתר פירוט שעות" : "הצג פירוט שעות"}">${isDetailOpen ? "−" : "+"}</button></span>` : `<span class="hr-inline-value muted">—</span>`}</td>
           <td><button type="button" class="ghost-btn" data-hr-upload="hours" data-row-id="${escapeHtml(rowId)}" data-employee-id="${escapeHtml(row.employee_id || "")}" data-month-key="${escapeHtml(row.month_key || "")}">העלה</button></td>
           <td><button type="button" class="payments-edit-btn ${isEditing ? "save" : ""}" data-hr-edit-row="hours" data-row-id="${escapeHtml(rowId)}" aria-label="${isEditing ? "שמור שעות" : "ערוך שעות"}">${rowActionIcon("hours", rowId)}</button></td>
@@ -49548,6 +49574,7 @@ document.addEventListener("DOMContentLoaded", () => {
             hrInstallationsData = { months: latest.months || [], door_rate: latest.door_rate || 14, orders: latest.orders || hrInstallationsData.orders || [] };
           }
           renderHrInstallations();
+          renderHours();
           notify(warnings.length ? `נשמר. ${warnings.join(" ")}` : `השינויים נשמרו (${dirtyIds.length} שורות).`);
         } catch (err) {
           notify(err.message || "לא הצלחתי לשמור את השינויים.");
@@ -49564,6 +49591,7 @@ document.addEventListener("DOMContentLoaded", () => {
           if (!res.ok) throw new Error(data.error || "השמירה נכשלה.");
           hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
           renderHrInstallations();
+          renderHours();
         } catch (err) {
           notify(err.message || "לא הצלחתי לשמור.");
         }
@@ -49617,6 +49645,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!res.ok) throw new Error(data.error || "טעינת ההתקנות נכשלה.");
         hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, orders: data.orders || hrInstallationsData.orders || [] };
         renderHrInstallations();
+        // עמודת "שכר משוער" בטבלת השעות מוסיפה את ההתקנות שסומנו לשכר
+        renderHours();
       } catch (err) {
         hrInstMonthsHost.innerHTML = `<div class="hr-empty" style="padding:18px;">${escapeHtml(err.message || "לא הצלחתי לטעון את טבלאות ההתקנות.")}</div>`;
       }
