@@ -7508,6 +7508,37 @@ tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
   box-shadow: 0 0 0 3px rgba(255, 125, 18, 0.12);
 }
 
+.installations-seg {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.installations-seg-btn {
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 7px 13px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.installations-seg-btn:hover { color: #0f172a; }
+
+.installations-seg-btn.is-active {
+  background: #fff;
+  color: #0f172a;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.1);
+}
+
 .installations-toggle {
   display: inline-flex;
   align-items: center;
@@ -7623,6 +7654,53 @@ tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
   border-radius: 18px;
   border: 1px dashed rgba(148, 163, 184, 0.26);
   background: rgba(248, 250, 252, 0.72);
+}
+
+.installation-case-slot {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.installation-case-slot > .installation-case-card {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.installation-case-delete {
+  flex: 0 0 auto;
+  margin-top: 12px;
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: rgba(255, 255, 255, 0.92);
+  color: #94a3b8;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity .16s ease, color .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.installation-case-delete svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 auto;
+  overflow: visible;
+}
+
+.installation-case-slot:hover .installation-case-delete,
+.installation-case-delete:focus-visible {
+  opacity: 1;
+}
+
+.installation-case-delete:hover {
+  color: #dc2626;
+  border-color: rgba(220, 38, 38, 0.35);
+  background: rgba(254, 242, 242, 0.98);
 }
 
 .installation-case-card {
@@ -10521,6 +10599,27 @@ a.admin-expense-status:hover {
   border: 1px solid rgba(148, 163, 184, 0.2);
   box-shadow: var(--shadow-lg);
   padding: 24px;
+}
+
+.installation-delete-note {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: #64748b;
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px 12px;
+}
+
+.primary-btn.is-danger {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.primary-btn.is-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
 }
 
 .confirm-modal-card h3 {
@@ -14696,10 +14795,11 @@ input:focus {
             <option value="">כל הסטטוסים</option>
           </select>
         </div>
-        <label class="installations-toggle" for="installationsOpenOnly">
-          <input id="installationsOpenOnly" type="checkbox">
-          <span>רק פתוחות</span>
-        </label>
+        <div class="installations-seg" id="installationsPhaseToggle" role="group" aria-label="סינון לפי שלב">
+          <button type="button" class="installations-seg-btn is-active" data-installations-phase="all">הכול</button>
+          <button type="button" class="installations-seg-btn" data-installations-phase="open">תואמו / ממתינים</button>
+          <button type="button" class="installations-seg-btn" data-installations-phase="closed">הושלמו / בוטלו</button>
+        </div>
         <label class="installations-toggle" for="installationsOverdueOnly">
           <input id="installationsOverdueOnly" type="checkbox">
           <span>רק כאלה שמועדן חלף</span>
@@ -19460,6 +19560,22 @@ input:focus {
   </div>
 </div>
 
+<div id="installationCaseDeleteModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card">
+    <div class="modal-head">
+      <h3>מחיקת תיק התקנה</h3>
+      <button type="button" class="modal-close-btn" id="installationCaseDeleteClose" aria-label="סגור חלון">×</button>
+    </div>
+    <p>האם אתה בטוח שברצונך למחוק את תיק ההתקנה מדף ההתקנות?</p>
+    <div id="installationCaseDeleteDetails" class="reminder-modal-meta"></div>
+    <p class="installation-delete-note">התיק יוסר מהרשימה ולא ייבנה מחדש בסנכרון הבא. ביקורי ההתקנה שכבר תועדו יישארו בטבלת ההתקנות שבעובדים ושכר, כדי שלא יאבדו נתוני שכר על עבודה שבוצעה.</p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="ghost-btn" id="installationCaseDeleteCancel">ביטול</button>
+      <button type="button" class="primary-btn is-danger" id="installationCaseDeleteConfirm">מחק</button>
+    </div>
+  </div>
+</div>
+
 <div id="marketingWorkManagerDeleteModal" class="confirm-modal" aria-hidden="true">
   <div class="confirm-modal-card">
     <div class="modal-head">
@@ -20446,7 +20562,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const installationsSummary = document.getElementById("installationsSummary");
   const installationsSearchInput = document.getElementById("installationsSearchInput");
   const installationsStatusFilter = document.getElementById("installationsStatusFilter");
-  const installationsOpenOnly = document.getElementById("installationsOpenOnly");
+  const installationsPhaseToggle = document.getElementById("installationsPhaseToggle");
+  let installationsPhaseFilter = "all"; // all | open | closed
   const installationsOverdueOnly = document.getElementById("installationsOverdueOnly");
   const installationsList = document.getElementById("installationsList");
   const installationsListCount = document.getElementById("installationsListCount");
@@ -23109,11 +23226,12 @@ document.addEventListener("DOMContentLoaded", () => {
   function filteredInstallationRows() {
     const searchValue = String(installationsSearchInput?.value || "").trim().toLowerCase();
     const statusValue = String(installationsStatusFilter?.value || "").trim();
-    const onlyOpen = !!installationsOpenOnly?.checked;
+    const phase = installationsPhaseFilter || "all";
     const onlyOverdue = !!installationsOverdueOnly?.checked;
     return installationRows.filter(row => {
       if (statusValue && String(row?.status || "").trim() !== statusValue) return false;
-      if (onlyOpen && !installationIsOpen(row)) return false;
+      if (phase === "open" && !installationIsOpen(row)) return false;
+      if (phase === "closed" && installationIsOpen(row)) return false;
       if (onlyOverdue && !row?.overdue) return false;
       if (!searchValue) return true;
       const haystack = [
@@ -23229,6 +23347,14 @@ document.addEventListener("DOMContentLoaded", () => {
       const fullAddress = installationFullAddress(row);
       const hasDeliveryConfirmation = installationHasDeliveryConfirmation(row);
       return `
+        <div class="installation-case-slot">
+        <button type="button" class="installation-case-delete" data-installation-delete="${escapeAttribute(installationId)}" title="מחק את תיק ההתקנה מהדף" aria-label="מחק את תיק ההתקנה מהדף">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"></path><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"></path>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path>
+            <path d="M10 11v6"></path><path d="M14 11v6"></path>
+          </svg>
+        </button>
         <button type="button" class="installation-case-card ${selected ? "selected" : ""} ${isCompleted ? "completed" : ""}" data-installation-select="${escapeAttribute(installationId)}">
           <div class="installation-case-head">
             <div class="installation-case-title">
@@ -23266,6 +23392,7 @@ document.addEventListener("DOMContentLoaded", () => {
             <span>${escapeHtml(row?.visit_count || 0)} ביקורים</span>
           </div>
         </button>
+        </div>
       `;
     }).join("");
   }
@@ -23556,6 +23683,70 @@ document.addEventListener("DOMContentLoaded", () => {
       installationsLoading = false;
       if (installationsRefreshButton) installationsRefreshButton.disabled = false;
       if (installationsForceSyncButton) installationsForceSyncButton.disabled = false;
+    }
+  }
+
+  let installationCaseDeleteTargetId = "";
+
+  function openInstallationCaseDeleteModal(installationId) {
+    const id = String(installationId || "").trim();
+    const row = installationCaseById(id);
+    if (!id || !row) return;
+    installationCaseDeleteTargetId = id;
+    const details = document.getElementById("installationCaseDeleteDetails");
+    if (details) {
+      const parts = [
+        String(row?.customer_name || "").trim() || "לקוח ללא שם",
+        row?.po_number ? `PO ${String(row.po_number).trim()}` : "",
+        installationFullAddress(row),
+        `${Number(row?.visit_count || 0) || 0} ביקורים`,
+      ].filter(Boolean);
+      details.innerHTML = parts.map(part => `<div>${escapeHtml(part)}</div>`).join("");
+    }
+    const modal = document.getElementById("installationCaseDeleteModal");
+    if (modal) {
+      modal.classList.add("visible");
+      modal.setAttribute("aria-hidden", "false");
+      document.getElementById("installationCaseDeleteCancel")?.focus();
+    }
+  }
+
+  function closeInstallationCaseDeleteModal() {
+    installationCaseDeleteTargetId = "";
+    const modal = document.getElementById("installationCaseDeleteModal");
+    if (!modal) return;
+    modal.classList.remove("visible");
+    modal.setAttribute("aria-hidden", "true");
+  }
+
+  async function confirmInstallationCaseDelete() {
+    const installationId = String(installationCaseDeleteTargetId || "").trim();
+    if (!installationId) return;
+    const confirmButton = document.getElementById("installationCaseDeleteConfirm");
+    const originalLabel = confirmButton ? confirmButton.textContent : "";
+    if (confirmButton) {
+      confirmButton.disabled = true;
+      confirmButton.textContent = "מוחק...";
+    }
+    try {
+      const response = await fetch("/installations-case-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ installation_id: installationId }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "לא הצלחתי למחוק את תיק ההתקנה.");
+      if (String(selectedInstallationId || "").trim() === installationId) selectedInstallationId = "";
+      applyInstallationsPayload(payload);
+      closeInstallationCaseDeleteModal();
+      showToast("success", "תיק ההתקנה נמחק", "התיק הוסר מדף ההתקנות ולא ייבנה מחדש בסנכרון הבא.");
+    } catch (error) {
+      showToast("error", "מחיקת תיק ההתקנה נכשלה", error.message || "נסה שוב.");
+    } finally {
+      if (confirmButton) {
+        confirmButton.disabled = false;
+        confirmButton.textContent = originalLabel || "מחק";
+      }
     }
   }
 
@@ -42655,7 +42846,13 @@ document.addEventListener("DOMContentLoaded", () => {
     renderInstallationsView();
   });
 
-  installationsOpenOnly?.addEventListener("change", () => {
+  installationsPhaseToggle?.addEventListener("click", event => {
+    const button = event.target.closest("[data-installations-phase]");
+    if (!button) return;
+    installationsPhaseFilter = button.dataset.installationsPhase || "all";
+    installationsPhaseToggle.querySelectorAll("[data-installations-phase]").forEach(el => {
+      el.classList.toggle("is-active", el === button);
+    });
     renderInstallationsView();
   });
 
@@ -42684,6 +42881,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   installationsList?.addEventListener("click", event => {
+    const deleteButton = event.target.closest("[data-installation-delete]");
+    if (deleteButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      openInstallationCaseDeleteModal(deleteButton.dataset.installationDelete || "");
+      return;
+    }
     const button = event.target.closest("[data-installation-select]");
     if (!button) return;
     const installationId = String(button.dataset.installationSelect || "").trim();
@@ -46120,6 +46324,14 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   marketingWorkManagersSendWhatsapp?.addEventListener("click", async () => {
     await sendWorkManagersWhatsapp();
+  });
+
+  document.getElementById("installationCaseDeleteClose")?.addEventListener("click", closeInstallationCaseDeleteModal);
+  document.getElementById("installationCaseDeleteCancel")?.addEventListener("click", closeInstallationCaseDeleteModal);
+  document.getElementById("installationCaseDeleteConfirm")?.addEventListener("click", () => { void confirmInstallationCaseDelete(); });
+  // בכוונה אין סגירה בלחיצה מחוץ לחלון — מחיקה מאושרת רק דרך "מחק", "ביטול" או ה-X
+  document.getElementById("installationCaseDeleteModal")?.addEventListener("keydown", event => {
+    if (event.key === "Escape") { event.stopPropagation(); closeInstallationCaseDeleteModal(); }
   });
 
   marketingWorkManagerDeleteModal?.addEventListener("click", event => {

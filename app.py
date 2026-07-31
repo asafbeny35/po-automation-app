@@ -12811,6 +12811,7 @@ CUSTOMERS_HIDDEN_FILE = RUNTIME_ROOT / "customers_hidden.json"
 PAYMENTS_RECEIPT_SYNC_META_FILE = RUNTIME_ROOT / "payments_receipt_sync_meta.json"
 LOST_DEBTS_STATE_FILE = RUNTIME_ROOT / "lost_debts_cache.json"
 HR_INSTALLATIONS_STATE_FILE = RUNTIME_ROOT / "hr_installations_cache.json"
+INSTALLATION_CASES_HIDDEN_FILE = RUNTIME_ROOT / "installation_cases_hidden.json"
 LOGS_DIR = RUNTIME_ROOT / "logs"
 LOGS_DIR.mkdir(parents=True, exist_ok=True)
 APP_ERROR_LOG = LOGS_DIR / "app_errors.log"
@@ -17386,6 +17387,38 @@ def _inventory_purchase_order_row_send_status(row: dict | None = None) -> str:
     return str((row or {}).get("send_status") or "").strip().lower()
 
 
+def _installation_hidden_case_ids() -> set[str]:
+    """תיקי התקנה שנמחקו ידנית מדף ההתקנות. הם נבנים מחדש מהיסטוריית ההזמנות
+    בכל סנכרון, ולכן המחיקה נשמרת כרשימת מזהים מוסתרים ולא כמחיקת שורה."""
+    try:
+        supabase_payload = _load_supabase_app_state("app_installation_hidden_cases")
+        if isinstance(supabase_payload, dict):
+            items = supabase_payload.get("hidden_ids") or []
+            if isinstance(items, list):
+                return {str(item or "").strip() for item in items if str(item or "").strip()}
+        if not INSTALLATION_CASES_HIDDEN_FILE.exists():
+            return set()
+        payload = json.loads(INSTALLATION_CASES_HIDDEN_FILE.read_text(encoding="utf-8"))
+        if isinstance(payload, dict):
+            payload = payload.get("hidden_ids") or []
+        if isinstance(payload, list):
+            return {str(item or "").strip() for item in payload if str(item or "").strip()}
+    except Exception as exc:
+        log_handled_error("installation hidden case ids load failed", exc)
+    return set()
+
+
+def _save_installation_hidden_case_ids(ids: set[str]) -> None:
+    cleaned = sorted(str(item or "").strip() for item in ids if str(item or "").strip())
+    _save_supabase_app_state("app_installation_hidden_cases", {"hidden_ids": cleaned})
+    try:
+        INSTALLATION_CASES_HIDDEN_FILE.write_text(
+            json.dumps(cleaned, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    except Exception as exc:
+        log_handled_error("installation hidden case ids save failed", exc)
+
+
 def _inventory_purchase_order_hidden_keys() -> set[str]:
     try:
         supabase_payload = _load_supabase_app_state("app_inventory_purchase_order_hidden_keys")
@@ -18930,7 +18963,7 @@ async def order_history_delete(request: Request):
 async def installations_state():
     try:
         sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)})
     except Exception as exc:
         log_handled_error("installations_state failed", exc)
         cached_cases = get_cached_installation_case_rows()
@@ -18939,7 +18972,7 @@ async def installations_state():
             return JSONResponse(
                 {
                     "status": "ok",
-                    **_build_installations_payload(cached_cases, cached_visits),
+                    **_build_installations_payload(cached_cases, cached_visits, hide_deleted=True),
                     "warning": "הוצגו נתוני התקנות אחרונים שנשמרו, כי רענון מלא מהשרת לא הצליח כרגע.",
                 }
             )
@@ -18950,7 +18983,7 @@ async def installations_state():
 async def installations_sync_from_history():
     try:
         sync_result = _sync_installation_cases_from_order_history(force_refresh=True, persist=True)
-        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)})
     except Exception as exc:
         log_handled_error("installations_sync_from_history failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לרענן את דף ההתקנות: {exc}"}, status_code=500)
@@ -18975,7 +19008,7 @@ async def installations_case_update(request: Request):
         merged_row["notes"] = str(incoming_row.get("notes") or "").strip()
         upsert_installation_case_row(merged_row)
         sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)})
     except Exception as exc:
         log_handled_error("installations_case_update failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לעדכן את תיק ההתקנה: {exc}"}, status_code=500)
@@ -19102,7 +19135,7 @@ async def _installations_visit_save_core(visit_payload: dict) -> dict:
         }
         upsert_installation_visit_row(visit_row)
         sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-        return {"status": "ok", "payload": _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))}
+        return {"status": "ok", "payload": _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)}
     except Exception as exc:
         log_handled_error("installations_visit_save failed", exc)
         return {"status": "error", "error": f"לא הצלחתי לשמור את ביקור ההתקנה: {exc}", "code": 500}
@@ -19118,6 +19151,26 @@ async def installations_visit_save(request: Request):
     return JSONResponse({"status": "ok", **(result.get("payload") or {})})
 
 
+@app.post("/installations-case-delete")
+async def installations_case_delete(request: Request):
+    """מחיקת תיק התקנה מדף ההתקנות. התיקים נבנים מחדש מהיסטוריית ההזמנות בכל
+    סנכרון, ולכן המחיקה נרשמת כמזהה מוסתר. ביקורי ההתקנה שכבר תועדו נשמרים
+    כדי שטבלת ההתקנות בעובדים ושכר לא תאבד נתוני שכר על עבודה שכבר בוצעה."""
+    try:
+        body = await request.json()
+        installation_id = str(body.get("installation_id") or "").strip()
+        if not installation_id:
+            return JSONResponse({"error": "חסר מזהה תיק התקנה למחיקה."}, status_code=400)
+        hidden_ids = _installation_hidden_case_ids()
+        hidden_ids.add(installation_id)
+        _save_installation_hidden_case_ids(hidden_ids)
+        sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)})
+    except Exception as exc:
+        log_handled_error("installations_case_delete failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי למחוק את תיק ההתקנה: {exc}"}, status_code=500)
+
+
 @app.post("/installations-visit-delete")
 async def installations_visit_delete(request: Request):
     try:
@@ -19131,7 +19184,7 @@ async def installations_visit_delete(request: Request):
             return JSONResponse({"error": "ביקור ההתקנה לא נמצא."}, status_code=404)
         save_installation_visit_rows(remaining_rows)
         sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))})
+        return JSONResponse({"status": "ok", **_build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)})
     except Exception as exc:
         log_handled_error("installations_visit_delete failed", exc)
         return JSONResponse({"error": f"לא הצלחתי למחוק את ביקור ההתקנה: {exc}"}, status_code=500)
@@ -25183,9 +25236,16 @@ def _build_pending_installations_from_working_orders(known_po_numbers: set[str])
     return pending_rows
 
 
-def _build_installations_payload(case_rows: list[dict] | None = None, visit_rows: list[dict] | None = None) -> dict:
+def _build_installations_payload(case_rows: list[dict] | None = None, visit_rows: list[dict] | None = None, *, hide_deleted: bool = False) -> dict:
     case_rows = case_rows if case_rows is not None else get_cached_installation_case_rows()
     visit_rows = visit_rows if visit_rows is not None else get_cached_installation_visit_rows()
+    if hide_deleted:
+        hidden_ids = _installation_hidden_case_ids()
+        if hidden_ids:
+            case_rows = [
+                row for row in (case_rows or [])
+                if str((row or {}).get("installation_id") or "").strip() not in hidden_ids
+            ]
     delivery_confirmation_rows = load_delivery_confirmation_rows()
     confirmations_by_po: dict[str, dict] = {}
     for confirmation_row in delivery_confirmation_rows or []:
@@ -25468,7 +25528,7 @@ def _installer_view_documents_drive_id(case: dict) -> str:
 
 def _installer_view_open_cases() -> tuple[list[dict], list[dict]]:
     sync_result = _sync_installation_cases_from_order_history(force_refresh=False, persist=True)
-    payload = _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"))
+    payload = _build_installations_payload(sync_result.get("rows"), sync_result.get("visits"), hide_deleted=True)
     open_cases = [
         case for case in (payload.get("rows") or [])
         if str(case.get("status") or "").strip() not in INSTALLER_VIEW_CLOSED_STATUSES
