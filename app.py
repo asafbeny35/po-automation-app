@@ -26815,10 +26815,12 @@ def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[b
             parts = str(value or "").split("\n")
             return Paragraph("<br/>".join(pdf_rtl(part) for part in parts), cell_style)
 
-        data = [[cell(c) for c in headers]]
+        # ReportLab מציב את עמודה 0 בשמאל. במסמך עברי העמודה הראשונה צריכה להיות
+        # בימין, ולכן הכותרות, השורות ורוחבי העמודות נהפכים כאן.
+        data = [[cell(c) for c in reversed(headers)]]
         for row in rows:
-            data.append([cell(c) for c in row])
-        table = Table(data, colWidths=widths, repeatRows=1)
+            data.append([cell(c) for c in reversed(row)])
+        table = Table(data, colWidths=list(reversed(widths)), repeatRows=1)
         style = [
             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4ede4")),
             ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#7c2d12")),
@@ -26866,25 +26868,24 @@ def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[b
             Paragraph(pdf_rtl("פירוט התקנות"), section_style),
             Spacer(1, 6),
         ]
-        inst_headers = ["תאריך", "לקוח", "הזמנה", "מיקום", "הותקנו", "התקנת דלתות", "אוכל", "דלק", "מפרעה", "סיכום"]
+        inst_headers = ["תאריך", "הותקנו", "התקנת דלתות", "אוכל", "דלק", "מפרעה", "סיכום"]
         rows = []
         for r in inst_rows:
             doors = money(r.get("doors_amount"))
             if r.get("is_min_doors"):
                 doors = f"{doors}\nבפועל {money(r.get('doors_amount_actual'))}"
             rows.append([
-                _hr_pdf_date(str(r.get("install_date") or "")), str(r.get("customer_name") or "—"),
-                str(r.get("po_number") or "—"), str(r.get("location") or "—"),
+                _hr_pdf_date(str(r.get("install_date") or "")),
                 f"{_hr_installation_number(r.get('installed_quantity'), 0.0):g}",
                 doors, money(r.get("food")), money(r.get("fuel")), money(r.get("advance")), money(r.get("total")),
             ])
         rows.append([
-            "סה״כ", f"{len(inst_rows)} התקנות", "", "",
+            f"סה״כ · {len(inst_rows)} התקנות",
             f"{_hr_installation_number(inst_totals.get('installed_quantity'), 0.0):g}",
             money(inst_totals.get("doors_amount")), money(inst_totals.get("food")),
             money(inst_totals.get("fuel")), money(inst_totals.get("advance")), money(inst_totals.get("total")),
         ])
-        story.append(build_table(inst_headers, rows, [62, 118, 72, 118, 48, 118, 58, 58, 58, 72], bold_last=True))
+        story.append(build_table(inst_headers, rows, [168, 78, 140, 96, 96, 96, 100], bold_last=True))
         if any(r.get("is_min_doors") for r in inst_rows):
             story += [Spacer(1, 5), Paragraph(pdf_rtl(
                 f"התקנת דלתות מחויבת בתשלום מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות לפי חוק, גם כשהותקנו פחות."), sub_style)]
