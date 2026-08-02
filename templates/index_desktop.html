@@ -49199,20 +49199,25 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     /** סכום ההתקנות שסומנו "הוסף לחישובי שכר" לאותו עובד ואותו חודש. */
-    function hrInstallationsPayrollAmount(employeeName, monthKey) {
-      const name = String(employeeName || "").trim();
-      const key = String(monthKey || "").trim();
-      if (!name || !key) return 0;
+    function hrInstallationsPayrollAmount(hoursRow) {
+      const key = String(hoursRow?.month_key || "").trim();
+      if (!key) return 0;
       const month = (hrInstallationsData.months || []).find(m => m.month_key === key);
       if (!month || !month.include_in_payroll) return 0;
-      if (String(month.employee_name || "").trim() !== name) return 0;
+      // ההתאמה לפי מזהה העובד, כך ששינוי שם לא מנתק את ההתקנות מהשכר.
+      // חודשים שנשמרו לפני שהמזהה נשמר נופלים בחזרה להתאמת שם.
+      const rowId = String(hoursRow?.employee_id || "").trim();
+      const monthId = String(month.employee_id || "").trim();
+      if (rowId && monthId) return monthId === rowId ? (Number(month.totals?.total || 0) || 0) : 0;
+      const name = String(hoursRow?.employee_name || "").trim();
+      if (!name || String(month.employee_name || "").trim() !== name) return 0;
       return Number(month.totals?.total || 0) || 0;
     }
 
     /** תא "שכר משוער": שעות × תעריף, ובתוספת ההתקנות של אותו חודש אם סומנו לשכר. */
     function hrHoursTotalCellHtml(row) {
       const hoursAmount = Number(row.total_estimate || 0) || 0;
-      const installations = hrInstallationsPayrollAmount(row.employee_name, row.month_key);
+      const installations = hrInstallationsPayrollAmount(row);
       if (!installations) return escapeHtml(formatCurrency(hoursAmount));
       return `<div class="hr-hours-total-stack">
         <strong>${escapeHtml(formatCurrency(hoursAmount + installations))}</strong>
@@ -49844,7 +49849,14 @@ document.addEventListener("DOMContentLoaded", () => {
           notify(err.message || "לא הצלחתי לשמור.");
         }
       };
-      card.querySelector("[data-hr-inst-employee]")?.addEventListener("change", (e) => saveMonth({ employee_name: e.target.value }));
+      card.querySelector("[data-hr-inst-employee]")?.addEventListener("change", (e) => {
+        const name = String(e.target.value || "").trim();
+        // נשמר גם מזהה העובד, כדי שהקישור לשכר ישרוד שינוי שם. עובדי עבר נכללים
+        // בחיפוש כי חודש קודם עשוי להיות משויך לעובד שכבר סיים.
+        const pool = (hrStateAll?.employees || hrState.employees || []);
+        const match = pool.find(emp => String(emp.full_name || "").trim() === name);
+        saveMonth({ employee_name: name, employee_id: String(match?.employee_id || "") });
+      });
       card.querySelector("[data-hr-inst-payroll]")?.addEventListener("change", (e) => saveMonth({ include_in_payroll: e.target.checked }));
 
       const postHrInst = async (url, body, okMessage) => {
