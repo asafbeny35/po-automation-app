@@ -26752,6 +26752,193 @@ async def hr_hours_detail(request: Request):
         return JSONResponse({"error": f"לא הצלחתי לטעון את פירוט השעות: {exc}"}, status_code=500)
 
 
+def _hr_pdf_date(value: str) -> str:
+    parsed = _hr_parse_iso_date(str(value or "").strip())
+    return parsed.strftime("%d/%m/%Y") if parsed else (str(value or "").strip() or "—")
+
+
+def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[bytes, str]:
+    """פירוט הימים והשעות של עובד לחודש, ואם החודש משויך לו בהתקנות — גם
+    טבלת ההתקנות, המפרעות וסיכום סה״כ לתשלום."""
+    employee_id = str(target_row.get("employee_id") or "").strip()
+    employee_name = str(target_row.get("employee_name") or "").strip() or "עובד"
+    month_key = str(target_row.get("month_key") or "").strip()
+    month_label = _hr_month_display(month_key)
+    hourly_rate = _hr_installation_number(target_row.get("hourly_rate"), 0.0)
+
+    total_hours = round(sum(_hr_installation_number(d.get("hours"), 0.0) for d in details or []), 2)
+    hours_pay = round(total_hours * hourly_rate, 2)
+
+    # התקנות של אותו עובד באותו חודש — לפי מזהה, ובנפילה לאחור לפי שם
+    installations_month = None
+    for month in (_build_hr_installations_payload().get("months") or []):
+        if str(month.get("month_key") or "").strip() != month_key:
+            continue
+        month_emp_id = str(month.get("employee_id") or "").strip()
+        if month_emp_id:
+            if month_emp_id == employee_id:
+                installations_month = month
+        elif str(month.get("employee_name") or "").strip() == employee_name:
+            installations_month = month
+        break
+
+    inst_rows = list((installations_month or {}).get("rows") or [])
+    inst_totals = dict((installations_month or {}).get("totals") or {})
+    inst_in_payroll = bool((installations_month or {}).get("include_in_payroll"))
+    inst_total = _hr_installation_number(inst_totals.get("total"), 0.0) if inst_rows else 0.0
+    grand_total = round(hours_pay + (inst_total if inst_in_payroll else 0.0), 2)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=landscape(A4),
+        rightMargin=28, leftMargin=28, topMargin=28, bottomMargin=24,
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("HrDetailTitle", parent=styles["Heading2"],
+        fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, fontSize=18, leading=24,
+        alignment=TA_RIGHT, textColor=colors.HexColor("#1f2d3d"))
+    sub_style = ParagraphStyle("HrDetailSub", parent=styles["BodyText"],
+        fontName=PDF_HEB_FONT, fontSize=10, leading=14, alignment=TA_RIGHT,
+        textColor=colors.HexColor("#64748b"))
+    section_style = ParagraphStyle("HrDetailSection", parent=styles["Heading3"],
+        fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, fontSize=13, leading=18,
+        alignment=TA_RIGHT, textColor=colors.HexColor("#7c2d12"))
+    cell_style = ParagraphStyle("HrDetailCell", parent=styles["BodyText"],
+        fontName=PDF_HEB_FONT, fontSize=9, leading=12, alignment=TA_RIGHT)
+
+    def money(value) -> str:
+        return f"{_hr_installation_number(value, 0.0):,.2f} ₪"
+
+    def build_table(headers: list[str], rows: list[list[str]], widths: list[float], bold_last: bool = False):
+        def cell(value):
+            # כל שורה עוברת היפוך RTL בנפרד, אחרת שורה שנייה בתא נדבקת להפוך
+            parts = str(value or "").split("\n")
+            return Paragraph("<br/>".join(pdf_rtl(part) for part in parts), cell_style)
+
+        data = [[cell(c) for c in headers]]
+        for row in rows:
+            data.append([cell(c) for c in row])
+        table = Table(data, colWidths=widths, repeatRows=1)
+        style = [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4ede4")),
+            ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#7c2d12")),
+            ("FONTNAME", (0, 0), (-1, 0), PDF_HEB_BOLD_FONT or PDF_HEB_FONT),
+            ("FONTNAME", (0, 1), (-1, -1), PDF_HEB_FONT),
+            ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d6d3d1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fffaf6")]),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+            ("LEFTPADDING", (0, 0), (-1, -1), 6),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+        ]
+        if bold_last:
+            style += [
+                ("BACKGROUND", (0, len(data) - 1), (-1, len(data) - 1), colors.HexColor("#fdf1e5")),
+                ("FONTNAME", (0, len(data) - 1), (-1, len(data) - 1), PDF_HEB_BOLD_FONT or PDF_HEB_FONT),
+            ]
+        table.setStyle(TableStyle(style))
+        return table
+
+    story = [
+        Paragraph(pdf_rtl(f"פירוט שעות ותשלום — {employee_name}"), title_style),
+        Paragraph(pdf_rtl(f"{month_label} · הופק בתאריך {date.today().strftime('%d/%m/%Y')}"), sub_style),
+        Spacer(1, 14),
+        Paragraph(pdf_rtl("פירוט ימים ושעות"), section_style),
+        Spacer(1, 6),
+    ]
+
+    day_headers = ["תאריך", "יום", "כניסה", "יציאה", "טווח", "שעות", "סטטוס"]
+    day_rows = [[
+        str(d.get("date") or "—"), str(d.get("day_name") or "—"),
+        str(d.get("entry_time") or "—"), str(d.get("exit_time") or "—"),
+        str(d.get("time_range") or "—"),
+        f"{_hr_installation_number(d.get('hours'), 0.0):.2f}",
+        str(d.get("status") or "—"),
+    ] for d in details or []]
+    day_rows.append(["סה״כ", "", "", "", f"{len(details or [])} ימי עבודה", f"{total_hours:.2f}", ""])
+    story.append(build_table(day_headers, day_rows, [104, 66, 88, 88, 168, 88, 168], bold_last=True))
+
+    if inst_rows:
+        story += [
+            Spacer(1, 18),
+            Paragraph(pdf_rtl("פירוט התקנות"), section_style),
+            Spacer(1, 6),
+        ]
+        inst_headers = ["תאריך", "לקוח", "הזמנה", "מיקום", "הותקנו", "התקנת דלתות", "אוכל", "דלק", "מפרעה", "סיכום"]
+        rows = []
+        for r in inst_rows:
+            doors = money(r.get("doors_amount"))
+            if r.get("is_min_doors"):
+                doors = f"{doors}\nבפועל {money(r.get('doors_amount_actual'))}"
+            rows.append([
+                _hr_pdf_date(str(r.get("install_date") or "")), str(r.get("customer_name") or "—"),
+                str(r.get("po_number") or "—"), str(r.get("location") or "—"),
+                f"{_hr_installation_number(r.get('installed_quantity'), 0.0):g}",
+                doors, money(r.get("food")), money(r.get("fuel")), money(r.get("advance")), money(r.get("total")),
+            ])
+        rows.append([
+            "סה״כ", f"{len(inst_rows)} התקנות", "", "",
+            f"{_hr_installation_number(inst_totals.get('installed_quantity'), 0.0):g}",
+            money(inst_totals.get("doors_amount")), money(inst_totals.get("food")),
+            money(inst_totals.get("fuel")), money(inst_totals.get("advance")), money(inst_totals.get("total")),
+        ])
+        story.append(build_table(inst_headers, rows, [62, 118, 72, 118, 48, 118, 58, 58, 58, 72], bold_last=True))
+        if any(r.get("is_min_doors") for r in inst_rows):
+            story += [Spacer(1, 5), Paragraph(pdf_rtl(
+                f"התקנת דלתות מחויבת בתשלום מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות לפי חוק, גם כשהותקנו פחות."), sub_style)]
+
+    story += [Spacer(1, 18), Paragraph(pdf_rtl("סיכום לתשלום"), section_style), Spacer(1, 6)]
+    summary = [["שכר שעות", f"{total_hours:.2f} שעות × {money(hourly_rate)}", money(hours_pay)]]
+    if inst_rows:
+        summary += [
+            ["התקנת דלתות", f"{_hr_installation_number(inst_totals.get('installed_quantity'), 0.0):g} דלתות", money(inst_totals.get("doors_amount"))],
+            ["אוכל", "", money(inst_totals.get("food"))],
+            ["דלק", "", money(inst_totals.get("fuel"))],
+            ["מפרעות", "מקוזז מהסכום", f"-{money(inst_totals.get('advance'))}"],
+            ["סה״כ התקנות", "נכלל בשכר החודש" if inst_in_payroll else "לא סומן להיכלל בשכר החודש", money(inst_total)],
+        ]
+    summary.append(["סה״כ לתשלום", "", money(grand_total)])
+    story.append(build_table(["רכיב", "פירוט", "סכום"], summary, [200, 380, 190], bold_last=True))
+    if inst_rows and not inst_in_payroll:
+        story += [Spacer(1, 5), Paragraph(pdf_rtl(
+            "ההתקנות מוצגות לצורך מעקב בלבד ואינן מחוברות לסה״כ, כי החודש לא סומן ״הוסף לחישובי שכר״."), sub_style)]
+
+    doc.build(story)
+    safe_name = f"פירוט שעות - {employee_name} - {month_label}.pdf".replace("/", "-")
+    return buffer.getvalue(), safe_name
+
+
+@app.get("/hr-hours-detail-pdf")
+async def hr_hours_detail_pdf(request: Request):
+    row_id = str(request.query_params.get("row_id") or "").strip()
+    if not row_id:
+        return JSONResponse({"error": "חסר מזהה שורת שעות."}, status_code=400)
+    try:
+        rows = load_hr_rows("hours")
+        target_row = next((row for row in rows if str(row.get("row_id") or "").strip() == row_id), None)
+        if not target_row:
+            return JSONResponse({"error": "שורת השעות לא נמצאה."}, status_code=404)
+        local_path = _hr_local_file_path(str(target_row.get("employee_id") or ""), str(target_row.get("month_key") or ""), str(target_row.get("hours_file_name") or ""))
+        if (not local_path or not local_path.exists()) and str(target_row.get("hours_drive_file_id") or "").strip():
+            local_path = _hr_storage_dir() / str(target_row.get("employee_id") or "").strip() / (str(target_row.get("month_key") or "").strip() or "general") / Path(str(target_row.get("hours_file_name") or "hours.xlsx")).name
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            download_drive_file(str(target_row.get("hours_drive_file_id") or "").strip(), local_path)
+        if not local_path or not local_path.exists():
+            return JSONResponse({"error": "קובץ השעות לא נמצא."}, status_code=404)
+        details = _hr_parse_hours_report_rows(local_path)
+        pdf_bytes, filename = _hr_hours_detail_pdf_bytes(target_row, details)
+        return Response(
+            content=pdf_bytes,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"},
+        )
+    except Exception as exc:
+        log_handled_error("hr_hours_detail_pdf failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להפיק את קובץ הפירוט: {exc}"}, status_code=500)
+
+
 @app.get("/hr-payslip-prep-preview")
 async def hr_payslip_prep_preview(request: Request):
     month_key = str(request.query_params.get("month_key") or "").strip()

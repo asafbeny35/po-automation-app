@@ -3964,6 +3964,20 @@ body.panel-only .shell {
   color: #0f172a;
 }
 
+.hr-hours-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.hr-hours-detail-hint {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+}
+
 .hr-hours-detail-meta {
   color: #64748b;
   font-size: 13px;
@@ -16681,6 +16695,10 @@ input:focus {
                 <tr><td colspan="7" class="hr-empty">עדיין לא נבחר קובץ שעות להצגת פירוט.</td></tr>
               </tbody>
             </table>
+          </div>
+          <div class="hr-hours-detail-actions">
+            <button type="button" id="hrHoursDetailPdfButton" class="ghost-btn" disabled>הורד PDF של הפירוט</button>
+            <span id="hrHoursDetailPdfHint" class="hr-hours-detail-hint"></span>
           </div>
         </div>
         <div id="hrFullTimeHoursGrid" class="hr-fulltime-grid"></div>
@@ -49086,6 +49104,23 @@ document.addEventListener("DOMContentLoaded", () => {
       `).join("");
     }
 
+    /** כפתור ההורדה פעיל רק כשיש פירוט פתוח, והרמז מספר אם ה-PDF יכלול גם התקנות. */
+    function refreshHoursDetailPdfButton() {
+      const button = document.getElementById("hrHoursDetailPdfButton");
+      const hint = document.getElementById("hrHoursDetailPdfHint");
+      if (!button) return;
+      const rowId = String(hrHoursDetailState.rowId || "").trim();
+      const hasDetails = Array.isArray(hrHoursDetailState.details) && hrHoursDetailState.details.length > 0;
+      button.disabled = !(rowId && hasDetails);
+      if (!hint) return;
+      if (button.disabled) { hint.textContent = ""; return; }
+      const hoursRow = (hrState.hours_rows || []).find(r => String(r.row_id || "") === rowId);
+      const installations = hoursRow ? hrInstallationsPayrollAmount(hoursRow) : 0;
+      hint.textContent = installations
+        ? "הקובץ יכלול גם את פירוט ההתקנות, המפרעות וסה״כ לתשלום."
+        : "הקובץ יכלול את פירוט הימים והשעות וסיכום לתשלום.";
+    }
+
     function renderHoursDetails() {
       if (!hoursDetailsBody) return;
       const details = Array.isArray(hrHoursDetailState.details) ? hrHoursDetailState.details : [];
@@ -49094,11 +49129,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (hoursDetailMeta) {
           hoursDetailMeta.innerHTML = `לחץ על <strong>+</strong> ליד קובץ שעות כדי להציג את הימים שעבדו בהם בפועל.`;
         }
+        refreshHoursDetailPdfButton();
         return;
       }
       if (hoursDetailMeta) {
         hoursDetailMeta.textContent = `${hrHoursDetailState.employeeName || "עובד"} · ${hrHoursDetailState.monthLabel || ""} · ${hrHoursDetailState.fileName || ""}`;
       }
+      refreshHoursDetailPdfButton();
       const totalHours = details.reduce((sum, detail) => sum + Number(detail.hours || 0), 0);
       hoursDetailsBody.innerHTML = `${details.map(detail => `
         <tr>
@@ -50881,6 +50918,39 @@ document.addEventListener("DOMContentLoaded", () => {
     hrPayslipPrepSendLive?.addEventListener("click", () => sendHrPayslipPrep("live"));
     hrPayslipPrepModal?.addEventListener("click", event => {
       if (event.target === hrPayslipPrepModal) closeHrPayslipPrepModal();
+    });
+
+    document.getElementById("hrHoursDetailPdfButton")?.addEventListener("click", async event => {
+      const button = event.currentTarget;
+      const rowId = String(hrHoursDetailState.rowId || "").trim();
+      if (!rowId) return;
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = "מפיק...";
+      try {
+        const response = await fetch(`/hr-hours-detail-pdf?row_id=${encodeURIComponent(rowId)}`);
+        if (!response.ok) {
+          let message = "לא הצלחתי להפיק את הקובץ.";
+          try { message = (await response.json()).error || message; } catch (_) {}
+          throw new Error(message);
+        }
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `פירוט שעות - ${hrHoursDetailState.employeeName || "עובד"} - ${hrHoursDetailState.monthLabel || ""}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        // שחרור מאוחר, אחרת ההורדה מתבטלת בחלק מהדפדפנים
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+        notify("הפירוט הורד כקובץ PDF.");
+      } catch (error) {
+        notify(error.message || "לא הצלחתי להפיק את הקובץ.");
+      } finally {
+        button.textContent = original;
+        refreshHoursDetailPdfButton();
+      }
     });
 
     hoursBody?.addEventListener("click", async event => {
