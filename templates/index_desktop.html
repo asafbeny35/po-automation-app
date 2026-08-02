@@ -16737,34 +16737,7 @@ input:focus {
             <h3>חשבונות בנק</h3>
             <p>כאן מרוכזים פרטי החשבונות להעברת משכורות לעובדים מתוך טאב השכר.</p>
           </div>
-          <div class="hr-bank-accounts-grid">
-            <article class="hr-bank-card hourly">
-              <h4>שיבשי סלומון</h4>
-              <div class="hr-bank-card-lines">
-                <div><strong>בנק:</strong> בנק הפועלים - 12</div>
-                <div><strong>סניף:</strong> 700 - חיפה ראשי</div>
-                <div class="hr-bank-account-line">
-                  <strong>חשבון:</strong> 100028
-                  <button type="button" class="hr-copy-account-btn" data-copy-bank-account="100028" aria-label="העתק מספר חשבון של שיבשי סלומון">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg>
-                  </button>
-                </div>
-              </div>
-            </article>
-            <article class="hr-bank-card">
-              <h4>דמלאו טווצ׳או</h4>
-              <div class="hr-bank-card-lines">
-                <div><strong>בנק:</strong> בנק דיסקונט - 11</div>
-                <div><strong>סניף:</strong> 443 - קרית ביאליק</div>
-                <div class="hr-bank-account-line">
-                  <strong>חשבון:</strong> 154841007
-                  <button type="button" class="hr-copy-account-btn" data-copy-bank-account="154841007" aria-label="העתק מספר חשבון של דמלאו טווצ׳או">
-                    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg>
-                  </button>
-                </div>
-              </div>
-            </article>
-          </div>
+          <div class="hr-bank-accounts-grid" id="hrBankAccountsGrid"></div>
         </section>
       </section>
 
@@ -49939,6 +49912,44 @@ document.addEventListener("DOMContentLoaded", () => {
       return String(employee?.active_status || "active").trim().toLowerCase() === "inactive";
     }
 
+    // חשבונות הבנק להעברת משכורות. כל חשבון קשור לעובד, כך שהוא עובר יחד איתו
+    // לדף "עובדי עבר" ברגע שהוא מסומן כעובד שסיים.
+    const HR_BANK_ACCOUNTS = [
+      { employee_id: "emp_cf3efc2c79", employee_name: "תאי יונתן גורן", bank: "בנק מזרחי טפחות - 20", branch: "492 - נווה שאנן", account: "187838" },
+      { employee_id: "emp_solomon_shibshi", employee_name: "שיבשי סלומון", bank: "בנק הפועלים - 12", branch: "700 - חיפה ראשי", account: "100028" },
+      { employee_id: "emp_tawuchao_damlau", employee_name: "דמלאו טווצ׳או", bank: "בנק דיסקונט - 11", branch: "443 - קרית ביאליק", account: "154841007" },
+    ];
+
+    function renderHrBankAccounts() {
+      const host = document.getElementById("hrBankAccountsGrid");
+      if (!host) return;
+      const employeesById = new Map((hrState.employees || []).map(e => [String(e.employee_id || ""), e]));
+      const visible = HR_BANK_ACCOUNTS.filter(acc => employeesById.has(acc.employee_id));
+      if (!visible.length) {
+        host.innerHTML = `<div class="hr-empty" style="padding:16px;">אין חשבונות בנק שמורים לעובדים בתצוגה הזו.</div>`;
+        return;
+      }
+      host.innerHTML = visible.map(acc => {
+        const employee = employeesById.get(acc.employee_id) || {};
+        const name = String(employee.full_name || "").trim() || acc.employee_name;
+        const isHourly = String(employee.employment_type || "") === "hourly";
+        return `
+          <article class="hr-bank-card${isHourly ? " hourly" : ""}">
+            <h4>${escapeHtml(name)}</h4>
+            <div class="hr-bank-card-lines">
+              <div><strong>בנק:</strong> ${escapeHtml(acc.bank)}</div>
+              <div><strong>סניף:</strong> ${escapeHtml(acc.branch)}</div>
+              <div class="hr-bank-account-line">
+                <strong>חשבון:</strong> ${escapeHtml(acc.account)}
+                <button type="button" class="hr-copy-account-btn" data-copy-bank-account="${escapeHtml(acc.account)}" aria-label="העתק מספר חשבון של ${escapeHtml(name)}">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="10" height="10" rx="2"></rect><path d="M7 15H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+              </div>
+            </div>
+          </article>`;
+      }).join("");
+    }
+
     function applyHrViewFilter() {
       if (!hrStateAll) return;
       const wantFormer = hrViewMode === "former";
@@ -49994,6 +50005,7 @@ document.addEventListener("DOMContentLoaded", () => {
       renderHoursDetails();
       renderFullTimeHoursReference();
       renderHrPayslipPrepHistory();
+      renderHrBankAccounts();
       loadHrInstallations();
     }
 
