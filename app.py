@@ -505,6 +505,7 @@ def _supplier_onboarding_source_paths() -> list[Path]:
         "business-dealer",
         "business-account-confirmation-extra",
         "business-id-copy",
+        "business-sample-invoice",
     )
     return [Path(ADMIN_DRIVE_ASSETS[key]["local_path"]) for key in asset_keys]
 
@@ -12919,6 +12920,11 @@ ADMIN_DRIVE_ASSETS = {
         "local_path": ADMIN_DOCS_DIR / "asaf_l_card.pdf",
         "folders": ("מסמכים עסקיים",),
         "drive_name": "צילום רישיון נהיגה - אסף בן יעקב.pdf",
+    },
+    "business-sample-invoice": {
+        "local_path": ADMIN_DOCS_DIR / "חשבונית מס לדוגמא.pdf",
+        "folders": ("מסמכים עסקיים",),
+        "drive_name": "חשבונית מס לדוגמא.pdf",
     },
     "business-void-check": {
         "local_path": Path("/Users/asafbeny/Library/Mobile Documents/com~apple~CloudDocs/Downloads/בן יעקב/מדבקות/יח דמרי/פתיחת תיק ספק/doc00400520260423132133.pdf"),
