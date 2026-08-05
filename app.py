@@ -9906,7 +9906,9 @@ def _hr_normalize_name_key(value: str) -> str:
 def _hr_match_employee_from_text(text: str, employees: list[dict]) -> dict | None:
     by_id_number = _hr_employee_by_id_number(employees)
     for id_number, employee in by_id_number.items():
-        if id_number and id_number in text:
+        # מיכפל מדפיסה ת"ז בלי אפסים מובילים, ולכן נבדקות שתי הצורות
+        variants = {id_number, id_number.lstrip("0")}
+        if any(variant and variant in text for variant in variants):
             return dict(employee)
     normalized_text = _hr_normalize_name_key(text)
     for employee in employees or []:
@@ -10256,8 +10258,11 @@ def _hr_parse_payslip_document(file_path: Path, employees: list[dict]) -> dict |
     employee = _hr_match_employee_from_text(text, employees)
     if not employee or not month_key:
         return None
+    # בשורת "סה״כ תשלומים" עשויות להופיע שתי עמודות — התשלום בפועל ושווי למס.
+    # הסכום הראשון הוא עמודת התשלום, והוא הברוטו. בלי הקבוצה האופציונלית נתפס
+    # שווי הארוחות ונרשם ברוטו קטן מהנטו.
     gross_amount = _hr_extract_first_amount(text, [
-        r"([0-9,]+\.[0-9]{2})\s+םימולשת\s+כ[\"״]הס",
+        r"([0-9,]+\.[0-9]{2})(?:\s+[0-9,]+\.[0-9]{2})?\s+םימולשת\s+כ[\"״]הס",
         r"סה[\"״]כ\s+תשלומים\s+([0-9,]+\.[0-9]{2})",
     ])
     # "לתשלום" (אחרי נכויי רשות כמו מקדמות) הוא הסכום שמשולם בפועל — עדיף על "שכר נטו"
@@ -27063,6 +27068,265 @@ async def hr_payslip_prep_send(
                 temp_path.unlink(missing_ok=True)
             except Exception:
                 pass
+
+
+HR_PAYSLIP_MAIL_SENDER = "shayalon222@gmail.com"
+HR_PAYSLIP_MAIL_QUERY = (
+    f'has:attachment newer_than:400d (from:{HR_PAYSLIP_MAIL_SENDER} OR subject:"תלוש שכר" OR subject:תלוש)'
+)
+
+
+def _hr_previous_month_key(today: date | None = None) -> str:
+    """החודש שקודם לחודש הנוכחי — לחיצה באוגוסט מייבאת את תלושי יולי."""
+    current = today or date.today()
+    year, month = current.year, current.month - 1
+    if month == 0:
+        year, month = year - 1, 12
+    return f"{year:04d}-{month:02d}"
+
+
+def _hr_payslip_mail_attachments(month_key: str) -> list[dict]:
+    """מוריד את כל צרופות ה-PDF מהמיילים של רואה החשבון. הסינון לחודש נעשה
+    בהמשך לפי תוכן התלוש עצמו ולא לפי תאריך המייל, כי תלושי יולי נשלחים באוגוסט."""
+    from services.gmail_oauth import _gmail_service
+
+    service = _gmail_service()
+    listed = service.users().messages().list(
+        userId="me", q=HR_PAYSLIP_MAIL_QUERY, maxResults=60
+    ).execute()
+    downloads: list[dict] = []
+    seen_attachments: set[str] = set()
+    for item in listed.get("messages") or []:
+        message_id = str(item.get("id") or "").strip()
+        if not message_id:
+            continue
+        message = service.users().messages().get(userId="me", id=message_id, format="full").execute()
+        payload = message.get("payload") or {}
+        headers = {
+            str(h.get("name") or "").lower(): str(h.get("value") or "")
+            for h in payload.get("headers") or []
+        }
+
+        def walk(part: dict):
+            yield part
+            for child in part.get("parts") or []:
+                yield from walk(child)
+
+        for part in walk(payload):
+            filename = str(part.get("filename") or "").strip()
+            attachment_id = str((part.get("body") or {}).get("attachmentId") or "").strip()
+            if not filename.lower().endswith(".pdf") or not attachment_id:
+                continue
+            dedup_key = f"{message_id}:{attachment_id}"
+            if dedup_key in seen_attachments:
+                continue
+            seen_attachments.add(dedup_key)
+            attachment = service.users().messages().attachments().get(
+                userId="me", messageId=message_id, id=attachment_id
+            ).execute()
+            raw = str(attachment.get("data") or "")
+            padded = raw + "=" * ((4 - len(raw) % 4) % 4)
+            downloads.append({
+                "message_id": message_id,
+                "subject": headers.get("subject", ""),
+                "from": headers.get("from", ""),
+                "file_name": Path(filename).name,
+                "content": base64.urlsafe_b64decode(padded.encode("utf-8")),
+            })
+    return downloads
+
+
+def _hr_split_payslip_pages(source_path: Path, work_dir: Path) -> list[Path]:
+    """מפצל PDF רב-עמודי לעמודים בודדים, כדי לזהות תלוש לכל עובד בנפרד."""
+    from PyPDF2 import PdfReader, PdfWriter
+
+    reader = PdfReader(str(source_path))
+    if len(reader.pages) <= 1:
+        return [source_path]
+    pages: list[Path] = []
+    for index, page in enumerate(reader.pages, 1):
+        writer = PdfWriter()
+        writer.add_page(page)
+        page_path = work_dir / f"{source_path.stem}__page{index}.pdf"
+        with page_path.open("wb") as handle:
+            writer.write(handle)
+        pages.append(page_path)
+    return pages
+
+
+def _hr_payslip_groups_from_pdf(source_path: Path, work_dir: Path, employees: list[dict]) -> list[dict]:
+    """מחזיר קבוצה לכל עובד שזוהה בקובץ. קובץ עם עמוד אחד מוחזר כמו שהוא, וקובץ
+    מאוחד מפוצל כך שלכל עובד מוצמד רק העמוד שלו. עמוד שלא זוהה נספח לתלוש שלפניו
+    (עמוד המשך), ולא נזרק."""
+    page_paths = _hr_split_payslip_pages(source_path, work_dir)
+    if len(page_paths) == 1:
+        parsed = _hr_parse_payslip_document(source_path, employees)
+        return [{"parsed": parsed, "pages": [source_path], "path": source_path}] if parsed else []
+
+    groups: list[dict] = []
+    for page_path in page_paths:
+        parsed = _hr_parse_payslip_document(page_path, employees)
+        if parsed:
+            current_id = str((parsed.get("employee") or {}).get("employee_id") or "")
+            previous = groups[-1] if groups else None
+            previous_id = str(((previous or {}).get("parsed") or {}).get("employee", {}).get("employee_id") or "")
+            if previous and previous_id == current_id:
+                previous["pages"].append(page_path)
+            else:
+                groups.append({"parsed": parsed, "pages": [page_path], "path": None})
+        elif groups:
+            groups[-1]["pages"].append(page_path)
+
+    for group in groups:
+        if len(group["pages"]) == 1:
+            group["path"] = group["pages"][0]
+        else:
+            employee_name = str((group["parsed"].get("employee") or {}).get("full_name") or "employee")
+            merged = work_dir / f"{source_path.stem}__{_hr_safe_file_component(employee_name)}.pdf"
+            merge_pdfs(group["pages"], merged)
+            group["path"] = merged
+    return groups
+
+
+def _hr_safe_file_component(value: str) -> str:
+    cleaned = re.sub(r"[^\w\u0590-\u05FF .-]+", "", str(value or "").strip())
+    return cleaned.replace(" ", "_") or "employee"
+
+
+@app.post("/hr-payslips-import")
+async def hr_payslips_import(request: Request):
+    """מייבא את תלושי החודש הקודם מתיבת המייל של המשרד ומצמיד אותם לעובדים."""
+    try:
+        body = {}
+        try:
+            body = await request.json()
+        except Exception:
+            body = {}
+        month_key = str((body or {}).get("month_key") or "").strip() or _hr_previous_month_key()
+        if not re.match(r"^\d{4}-\d{2}$", month_key):
+            return JSONResponse({"error": "חודש לא תקין לייבוא תלושים."}, status_code=400)
+
+        employees = load_hr_rows("employees")
+        employees_by_id = _hr_employee_lookup(employees)
+        payroll_rows = load_hr_rows("payroll")
+
+        try:
+            attachments = _hr_payslip_mail_attachments(month_key)
+        except Exception as mail_exc:
+            log_handled_error("hr_payslips_import mail fetch failed", mail_exc)
+            return JSONResponse(
+                {"error": f"לא הצלחתי לגשת לתיבת המייל של המשרד: {mail_exc}"}, status_code=502
+            )
+
+        work_dir = _hr_storage_dir() / "_payslip_import" / month_key
+        if work_dir.exists():
+            shutil.rmtree(work_dir, ignore_errors=True)
+        work_dir.mkdir(parents=True, exist_ok=True)
+
+        imported: list[dict] = []
+        skipped: list[dict] = []
+        errors: list[dict] = []
+        handled_employee_ids: set[str] = set()
+
+        for attachment in attachments:
+            file_name = attachment["file_name"]
+            try:
+                source_path = work_dir / f"{uuid.uuid4().hex[:8]}_{file_name}"
+                source_path.write_bytes(attachment["content"])
+                groups = _hr_payslip_groups_from_pdf(source_path, work_dir, employees)
+                if not groups:
+                    skipped.append({"file_name": file_name, "reason": "לא זוהה כתלוש שכר"})
+                    continue
+                for group in groups:
+                    parsed = group["parsed"]
+                    parsed_month = str(parsed.get("month_key") or "").strip()
+                    employee = dict(parsed.get("employee") or {})
+                    employee_id = str(employee.get("employee_id") or "").strip()
+                    employee_name = str(employee.get("full_name") or "").strip()
+                    if parsed_month != month_key:
+                        skipped.append({
+                            "file_name": file_name,
+                            "employee_name": employee_name,
+                            "reason": f"תלוש של {_hr_month_display(parsed_month) or 'חודש אחר'}",
+                        })
+                        continue
+                    if not employee_id or employee_id not in employees_by_id:
+                        errors.append({"file_name": file_name, "error": "לא נמצא עובד מתאים לתלוש."})
+                        continue
+                    if employee_id in handled_employee_ids:
+                        skipped.append({
+                            "file_name": file_name,
+                            "employee_name": employee_name,
+                            "reason": "כבר יובא תלוש לעובד הזה החודש",
+                        })
+                        continue
+
+                    stored_name = f"תלוש {_hr_month_display(month_key)} - {employee_name}.pdf"
+                    target_dir = _hr_storage_dir() / employee_id / month_key
+                    target_dir.mkdir(parents=True, exist_ok=True)
+                    final_path = target_dir / stored_name
+                    shutil.copy2(group["path"], final_path)
+
+                    upload_result = _hr_upload_file_to_drive(
+                        final_path, employee_name, "payroll", month_key=month_key, drive_name=stored_name
+                    )
+                    employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or employee.get("drive_folder_id") or "").strip()
+                    employee["drive_folder_url"] = str(upload_result.get("employee_folder_url") or employee.get("drive_folder_url") or "").strip()
+                    start_date = str(parsed.get("start_date") or "").strip()
+                    if start_date and not str(employee.get("start_date") or "").strip():
+                        employee["start_date"] = start_date
+                    upsert_hr_row("employees", employee, "employee_id")
+
+                    existing_row = next(
+                        (
+                            item for item in payroll_rows
+                            if str(item.get("employee_id") or "").strip() == employee_id
+                            and str(item.get("month_key") or "").strip() == month_key
+                        ),
+                        {},
+                    ) or {}
+                    row = dict(existing_row)
+                    row.update({
+                        "row_id": str(row.get("row_id") or f"payroll_{employee_id}_{month_key}").strip(),
+                        "employee_id": employee_id,
+                        "employee_name": employee_name,
+                        "month_key": month_key,
+                        "employment_type": str(employee.get("employment_type") or row.get("employment_type") or "global").strip(),
+                        "gross_amount": str(parsed.get("gross_amount") or row.get("gross_amount") or "").strip(),
+                        "net_amount": str(parsed.get("net_amount") or row.get("net_amount") or "").strip(),
+                        "payslip_file_name": stored_name,
+                        "payslip_drive_file_id": str(upload_result.get("drive_file_id") or "").strip(),
+                        "payslip_drive_url": str(upload_result.get("drive_url") or "").strip(),
+                    })
+                    upsert_hr_row("payroll", row, "row_id")
+                    handled_employee_ids.add(employee_id)
+                    imported.append({
+                        "employee_name": employee_name,
+                        "month_key": month_key,
+                        "gross_amount": row["gross_amount"],
+                        "net_amount": row["net_amount"],
+                        "file_name": stored_name,
+                        "pages": len(group["pages"]),
+                        "replaced": bool(existing_row),
+                    })
+            except Exception as file_exc:
+                log_handled_error(f"hr_payslips_import failed for {file_name}", file_exc)
+                errors.append({"file_name": file_name, "error": str(file_exc)})
+
+        shutil.rmtree(work_dir, ignore_errors=True)
+        return JSONResponse({
+            "status": "ok",
+            "month_key": month_key,
+            "month_label": _hr_month_display(month_key),
+            "attachments_scanned": len(attachments),
+            "imported": imported,
+            "skipped": skipped,
+            "errors": errors,
+            **_hr_state_payload(force_refresh=True),
+        })
+    except Exception as exc:
+        log_handled_error("hr_payslips_import failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לייבא את התלושים: {exc}"}, status_code=500)
 
 
 @app.post("/hr-ingest-files")

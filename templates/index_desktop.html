@@ -16725,6 +16725,7 @@ input:focus {
         <div class="hr-inline-toolbar">
           <select id="hrPayrollEmployeeSelect"></select>
           <input id="hrPayrollMonthInput" type="month">
+          <button type="button" id="hrImportPayslipsButton" class="assistant-submit">ייבא תלושים</button>
           <button type="button" id="hrAddPayrollRowButton" class="assistant-submit">+ הוסף חודש שכר</button>
           <a id="hrPayrollExportExcel" class="ghost-btn" href="/hr-export/payroll/xlsx" target="_blank" rel="noopener">ייצא Excel</a>
           <a id="hrPayrollExportPdf" class="ghost-btn" href="/hr-export/payroll/pdf" target="_blank" rel="noopener">ייצא PDF</a>
@@ -50833,6 +50834,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     hrNewEmployeeButton?.addEventListener("click", openHrCreateEmployeeModal);
     addHoursRowButton?.addEventListener("click", () => addSectionRow("hours"));
+    /** מייבא את תלושי החודש הקודם מתיבת המייל של המשרד ומצמיד אותם לעובדים. */
+    async function importPayslipsFromMail() {
+      const button = document.getElementById("hrImportPayslipsButton");
+      if (!button || button.disabled) return;
+      const original = button.textContent;
+      button.disabled = true;
+      button.textContent = "מייבא...";
+      try {
+        const response = await fetch("/hr-payslips-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "הייבוא נכשל.");
+        applyState(data);
+        const imported = Array.isArray(data.imported) ? data.imported : [];
+        const errors = Array.isArray(data.errors) ? data.errors : [];
+        const label = data.month_label || data.month_key || "";
+        if (!imported.length) {
+          const skipped = Array.isArray(data.skipped) ? data.skipped : [];
+          notify(errors.length
+            ? `לא יובאו תלושים ל${label}. ${errors[0].error || ""}`
+            : `לא נמצאו תלושים חדשים ל${label} מתוך ${data.attachments_scanned || 0} צרופות שנסרקו.`);
+        } else {
+          const names = imported.map(item => item.employee_name).join(", ");
+          const replaced = imported.filter(item => item.replaced).length;
+          const parts = [`יובאו ${imported.length} תלושים ל${label}: ${names}.`];
+          if (replaced) parts.push(`${replaced} החליפו תלוש קיים.`);
+          if (errors.length) parts.push(`${errors.length} קבצים נכשלו.`);
+          notify(parts.join(" "));
+        }
+      } catch (error) {
+        notify(error.message || "לא הצלחתי לייבא את התלושים.");
+      } finally {
+        button.disabled = false;
+        button.textContent = original;
+      }
+    }
+
+    document.getElementById("hrImportPayslipsButton")?.addEventListener("click", () => { void importPayslipsFromMail(); });
     addPayrollRowButton?.addEventListener("click", () => addSectionRow("payroll"));
     addContributionRowButton?.addEventListener("click", () => addSectionRow("contributions"));
     docUploadButton?.addEventListener("click", uploadGenericDocument);
