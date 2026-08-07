@@ -3729,6 +3729,55 @@ def _finance_upsert_payable_row_for_invoice(
     return {"status": "created", **result}
 
 
+def _finance_invoice_number_for_payment(invoice_row: dict) -> str:
+    """מספר החשבונית שמקשר בין טבלת החשבוניות לשורת ה״לתשלום״."""
+    return str(
+        (invoice_row or {}).get("supplier_invoice_number")
+        or (invoice_row or {}).get("reference_number")
+        or (invoice_row or {}).get("invoice_number")
+        or ""
+    ).strip()
+
+
+def _finance_payable_rows_index(rows_state: dict | None = None) -> dict[str, dict]:
+    """אינדקס שורות ה״לתשלום״ לפי מספר חשבונית, כדי לא לטעון את הטבלה לכל חשבונית."""
+    state = rows_state if rows_state is not None else load_payment_transfer_rows()
+    index: dict[str, dict] = {}
+    for row in list((state or {}).get("all_rows") or []):
+        if str(row.get("payment_direction") or "").strip() != "תשלום":
+            continue
+        for field in ("po_number", "tax_invoice_number"):
+            key = _finance_payment_invoice_key(str(row.get(field) or "").strip())
+            if key and key not in index:
+                index[key] = row
+    return index
+
+
+def _finance_annotate_invoice_payment_state(invoice_rows: list[dict]) -> list[dict]:
+    """מסמן לכל חשבונית אם שולמה. מקור האמת הוא שורת ה״לתשלום״ בתשלומים והעברות,
+    ולכן סימון ״שולם״ שם משתקף מיד כאן ואין שני דגלים שיכולים להיפרד זה מזה.
+    חשבונית בלי שורת לתשלום נחשבת משולמת — זו ברירת המחדל."""
+    try:
+        index = _finance_payable_rows_index()
+    except Exception as exc:
+        log_handled_error("finance payable index build failed", exc)
+        index = {}
+    annotated: list[dict] = []
+    for row in invoice_rows or []:
+        item = dict(row or {})
+        payable = None
+        for field in ("supplier_invoice_number", "reference_number"):
+            key = _finance_payment_invoice_key(str(item.get(field) or "").strip())
+            if key and key in index:
+                payable = index[key]
+                break
+        is_unpaid = bool(payable) and str(payable.get("paid") or "").strip().upper() != "TRUE"
+        item["payment_state"] = "unpaid" if is_unpaid else "paid"
+        item["has_payable_row"] = bool(payable)
+        annotated.append(item)
+    return annotated
+
+
 def _finance_find_payable_row_for_invoice(invoice_number: str) -> dict | None:
     normalized_invoice_key = _finance_payment_invoice_key(invoice_number)
     rows_state = load_payment_transfer_rows()
@@ -11873,7 +11922,7 @@ async def _build_finance_payload(force_refresh: bool = False) -> dict:
     }
     bank_movement_summary = _finance_bank_movement_summary(bank_movement_rows)
     return {
-        "invoice_rows": invoice_rows,
+        "invoice_rows": _finance_annotate_invoice_payment_state(invoice_rows),
         "invoice_summary": invoice_summary,
         "bank_movement_rows": bank_movement_rows,
         "bank_movement_summary": bank_movement_summary,
@@ -21589,7 +21638,7 @@ async def finance_state():
             return JSONResponse(
                 {
                     "status": "stale",
-                    "invoice_rows": invoice_rows,
+                    "invoice_rows": _finance_annotate_invoice_payment_state(invoice_rows),
                     "invoice_summary": {
                         "count": len(invoice_rows),
                         "subtotal_sum": round(sum(_finance_parse_number(row.get("subtotal")) for row in invoice_rows), 2),
@@ -21806,6 +21855,78 @@ async def finance_invoices_save(request: Request):
     except Exception as exc:
         log_handled_error("finance_invoices_save failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לשמור את החשבונית: {exc}"}, status_code=500)
+
+
+@app.post("/finance-invoice-set-paid")
+async def finance_invoice_set_paid(request: Request):
+    """מחליף סטטוס תשלום של חשבונית מתוך טבלת החשבוניות. סימון ״טרם שולמה״ יוצר
+    (או מחזיר ל-לא-שולם) שורה בטבלת ה״לתשלום״, וסימון ״שולמה״ מסמן אותה שם כשולמה,
+    כך ששני המסכים תמיד מציגים את אותו מצב."""
+    try:
+        body = await request.json()
+        row_id = str(body.get("row_id") or "").strip()
+        paid = bool(body.get("paid"))
+        if not row_id:
+            return JSONResponse({"error": "חסר מזהה חשבונית."}, status_code=400)
+
+        rows = _dedupe_finance_invoice_rows(load_marketing_rows("finance_invoices"))
+        index = next((i for i, row in enumerate(rows) if str(row.get("row_id") or "").strip() == row_id), -1)
+        if index < 0:
+            return JSONResponse({"error": "לא נמצאה חשבונית תואמת."}, status_code=404)
+
+        invoice = _normalize_finance_invoice_row_app(rows[index])
+        invoice_number = _finance_invoice_number_for_payment(invoice)
+        if not invoice_number:
+            return JSONResponse(
+                {"error": "לחשבונית אין מספר אסמכתא, ובלעדיו אי אפשר לקשר אותה לשורה בטבלת לתשלום."},
+                status_code=400,
+            )
+
+        invoice["create_payable_row"] = "" if paid else "TRUE"
+        invoice["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        rows[index] = invoice
+        save_marketing_rows("finance_invoices", rows)
+
+        payments_sync = None
+        payable = _finance_find_payable_row_for_invoice(invoice_number)
+        if paid:
+            if payable and str(payable.get("_sheet_title") or "").strip() and int(payable.get("_sheet_row") or 0) > 0:
+                payments_sync = update_payment_transfer_paid(
+                    str(payable.get("_sheet_title") or "").strip(),
+                    int(payable.get("_sheet_row") or 0),
+                    True,
+                )
+        else:
+            # כל חשבונית שטרם שולמה חייבת להופיע ב״לתשלום״ — נוצרת שורה אם אין
+            payments_sync = _finance_upsert_payable_row_for_invoice(
+                invoice,
+                supplier_invoice_number=invoice_number,
+                payment_terms_days=str(invoice.get("payment_terms_days") or "").strip(),
+                payment_due_date=str(invoice.get("payment_due_date") or "").strip(),
+                payment_supplier_name=str(invoice.get("payment_supplier_name") or invoice.get("supplier_name") or "").strip(),
+                source_mode=str(invoice.get("source_mode") or "PROD").strip(),
+            )
+            payable = _finance_find_payable_row_for_invoice(invoice_number)
+            if payable and str(payable.get("paid") or "").strip().upper() == "TRUE":
+                update_payment_transfer_paid(
+                    str(payable.get("_sheet_title") or "").strip(),
+                    int(payable.get("_sheet_row") or 0),
+                    False,
+                )
+
+        _invalidate_finance_state_cache()
+        await _log_activity(
+            request,
+            action="עריכה",
+            tab="כספים",
+            description=f"סימון חשבונית {invoice_number} כ{'שולמה' if paid else 'טרם שולמה'}",
+            entity_id=row_id,
+        )
+        saved = _finance_annotate_invoice_payment_state([invoice])[0]
+        return JSONResponse({"status": "ok", "row": saved, "payments_sync": payments_sync})
+    except Exception as exc:
+        log_handled_error("finance_invoice_set_paid failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לעדכן את סטטוס התשלום: {exc}"}, status_code=500)
 
 
 @app.post("/finance-invoices-override-due-dates")
@@ -23637,6 +23758,9 @@ async def update_payments_transfer_paid_endpoint(request: Request):
     try:
         _payments_assert_snapshot_matches(sheet_title, row_number, expected_snapshot_hash)
         result = update_payment_transfer_paid(sheet_title, row_number, paid)
+        # סטטוס התשלום של חשבונית נגזר משורת ה״לתשלום״, ולכן טאב הכספים חייב
+        # להתרענן כדי שהשינוי כאן יופיע גם בטבלת החשבוניות
+        _invalidate_finance_state_cache()
         state = load_payment_transfer_rows()
         if session_id:
             async with PAYMENTS_EDIT_PRESENCE_LOCK:

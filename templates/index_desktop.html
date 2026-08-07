@@ -5548,6 +5548,31 @@ tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
   background: #eef8ef !important;
 }
 
+.finance-paid-pill {
+  border: 1px solid rgba(34, 197, 94, 0.32);
+  background: rgba(240, 253, 244, 0.9);
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 6px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.finance-paid-pill:hover { background: rgba(220, 252, 231, 0.95); }
+
+.finance-paid-pill.is-unpaid {
+  border-color: rgba(220, 38, 38, 0.34);
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+}
+
+.finance-paid-pill.is-unpaid:hover { background: rgba(254, 226, 226, 0.98); }
+
+.finance-paid-pill[disabled] { opacity: .6; cursor: default; }
+
 .finance-invoice-override-btn {
   border: 1px solid #b9d7bb;
   background: #f7fbf7;
@@ -16306,11 +16331,12 @@ input:focus {
                   <th>סה״כ (לפני מע״מ)</th>
                   <th>מע״מ</th>
                   <th>סה״כ (כולל מע״מ)</th>
+                  <th>סטטוס תשלום</th>
                   <th>פעולות</th>
                 </tr>
               </thead>
               <tbody id="financeInvoicesTableBody">
-                <tr><td colspan="9" class="work-managers-empty">הטבלה עדיין לא נטענה.</td></tr>
+                <tr><td colspan="10" class="work-managers-empty">הטבלה עדיין לא נטענה.</td></tr>
               </tbody>
             </table>
           </div>
@@ -34769,6 +34795,8 @@ document.addEventListener("DOMContentLoaded", () => {
       payment_terms_days: String(row.payment_terms_days || "").trim(),
       payment_supplier_name: String(row.payment_supplier_name || "").trim(),
       create_payable_row: String(row.create_payable_row || "").trim(),
+      payment_state: String(row.payment_state || "paid").trim() === "unpaid" ? "unpaid" : "paid",
+      has_payable_row: !!row.has_payable_row,
       source_mode: String(row.source_mode || "PROD").trim(),
       updated_at: String(row.updated_at || "").trim(),
     };
@@ -35994,6 +36022,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ["subtotal", "סה״כ (לפני מע״מ)"],
       ["vat", "מע״מ"],
       ["total", "סה״כ (כולל מע״מ)"],
+      ["payment_state", "סטטוס תשלום"],
       ["actions", "פעולות"],
     ];
     headRow.innerHTML = columns.map(([key, label]) => key === "actions"
@@ -36448,12 +36477,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (financeInvoicesCollapsed) return;
     if (!financeInvoicesTableBody) return;
     if (!financeInvoicesLoaded && !financeInvoicesRows.length) {
-      financeInvoicesTableBody.innerHTML = `<tr><td colspan="9" class="work-managers-empty">הטבלה עדיין לא נטענה.</td></tr>`;
+      financeInvoicesTableBody.innerHTML = `<tr><td colspan="10" class="work-managers-empty">הטבלה עדיין לא נטענה.</td></tr>`;
       return;
     }
     const rows = financeInvoicesFilteredRows();
     if (!rows.length) {
-      financeInvoicesTableBody.innerHTML = `<tr><td colspan="9" class="work-managers-empty">אין כרגע רשומות להצגה בפילטר שבחרת.</td></tr>`;
+      financeInvoicesTableBody.innerHTML = `<tr><td colspan="10" class="work-managers-empty">אין כרגע רשומות להצגה בפילטר שבחרת.</td></tr>`;
       return;
     }
     const moneyField = (row, field, placeholder = "0.00") => financeInvoiceEditing(row.row_id)
@@ -36478,6 +36507,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <td>${moneyField(row, "subtotal")}</td>
           <td>${moneyField(row, "vat")}</td>
           <td>${moneyField(row, "total")}</td>
+          <td>${financeInvoicePaidCellHtml(row)}</td>
           <td>
             <div class="work-managers-actions">
               ${financeInvoicesReportFilter && !reportMatch ? `<button type="button" class="finance-invoice-override-btn" data-finance-add-report="${rowId}" title="הוסף את החשבונית גם למועד הדיווח ${escapeAttribute(financeInvoicesReportFilter)}">הוסף לדיווח</button>` : ""}
@@ -36493,6 +36523,38 @@ document.addEventListener("DOMContentLoaded", () => {
         </tr>
       `;
     }).join("");
+  }
+
+  /** תא סטטוס התשלום: כפתור דו-מצבי. ברירת המחדל היא "שולמה". */
+  function financeInvoicePaidCellHtml(row) {
+    const unpaid = String(row.payment_state || "paid").trim() === "unpaid";
+    const rowId = escapeAttribute(String(row.row_id || ""));
+    const title = unpaid
+      ? "החשבונית מופיעה בטבלת לתשלום. לחץ כדי לסמן שולמה."
+      : "לחץ כדי לסמן טרם שולמה ולהוסיף אותה לטבלת לתשלום.";
+    return `<button type="button" class="finance-paid-pill${unpaid ? " is-unpaid" : ""}" data-finance-toggle-paid="${rowId}" title="${title}">${unpaid ? "טרם שולמה" : "שולמה"}</button>`;
+  }
+
+  async function setFinanceInvoicePaid(rowId, paid) {
+    const button = financeInvoicesTableBody?.querySelector(`[data-finance-toggle-paid="${CSS.escape(String(rowId))}"]`);
+    const original = button ? button.textContent : "";
+    if (button) { button.disabled = true; button.textContent = "מעדכן..."; }
+    try {
+      const response = await fetch("/finance-invoice-set-paid", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ row_id: rowId, paid }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "לא הצלחתי לעדכן את סטטוס התשלום.");
+      upsertFinanceInvoiceRowClient(data.row || {});
+      renderFinanceInvoicesTable();
+      showToast("success", paid ? "החשבונית סומנה כשולמה" : "החשבונית סומנה כטרם שולמה",
+        paid ? "השורה בטבלת לתשלום סומנה כשולמה." : "החשבונית נוספה לטבלת לתשלום בתשלומים והעברות.");
+    } catch (error) {
+      if (button) { button.disabled = false; button.textContent = original; }
+      showToast("error", "עדכון סטטוס התשלום נכשל", error.message || "נסה שוב.");
+    }
   }
 
   function toggleFinanceInvoiceSelection(rowId) {
@@ -45520,6 +45582,16 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   financeInvoicesTableBody?.addEventListener("click", async event => {
+    const paidButton = event.target.closest("[data-finance-toggle-paid]");
+    if (paidButton) {
+      event.stopPropagation();
+      const rowId = String(paidButton.dataset.financeTogglePaid || "").trim();
+      if (!rowId) return;
+      const row = financeInvoicesRows.find(item => String(item.row_id || "") === rowId);
+      const currentlyUnpaid = String(row?.payment_state || "paid").trim() === "unpaid";
+      await setFinanceInvoicePaid(rowId, currentlyUnpaid);
+      return;
+    }
     const addReportButton = event.target.closest("[data-finance-add-report]");
     if (addReportButton) {
       event.stopPropagation();
