@@ -13055,6 +13055,11 @@ ADMIN_DRIVE_ASSETS = {
         "folders": ("רכבים", "מלגזה"),
         "drive_name": "מלגזה - צד ג'.pdf",
     },
+    "vehicle-forklift-inspection": {
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "תסקיר מלגזה 02093.pdf",
+        "folders": ("רכבים", "מלגזה"),
+        "drive_name": "מלגזה - תסקיר בדיקה 02093.pdf",
+    },
     "vehicle-forklift-mandatory": {
         "local_path": ADMIN_VEHICLE_DOCS_DIR / "1104934017-26 תעודת חובה.pdf",
         "folders": ("רכבים", "מלגזה"),
