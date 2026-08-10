@@ -1,15 +1,17 @@
 """
 Cloud OCR service — Google Cloud Vision API.
-Falls back to pytesseract if Vision is not configured.
+Falls back to OpenAI Vision and then pytesseract if Vision is unavailable.
 Used by ocr_pdf() and image OCR calls throughout the app.
 """
 from __future__ import annotations
 
 import base64
-import io
 import logging
 from pathlib import Path
 
+import httpx
+
+from .config import settings
 from .google_service_account import build_service_account_credentials
 
 
@@ -51,10 +53,84 @@ def _ocr_image_bytes_via_vision(image_bytes: bytes) -> str:
         return ""
 
 
+def _extract_openai_output_text(payload: dict) -> str:
+    """Extract assistant text from a Responses API payload."""
+    direct_text = payload.get("output_text")
+    if isinstance(direct_text, str) and direct_text.strip():
+        return direct_text.strip()
+
+    text_parts: list[str] = []
+    for output_item in payload.get("output") or []:
+        if not isinstance(output_item, dict):
+            continue
+        for content_item in output_item.get("content") or []:
+            if not isinstance(content_item, dict):
+                continue
+            text = content_item.get("text")
+            if isinstance(text, str) and text.strip():
+                text_parts.append(text.strip())
+    return "\n".join(text_parts)
+
+
+def _ocr_image_bytes_via_openai(image_bytes: bytes) -> str:
+    """OCR an image through the OpenAI Responses API."""
+    if not settings.openai_api_key:
+        logger.warning("OCR OpenAI fallback unavailable: OPENAI_API_KEY is not configured")
+        return ""
+
+    image_url = "data:image/png;base64," + base64.b64encode(image_bytes).decode("ascii")
+    request_payload = {
+        "model": settings.openai_model or "gpt-5-mini",
+        "input": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "input_text",
+                        "text": (
+                            "Perform exact OCR on this purchase-order page. Return only the "
+                            "visible text, without commentary or Markdown fences. Preserve table "
+                            "rows and line breaks as faithfully as possible. Keep every Hebrew and "
+                            "English word, number, date, SKU, quantity, dimension, price, address, "
+                            "phone number, subtotal, VAT, and total exactly as shown."
+                        ),
+                    },
+                    {
+                        "type": "input_image",
+                        "image_url": image_url,
+                        "detail": "high",
+                    },
+                ],
+            }
+        ],
+        "max_output_tokens": 8000,
+    }
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                "https://api.openai.com/v1/responses",
+                headers={
+                    "Authorization": f"Bearer {settings.openai_api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=request_payload,
+            )
+        response.raise_for_status()
+        text = _extract_openai_output_text(response.json())
+        logger.info("OCR OpenAI image completed: text_length=%s", len(text))
+        return text
+    except Exception as exc:
+        logger.exception("OCR OpenAI image request failed: %s", exc)
+        return ""
+
+
 def ocr_image_file(file_path: Path) -> str:
-    """OCR a single image file. Uses Vision API if available, else pytesseract."""
+    """OCR a single image file with cloud fallbacks before local Tesseract."""
     image_bytes = file_path.read_bytes()
     result = _ocr_image_bytes_via_vision(image_bytes)
+    if result:
+        return result
+    result = _ocr_image_bytes_via_openai(image_bytes)
     if result:
         return result
     # fallback: pytesseract
@@ -71,15 +147,13 @@ def ocr_image_file(file_path: Path) -> str:
 
 def ocr_pdf_via_vision(pdf_path: Path) -> str:
     """
-    OCR a PDF using Google Cloud Vision API.
+    OCR a PDF using Google Cloud Vision API, with an OpenAI Vision fallback.
     Rasterizes pages with PyMuPDF (fitz, already a dependency) — no poppler needed.
     Falls back to pytesseract+pdf2image if Vision not available.
     """
     # Try PyMuPDF rasterization + Vision API
     try:
         import fitz  # PyMuPDF
-        from PIL import Image
-
         doc = fitz.open(str(pdf_path))
         page_texts = []
         for page_num in range(doc.page_count):
@@ -87,12 +161,18 @@ def ocr_pdf_via_vision(pdf_path: Path) -> str:
             pixmap = page.get_pixmap(matrix=fitz.Matrix(2, 2), alpha=False)
             img_bytes = pixmap.tobytes("png")
             text = _ocr_image_bytes_via_vision(img_bytes)
+            if not text.strip():
+                logger.warning(
+                    "OCR Vision returned no text for page=%s; using OpenAI fallback",
+                    page_num + 1,
+                )
+                text = _ocr_image_bytes_via_openai(img_bytes)
             page_texts.append(text)
         doc.close()
         result = "\n".join(page_texts)
         if result.strip():
             logger.info(
-                "OCR PDF completed with Vision: pages=%s text_length=%s",
+                "OCR PDF completed with cloud OCR: pages=%s text_length=%s",
                 len(page_texts),
                 len(result.strip()),
             )
