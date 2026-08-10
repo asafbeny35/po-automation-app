@@ -7,6 +7,7 @@ from services.parsers.amram import parse as parse_amram
 from services.parsers.artec import parse as parse_artec
 from services.parsers.asbit import parse as parse_asbit
 from services.parsers.brosh import parse as parse_brosh
+from services.parsers.china_civil import parse as parse_china_civil
 from services.parsers.common import extract_text_pdfplumber, fix_hebrew_text, fix_hebrew_rtl_text, normalize_ws, ocr_pdf, to_purchase_order
 from services.parsers.damari import parse as parse_damari
 from services.parsers.generic import parse_generic, parse_prashkovsky
@@ -152,6 +153,14 @@ def parse_purchase_order(pdf_path: str | Path):
             raw_text,
             "shponder_pedlon",
         )
+        if parsed:
+            return parsed
+
+    if "560024093" in raw_text and any(
+        marker in raw_text
+        for marker in ("ליביס הניי'צ", "צ'יינה סיביל", "חשבונית יש להפיק", "תינובשח")
+    ):
+        parsed = _build_purchase_order(parse_china_civil(raw_text), raw_text, "china_civil")
         if parsed:
             return parsed
 
