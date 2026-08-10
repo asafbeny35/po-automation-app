@@ -16465,6 +16465,10 @@ def _project_manager_entries_from_po(po: PurchaseOrderData) -> list[dict]:
 
 async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOrderData:
     customer_data = None
+    parser_name = str((po.extra or {}).get("parser_name") or "").strip().lower()
+    preserve_po_payment_terms = parser_name == "haikon" and po.payment_terms_days is not None
+    original_payment_terms_days = po.payment_terms_days
+    original_payment_terms_label = po.payment_terms_label
     # 🔥 override מ-GI רק לימי אשראי / תנאי תשלום
     try:
         client = GreenInvoiceClient(
@@ -16482,7 +16486,7 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
                     customer_id=po.customer_id or "",
                     customer_name=po.customer_name or "",
                 )
-                if days is not None:
+                if days is not None and not preserve_po_payment_terms:
                     po.payment_terms_days = days
                     po.payment_terms_label = f"שוטף + {days}"
 
@@ -16591,6 +16595,10 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
             keep_contact_phone = (po.extra or {}).get("contact_phone", "")
 
             po = client._merge_customer_data_into_po(po, customer_data)
+
+            if preserve_po_payment_terms:
+                po.payment_terms_days = original_payment_terms_days
+                po.payment_terms_label = original_payment_terms_label
 
             po.extra = po.extra or {}
             po.delivery_address = keep_delivery or po.delivery_address
