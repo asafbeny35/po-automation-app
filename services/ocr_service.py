@@ -1,6 +1,6 @@
 """
 Cloud OCR service — Google Cloud Vision API.
-Falls back to OpenAI Vision and then pytesseract if Vision is unavailable.
+Falls back to OpenAI, Anthropic, and then pytesseract if Vision is unavailable.
 Used by ocr_pdf() and image OCR calls throughout the app.
 """
 from __future__ import annotations
@@ -16,6 +16,15 @@ from .google_service_account import build_service_account_credentials
 
 
 logger = logging.getLogger(__name__)
+
+
+OCR_PROMPT = (
+    "Perform exact OCR on this purchase-order page. Return only the visible text, "
+    "without commentary or Markdown fences. Preserve table rows and line breaks as "
+    "faithfully as possible. Keep every Hebrew and English word, number, date, SKU, "
+    "quantity, dimension, price, address, phone number, subtotal, VAT, and total "
+    "exactly as shown."
+)
 
 
 def _vision_client():
@@ -87,13 +96,7 @@ def _ocr_image_bytes_via_openai(image_bytes: bytes) -> str:
                 "content": [
                     {
                         "type": "input_text",
-                        "text": (
-                            "Perform exact OCR on this purchase-order page. Return only the "
-                            "visible text, without commentary or Markdown fences. Preserve table "
-                            "rows and line breaks as faithfully as possible. Keep every Hebrew and "
-                            "English word, number, date, SKU, quantity, dimension, price, address, "
-                            "phone number, subtotal, VAT, and total exactly as shown."
-                        ),
+                        "text": OCR_PROMPT,
                     },
                     {
                         "type": "input_image",
@@ -124,13 +127,80 @@ def _ocr_image_bytes_via_openai(image_bytes: bytes) -> str:
         return ""
 
 
+def _extract_anthropic_output_text(payload: dict) -> str:
+    """Extract text blocks from an Anthropic Messages API payload."""
+    text_parts = []
+    for content_item in payload.get("content") or []:
+        if not isinstance(content_item, dict) or content_item.get("type") != "text":
+            continue
+        text = content_item.get("text")
+        if isinstance(text, str) and text.strip():
+            text_parts.append(text.strip())
+    return "\n".join(text_parts)
+
+
+def _ocr_image_bytes_via_anthropic(image_bytes: bytes) -> str:
+    """OCR an image through the Anthropic Messages API."""
+    if not settings.anthropic_api_key:
+        logger.warning("OCR Anthropic fallback unavailable: ANTHROPIC_API_KEY is not configured")
+        return ""
+
+    request_payload = {
+        "model": "claude-3-5-haiku-20241022",
+        "max_tokens": 8000,
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "image",
+                        "source": {
+                            "type": "base64",
+                            "media_type": "image/png",
+                            "data": base64.b64encode(image_bytes).decode("ascii"),
+                        },
+                    },
+                    {"type": "text", "text": OCR_PROMPT},
+                ],
+            }
+        ],
+    }
+    try:
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                "https://api.anthropic.com/v1/messages",
+                headers={
+                    "x-api-key": settings.anthropic_api_key,
+                    "anthropic-version": "2023-06-01",
+                    "Content-Type": "application/json",
+                },
+                json=request_payload,
+            )
+        response.raise_for_status()
+        text = _extract_anthropic_output_text(response.json())
+        logger.info("OCR Anthropic image completed: text_length=%s", len(text))
+        return text
+    except Exception as exc:
+        logger.exception("OCR Anthropic image request failed: %s", exc)
+        return ""
+
+
+def _ocr_image_bytes_via_cloud_fallbacks(image_bytes: bytes) -> str:
+    """Try configured multimodal providers in order."""
+    text = _ocr_image_bytes_via_openai(image_bytes)
+    if text.strip():
+        return text
+    logger.warning("OCR OpenAI returned no text; using Anthropic fallback")
+    return _ocr_image_bytes_via_anthropic(image_bytes)
+
+
 def ocr_image_file(file_path: Path) -> str:
     """OCR a single image file with cloud fallbacks before local Tesseract."""
     image_bytes = file_path.read_bytes()
     result = _ocr_image_bytes_via_vision(image_bytes)
     if result:
         return result
-    result = _ocr_image_bytes_via_openai(image_bytes)
+    result = _ocr_image_bytes_via_cloud_fallbacks(image_bytes)
     if result:
         return result
     # fallback: pytesseract
@@ -166,7 +236,7 @@ def ocr_pdf_via_vision(pdf_path: Path) -> str:
                     "OCR Vision returned no text for page=%s; using OpenAI fallback",
                     page_num + 1,
                 )
-                text = _ocr_image_bytes_via_openai(img_bytes)
+                text = _ocr_image_bytes_via_cloud_fallbacks(img_bytes)
             page_texts.append(text)
         doc.close()
         result = "\n".join(page_texts)
