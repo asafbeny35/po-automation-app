@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from services.parsers.haikon import parse
 
 
@@ -145,3 +147,40 @@ def test_haikon_parser_is_used_by_purchase_order_pipeline():
     assert purchase_order.extra["parser_name"] == "haikon"
     assert purchase_order.po_number == "8293"
     assert len(purchase_order.items) == 3
+
+
+@pytest.mark.asyncio
+async def test_haikon_payment_terms_from_po_survive_customer_enrichment(monkeypatch):
+    import app
+
+    class FakeGreenInvoiceClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def get_existing_customer_details(self, customer_id):
+            return {"name": 'הייקון (א.ק) בע"מ', "paymentTerms": 60}
+
+        def _resolve_payment_days_for_customer(self, **kwargs):
+            return 60
+
+        def _merge_customer_data_into_po(self, po, customer_data):
+            po.payment_terms_days = 60
+            po.payment_terms_label = "שוטף + 60"
+            return po
+
+    monkeypatch.setattr(app, "GreenInvoiceClient", FakeGreenInvoiceClient)
+    po = app.PurchaseOrderData(
+        customer_name='הייקון (א.ק.) בע"מ',
+        customer_id="516193430",
+        payment_terms_days=90,
+        payment_terms_label="שוטף 90",
+        extra={"parser_name": "haikon"},
+    )
+
+    enriched = await app._enrich_po_for_process(
+        po,
+        {"base_url": "https://example.test", "api_key": "key", "api_secret": "secret"},
+    )
+
+    assert enriched.payment_terms_days == 90
+    assert enriched.payment_terms_label == "שוטף 90"
