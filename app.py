@@ -11147,6 +11147,38 @@ def _manual_order_apply_customer_overrides(row: dict | None) -> dict:
     return merged
 
 
+def _manual_order_catalog_customer_row(row: dict | None) -> dict:
+    """Build an autocomplete row for a client even without prior documents."""
+    source = _manual_order_apply_customer_overrides(row)
+    customer_guid = str(source.get("customer_guid") or source.get("client_id") or "").strip()
+    customer_id = re.sub(r"\D+", "", str(source.get("customer_id") or ""))
+    customer_name = str(source.get("customer_name") or "").strip()
+    customer_key = _manual_order_customer_lookup_key(customer_guid, customer_id, customer_name)
+    if not customer_key or not customer_name:
+        return {}
+
+    return {
+        "customer_key": customer_key,
+        "customer_guid": customer_guid,
+        "customer_id": customer_id,
+        "customer_name": customer_name,
+        "emails": str(source.get("emails") or "").strip(),
+        "phone": str(source.get("phone") or "").strip(),
+        "mobile": str(source.get("mobile") or "").strip(),
+        "contact_person": str(source.get("contact_person") or "").strip(),
+        "address": str(source.get("address") or "").strip(),
+        "city": str(source.get("city") or "").strip(),
+        "country": str(source.get("country") or "").strip(),
+        "payment_terms_days": str(source.get("payment_terms_days") or "").strip(),
+        "source_mode": "PROD",
+        "documents_count": 0,
+        "last_document_date": "",
+        "primary_email": _manual_order_customer_primary_email(source),
+        "primary_phone": _manual_order_customer_primary_phone(source),
+        "address_label": _manual_order_customer_address_label(source),
+    }
+
+
 def _manual_order_history_customer_matches(
     row: dict | None,
     customer_guid: str = "",
@@ -11670,14 +11702,24 @@ async def _build_manual_order_recent_customers_payload(force_refresh: bool = Fal
 
     customer_details_by_guid: dict[str, dict] = {}
 
+    # The autocomplete is a client picker, not an order-history picker. Seed it
+    # from the active GreenInvoice client catalog so first-time customers are
+    # available, then enrich matching rows with document activity below.
     recent_customers: dict[str, dict] = {}
+    for catalog_customer in customers_catalog or []:
+        if not isinstance(catalog_customer, dict):
+            continue
+        active_value = str(catalog_customer.get("active") or "").strip().lower()
+        if active_value in {"false", "0", "no", "off"}:
+            continue
+        catalog_row = _manual_order_catalog_customer_row(catalog_customer)
+        if catalog_row:
+            recent_customers[catalog_row["customer_key"]] = catalog_row
+
     for doc in docs:
         customer_guid = str(doc.get("client_id") or doc.get("customer_guid") or "").strip()
         customer_id = re.sub(r"\D+", "", str(doc.get("customer_id") or ""))
         customer_name = str(doc.get("customer_name") or "").strip()
-        customer_key = _manual_order_customer_lookup_key(customer_guid, customer_id, customer_name)
-        if not customer_key:
-            continue
         matched_customer = (
             customers_by_guid.get(customer_guid)
             or customers_by_id.get(customer_id)
@@ -11738,6 +11780,13 @@ async def _build_manual_order_recent_customers_payload(force_refresh: bool = Fal
                         merged_customer[key] = value
                 matched_customer = merged_customer
         matched_customer = _manual_order_apply_customer_overrides(matched_customer)
+        customer_key = _manual_order_customer_lookup_key(
+            str(matched_customer.get("customer_guid") or customer_guid or "").strip(),
+            str(matched_customer.get("customer_id") or customer_id or "").strip(),
+            str(matched_customer.get("customer_name") or customer_name or "").strip(),
+        )
+        if not customer_key:
+            continue
         existing = recent_customers.get(customer_key) or {}
         doc_date = str(doc.get("date") or "").strip()
         documents_count = int(existing.get("documents_count") or 0) + 1
@@ -11776,7 +11825,7 @@ async def _build_manual_order_recent_customers_payload(force_refresh: bool = Fal
         "status": "ok",
         "customers": rows,
         "count": len(rows),
-        "source": "greeninvoice-prod-documents-since-2025-05-01",
+        "source": "greeninvoice-prod-client-catalog-and-documents-since-2025-05-01",
         "date_from": "2025-05-01",
         "generated_at": datetime.now().isoformat(timespec="seconds"),
         "warning": ("חלק מסוגי המסמכים לא נטענו כרגע, אבל הרשימה הוכנה מהנתונים שכן חזרו." if warnings else ""),
