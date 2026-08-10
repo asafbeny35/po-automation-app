@@ -146,7 +146,7 @@ def _ocr_image_bytes_via_anthropic(image_bytes: bytes) -> str:
         return ""
 
     request_payload = {
-        "model": "claude-3-5-haiku-20241022",
+        "model": "claude-sonnet-4-20250514",
         "max_tokens": 8000,
         "messages": [
             {

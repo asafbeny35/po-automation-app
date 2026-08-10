@@ -87,7 +87,7 @@ def test_anthropic_ocr_sends_base64_image_and_returns_text(monkeypatch):
     request = client.post.call_args
     assert request.args[0] == "https://api.anthropic.com/v1/messages"
     assert request.kwargs["headers"]["x-api-key"] == "anthropic-test-key"
-    assert request.kwargs["json"]["model"] == "claude-3-5-haiku-20241022"
+    assert request.kwargs["json"]["model"] == "claude-sonnet-4-20250514"
     image_part = request.kwargs["json"]["messages"][0]["content"][0]
     assert image_part["type"] == "image"
     assert image_part["source"]["media_type"] == "image/png"
