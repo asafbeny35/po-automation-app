@@ -1,6 +1,8 @@
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from services.parsers.china_civil import parse
 
 
@@ -76,3 +78,39 @@ def test_china_civil_parser_is_used_by_purchase_order_pipeline():
     assert purchase_order.extra["parser_name"] == "china_civil"
     assert purchase_order.customer_id == "560024093"
     assert purchase_order.items[0].description.endswith("ללא התקנה")
+
+
+@pytest.mark.asyncio
+async def test_china_civil_identity_and_payment_terms_survive_enrichment(monkeypatch):
+    import app
+
+    class FakeGreenInvoiceClient:
+        def __init__(self, **kwargs):
+            pass
+
+        async def get_existing_customer_details(self, customer_id):
+            return {"name": "ציינה סיויל", "paymentTerms": 0}
+
+        def _resolve_payment_days_for_customer(self, **kwargs):
+            return 0
+
+        def _merge_customer_data_into_po(self, po, customer_data):
+            po.customer_name = customer_data["name"]
+            po.payment_terms_days = None
+            po.payment_terms_label = "שוטף + 0"
+            return po
+
+    monkeypatch.setattr(app, "GreenInvoiceClient", FakeGreenInvoiceClient)
+    purchase_order = parse(RAW_TEXT)
+    assert purchase_order is not None
+    purchase_order.extra["parser_name"] = "china_civil"
+
+    enriched = await app._enrich_po_for_process(
+        purchase_order,
+        {"base_url": "https://example.test", "api_key": "key", "api_secret": "secret"},
+    )
+
+    assert enriched.customer_name == "צ'יינה סיביל אינג'נירינג"
+    assert enriched.customer_id == "560024093"
+    assert enriched.payment_terms_days == 15
+    assert enriched.payment_terms_label == "שוטף + 15"

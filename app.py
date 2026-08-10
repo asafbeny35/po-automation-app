@@ -16466,9 +16466,14 @@ def _project_manager_entries_from_po(po: PurchaseOrderData) -> list[dict]:
 async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOrderData:
     customer_data = None
     parser_name = str((po.extra or {}).get("parser_name") or "").strip().lower()
-    preserve_po_payment_terms = parser_name == "haikon" and po.payment_terms_days is not None
+    preserve_po_payment_terms = (
+        parser_name in {"haikon", "china_civil"}
+        and po.payment_terms_days is not None
+    )
     original_payment_terms_days = po.payment_terms_days
     original_payment_terms_label = po.payment_terms_label
+    original_customer_name = po.customer_name
+    original_customer_id = po.customer_id
     # 🔥 override מ-GI רק לימי אשראי / תנאי תשלום
     try:
         client = GreenInvoiceClient(
@@ -16599,6 +16604,9 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
             if preserve_po_payment_terms:
                 po.payment_terms_days = original_payment_terms_days
                 po.payment_terms_label = original_payment_terms_label
+            if parser_name == "china_civil":
+                po.customer_name = original_customer_name
+                po.customer_id = original_customer_id
 
             po.extra = po.extra or {}
             po.delivery_address = keep_delivery or po.delivery_address
