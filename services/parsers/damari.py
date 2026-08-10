@@ -68,6 +68,13 @@ def _normalize_reversed_date(value: str) -> str:
     return clean
 
 
+def _format_item_description(value: str) -> str:
+    """Normalize punctuation in descriptions reconstructed from RTL PDF text."""
+    clean = normalize_ws(value or "")
+    clean = re.sub(r"\s*-\s*", " - ", clean)
+    return normalize_ws(clean).strip(" -,")
+
+
 def _extract_items(lines: list[str], flat: str) -> list[POItem]:
     items: list[POItem] = []
     line_pattern = re.compile(
@@ -76,8 +83,24 @@ def _extract_items(lines: list[str], flat: str) -> list[POItem]:
     line_pattern_with_size = re.compile(
         r"^([0-9,]+\.\d{2})\s+([0-9,]+\.\d{4})\s+([0-9,]+\.\d{2})\s+(\d+(?:\.\d{1,2})?)\s+([0-9.]+\s*/\s*[0-9.]+)\s+(.+?)\s+(\d{4,})$"
     )
+    # Newer Crystal Reports layouts omit the duplicated quantity/size column:
+    # total, unit price, quantity, unit, description, SKU.
+    standard_line_pattern = re.compile(
+        r"^([0-9,]+\.\d{2})\s+([0-9,]+\.\d{4})\s+([0-9,]+\.\d{2})\s+(?:'חי|יח')\s+(.+?)\s+(\d{4,})$"
+    )
+    item_patterns = (line_pattern_with_size, line_pattern, standard_line_pattern)
+    continuation_stop_markers = (
+        "תורעה",
+        'כ"הס',
+        'מ"עמ',
+        "החנה",
+        "תוכיא תושירד",
+        "טירפ רואית",
+        "טירפ דוק",
+        "הדימ",
+    )
 
-    for line in lines:
+    for index, line in enumerate(lines):
         if "כ\"הס ינפל" in line or "מ\"עמ" in line or "תורעה" in line:
             continue
         sized_match = line_pattern_with_size.match(line)
@@ -87,8 +110,8 @@ def _extract_items(lines: list[str], flat: str) -> list[POItem]:
             quantity = _amount(sized_match.group(4) or sized_match.group(3))
             size_token = normalize_ws(sized_match.group(5)).replace(" ", "")
             sku = sized_match.group(7)
-            description_core = _reverse_words(sized_match.group(6)).replace(" -", " - ").strip()
-            description = normalize_ws(f"{description_core} {size_token}".replace(" -מידות", " - מידות")).strip(" -,") or "פריט לא זוהה"
+            description_core = _format_item_description(_reverse_words(sized_match.group(6)))
+            description = _format_item_description(f"{description_core} {size_token}") or "פריט לא זוהה"
             items.append(
                 POItem(
                     sku=sku,
@@ -101,21 +124,48 @@ def _extract_items(lines: list[str], flat: str) -> list[POItem]:
             )
             continue
         match = line_pattern.match(line)
-        if not match:
+        if match:
+            line_total = _amount(match.group(1))
+            unit_price = _amount(match.group(2))
+            quantity = _amount(match.group(4))
+            sku = match.group(6)
+            description = _format_item_description(_reverse_words(match.group(5))) or "פריט לא זוהה"
+            items.append(
+                POItem(
+                    sku=sku,
+                    description=description,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                    unit="יח'",
+                )
+            )
             continue
-        line_total = _amount(match.group(1))
-        unit_price = _amount(match.group(2))
-        quantity = _amount(match.group(4))
-        sku = match.group(6)
-        description = _reverse_words(match.group(5)).replace(" -", " - ").strip()
-        description = normalize_ws(description).strip(" -,") or "פריט לא זוהה"
+
+        standard_match = standard_line_pattern.match(line)
+        if not standard_match:
+            continue
+
+        description_parts = [_format_item_description(_reverse_words(standard_match.group(4)))]
+        # A long product description may wrap onto one or more text-only lines.
+        # Reverse each physical RTL line separately, then append it in visual order.
+        for continuation in lines[index + 1:]:
+            if any(pattern.match(continuation) for pattern in item_patterns):
+                break
+            if any(marker in continuation for marker in continuation_stop_markers):
+                break
+            if re.match(r"^[0-9,]+\.\d{2}\b", continuation):
+                break
+            description_parts.append(_format_item_description(_reverse_words(continuation)))
+
+        description = _format_item_description(" ".join(part for part in description_parts if part)) or "פריט לא זוהה"
         items.append(
             POItem(
-                sku=sku,
+                sku=standard_match.group(5),
                 description=description,
-                quantity=quantity,
-                unit_price=unit_price,
-                line_total=line_total,
+                quantity=_amount(standard_match.group(3)),
+                unit_price=_amount(standard_match.group(2)),
+                line_total=_amount(standard_match.group(1)),
                 unit="יח'",
             )
         )
