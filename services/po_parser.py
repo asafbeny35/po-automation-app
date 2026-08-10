@@ -11,6 +11,7 @@ from services.parsers.common import extract_text_pdfplumber, fix_hebrew_text, fi
 from services.parsers.damari import parse as parse_damari
 from services.parsers.generic import parse_generic, parse_prashkovsky
 from services.parsers.hagivaa import parse as parse_hagivaa
+from services.parsers.haikon import parse as parse_haikon
 from services.parsers.kedar import parse as parse_kedar
 from services.parsers.lati import parse as parse_lati
 from services.parsers.levinstein import parse_levinstein
@@ -82,6 +83,15 @@ def parse_purchase_order(pdf_path: str | Path):
             return parsed
 
     fixed_text = fix_hebrew_text(raw_text)
+
+    if "516193430" in raw_text or (
+        "מישור אדומים" in raw_text
+        and "הזמנת רכש" in raw_text
+        and ("חשבשבת" in raw_text or "ERP" in raw_text)
+    ):
+        parsed = _build_purchase_order(parse_haikon(raw_text), raw_text, "haikon")
+        if parsed:
+            return parsed
 
     if ("Square" in raw_text and "meter" in raw_text) and re.search(r"\d{6,}-\d{2}", raw_text):
         from services.parsers.plasan import parse as parse_plasan
