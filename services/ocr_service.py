@@ -1,6 +1,6 @@
 """
 Cloud OCR service — Google Cloud Vision API.
-Falls back to OpenAI, Anthropic, and then pytesseract if Vision is unavailable.
+Falls back to Drive OCR, OpenAI, Anthropic, and then pytesseract.
 Used by ocr_pdf() and image OCR calls throughout the app.
 """
 from __future__ import annotations
@@ -185,8 +185,25 @@ def _ocr_image_bytes_via_anthropic(image_bytes: bytes) -> str:
         return ""
 
 
+def _ocr_image_bytes_via_drive(image_bytes: bytes) -> str:
+    """OCR an image through Google Drive's image-to-Docs conversion."""
+    try:
+        from .google_drive_sync import ocr_image_bytes_to_text
+
+        text = ocr_image_bytes_to_text(image_bytes)
+        logger.info("OCR Drive image completed: text_length=%s", len(text.strip()))
+        return text
+    except Exception as exc:
+        logger.exception("OCR Drive image request failed: %s", exc)
+        return ""
+
+
 def _ocr_image_bytes_via_cloud_fallbacks(image_bytes: bytes) -> str:
     """Try configured multimodal providers in order."""
+    text = _ocr_image_bytes_via_drive(image_bytes)
+    if text.strip():
+        return text
+    logger.warning("OCR Drive returned no text; using OpenAI fallback")
     text = _ocr_image_bytes_via_openai(image_bytes)
     if text.strip():
         return text

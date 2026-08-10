@@ -38,15 +38,21 @@ def _extract_items(text: str) -> list[POItem]:
     items: list[POItem] = []
     row_pattern = re.compile(
         r"(?P<dimension>[+\-]*\d{3,4}/\d{3,4})"
-        r"[^\n]*?\s(?P<quantity>\d+(?:\.\d{1,2})?)"
-        r"\s+(?P<unit_price>\d+(?:\.\d{1,2})?)"
-        r"\s+[^\n]*?\s(?P<discount>\d+(?:\.\d{1,2})?)"
-        r"\s+(?P<line_total>\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)\s*$",
+        r"[^\n]*?[ \t]+(?P<quantity>\d+(?:\.\d{1,2})?)"
+        r"[ \t]+(?P<unit_price>\d+(?:\.\d{1,2})?)"
+        r"[ \t]+[^\n]*?[ \t]+(?P<discount>\d+(?:\.\d{1,2})?)"
+        r"[ \t]+(?P<line_total>\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?)[ \t]*$",
         re.MULTILINE,
     )
 
     sku_root_match = re.search(r"1700[-\s]?PROD[0O]5", text, re.IGNORECASE)
-    sku_root = sku_root_match.group(0).upper().replace(" ", "-") if sku_root_match else ""
+    reversed_sku_match = re.search(r"PROD[0O]5[-\s]?1700", text, re.IGNORECASE)
+    if sku_root_match:
+        sku_root = sku_root_match.group(0).upper().replace(" ", "-")
+    elif reversed_sku_match:
+        sku_root = "1700-PROD05"
+    else:
+        sku_root = ""
     sku_root = re.sub(r"(?<=PROD)O(?=5$)", "0", sku_root)
     has_sku_continuation = bool(re.search(r"(?m)^\s*0?500\s*$", text))
     sku = f"{sku_root}0500" if sku_root and has_sku_continuation else sku_root
@@ -58,6 +64,67 @@ def _extract_items(text: str) -> list[POItem]:
         line_total = _amount(match.group("line_total"))
         if not quantity or not unit_price or not line_total:
             continue
+        items.append(
+            POItem(
+                sku=sku,
+                description=f"יח' מגן דלת / כנף {dimension}",
+                quantity=quantity,
+                unit="יח'",
+                unit_price=unit_price,
+                line_total=line_total,
+            )
+        )
+
+    if items:
+        return items
+
+    # Google Drive OCR preserves all values but may emit table columns as separate
+    # vertical blocks. Reassemble the three rows by their document order and verify
+    # every quantity/price/total relation before accepting the fallback.
+    dimension_matches = list(re.finditer(r"[+\-]*\d{3,4}/\d{3,4}", text))
+    dimensions = [_normalize_dimension(match.group(0)) for match in dimension_matches]
+    if not dimensions:
+        return []
+
+    numeric_block = ""
+    last_dimension_end = dimension_matches[-1].end()
+    delivery_marker = re.search(r"מקום\s+אספקה", text[last_dimension_end:])
+    if delivery_marker:
+        numeric_block = text[
+            last_dimension_end:last_dimension_end + delivery_marker.start()
+        ]
+    price_quantity_values = [
+        _amount(value)
+        for value in re.findall(r"(?m)^\s*(\d+(?:\.\d{2})?)\s*$", numeric_block)
+    ]
+
+    totals_block = ""
+    totals_start = re.search(r"מטבע\s*%?\s*הנחה", text)
+    if totals_start:
+        after_totals_start = text[totals_start.end():]
+        totals_end = re.search(r"סה[\"״']?כ\s*:", after_totals_start)
+        totals_block = (
+            after_totals_start[:totals_end.start()]
+            if totals_end
+            else after_totals_start
+        )
+    line_totals = [
+        _amount(value)
+        for value in re.findall(
+            r"(?m)^\s*(\d{1,3}(?:,\d{3})+\.\d{2})\s*$",
+            totals_block,
+        )
+    ]
+
+    row_count = len(dimensions)
+    if len(price_quantity_values) < row_count * 2 or len(line_totals) < row_count:
+        return []
+    for index, dimension in enumerate(dimensions):
+        unit_price = price_quantity_values[index * 2]
+        quantity = price_quantity_values[index * 2 + 1]
+        line_total = line_totals[index]
+        if round(quantity * unit_price, 2) != round(line_total, 2):
+            return []
         items.append(
             POItem(
                 sku=sku,
@@ -103,7 +170,15 @@ def parse(text: str) -> Optional[tuple[str, list[POItem], dict]]:
     if not items:
         return None
 
-    po_number = _first(r"הזמנת\s+רכש\s+מס[\"״']?\s*:\s*([A-Za-z0-9/-]+)", clean)
+    po_number = _first(
+        r"הזמנת\s+רכש\s+מס[\"״']?[ \t]*:[ \t]*([A-Za-z0-9/-]+)",
+        clean,
+    )
+    if not po_number:
+        po_header = re.search(r"הזמנת\s+רכש\s+מס[\"״']?[ \t]*:", clean)
+        if po_header:
+            nearby_header = clean[po_header.end():po_header.end() + 250]
+            po_number = _first(r"^\s*(\d{4,})\s*$", nearby_header)
     po_date = normalize_date(
         _first(r"(?:תאריך|NN)\s*:\s*(\d{1,2}/\d{1,2}/\d{4})", clean)
         or _first(r"(\d{1,2}/\d{1,2}/\d{4})", clean)

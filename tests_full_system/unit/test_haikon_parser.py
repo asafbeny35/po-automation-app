@@ -28,6 +28,56 @@ OCR_TEXT = '''516193430 (א. ק.) בע"מ ח.פ.
 הופק ע"י חשבשבת ERP'''
 
 
+DRIVE_OCR_TEXT = '''היי, (א. ק. ) בע"מ
+516193430 .9.n
+רחוב שדות 1 א. ת. מישור אדומים 9851106 טל': 02-6207170 פקס: 02-6207171
+לכבוד :
+בן יעקב אסף
+הזמנת רכש מס' :
+פרוייקט: אלוני ים
+הזמנת: הגנה על דלתות
+8293
+מפתח פריט שם פריט
+כמות
+מחיר
+0500
+0500
+0500
+PROD05-1700 יח' מגן דלת / כנף 1270/2600 PROD05-1700 יח' מגן דלת / כנף -+1300/2600
+PROD05-1700 יח' מגן דלת / כנף 2120/1005
+195.00
+15.00
+195.00
+28.00
+75.00
+35.00
+מקום אספקה: רחוב אלן טיורינג 3 הרצליה
+תאריך אספקה: תנאי תשלום: שוטף 90
+שעה
+תאריך
+12:13:
+06/08/2026:
+מטבע % הנחה
+סהייכ
+שייח
+שייח
+שייח
+2,925.00
+0.00
+5,460.00
+0.00
+2,625.00
+0.00
+סה"כ: 11,010.00
+הנחה: 0.00
+סה"כ לפני מע"מ: 11,010.00
+18.00 %
+מע"מ: 1,981.80
+סה"כ לתשלום: 12,991.80
+לספק לרחוב אלן טיורינג 3 הרצליה /// עמית 054-8047504
+הופק ע"י חשבשבת ERP'''
+
+
 def test_haikon_parser_extracts_all_three_product_rows():
     result = parse(OCR_TEXT)
     assert result is not None
@@ -64,6 +114,22 @@ def test_haikon_parser_extracts_all_three_product_rows():
 
 def test_haikon_parser_rejects_unrelated_purchase_order():
     assert parse('חברה אחרת בע"מ\nהזמנת רכש מס: 8293') is None
+
+
+def test_haikon_parser_reassembles_drive_ocr_column_blocks():
+    result = parse(DRIVE_OCR_TEXT)
+    assert result is not None
+
+    customer_name, items, header = result
+    assert customer_name == 'הייקון (א.ק.) בע"מ'
+    assert header["po_number"] == "8293"
+    assert header["po_date"] == "06/08/2026"
+    assert header["delivery_address"] == "רחוב אלן טיורינג 3 הרצליה"
+    assert header["total"] == 12991.8
+    assert [item.quantity for item in items] == [15.0, 28.0, 35.0]
+    assert [item.unit_price for item in items] == [195.0, 195.0, 75.0]
+    assert [item.line_total for item in items] == [2925.0, 5460.0, 2625.0]
+    assert all(item.sku == "1700-PROD050500" for item in items)
 
 
 def test_haikon_parser_is_used_by_purchase_order_pipeline():

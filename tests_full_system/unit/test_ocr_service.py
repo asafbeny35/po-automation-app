@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from services import ocr_service
+from services import google_drive_sync
 
 
 def test_extract_openai_output_text_supports_responses_api_messages():
@@ -96,6 +97,7 @@ def test_anthropic_ocr_sends_base64_image_and_returns_text(monkeypatch):
 
 def test_cloud_fallbacks_use_anthropic_after_openai_failure():
     with (
+        patch("services.ocr_service._ocr_image_bytes_via_drive", return_value=""),
         patch("services.ocr_service._ocr_image_bytes_via_openai", return_value=""),
         patch(
             "services.ocr_service._ocr_image_bytes_via_anthropic",
@@ -106,3 +108,53 @@ def test_cloud_fallbacks_use_anthropic_after_openai_failure():
 
     assert result == "הייקון 8293"
     anthropic_ocr.assert_called_once_with(b"png-bytes")
+
+
+def test_cloud_fallbacks_prefer_drive_before_ai_providers():
+    with (
+        patch(
+            "services.ocr_service._ocr_image_bytes_via_drive",
+            return_value="הייקון 8293",
+        ) as drive_ocr,
+        patch("services.ocr_service._ocr_image_bytes_via_openai") as openai_ocr,
+        patch("services.ocr_service._ocr_image_bytes_via_anthropic") as anthropic_ocr,
+    ):
+        result = ocr_service._ocr_image_bytes_via_cloud_fallbacks(b"png-bytes")
+
+    assert result == "הייקון 8293"
+    drive_ocr.assert_called_once_with(b"png-bytes")
+    openai_ocr.assert_not_called()
+    anthropic_ocr.assert_not_called()
+
+
+def test_drive_ocr_converts_exports_and_deletes_temporary_doc(monkeypatch):
+    service = MagicMock()
+    files = service.files.return_value
+    files.create.return_value.execute.return_value = {"id": "temporary-doc-id"}
+
+    class FakeDownloader:
+        def __init__(self, output, request):
+            self.output = output
+
+        def next_chunk(self):
+            self.output.write("הייקון 8293".encode("utf-8"))
+            return None, True
+
+    monkeypatch.setattr(google_drive_sync, "_service", lambda: service)
+    monkeypatch.setattr(google_drive_sync, "MediaIoBaseDownload", FakeDownloader)
+
+    result = google_drive_sync.ocr_image_bytes_to_text(b"png-bytes")
+
+    assert result == "הייקון 8293"
+    create_request = files.create.call_args.kwargs
+    assert create_request["body"]["mimeType"] == "application/vnd.google-apps.document"
+    assert create_request["ocrLanguage"] == "iw"
+    files.export_media.assert_called_once_with(
+        fileId="temporary-doc-id",
+        mimeType="text/plain",
+    )
+    files.update.assert_called_once_with(
+        fileId="temporary-doc-id",
+        body={"trashed": True},
+        supportsAllDrives=True,
+    )

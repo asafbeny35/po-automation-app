@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import io
 import json
+import logging
 import mimetypes
 import os
 from pathlib import Path
@@ -10,7 +12,7 @@ from google.oauth2.credentials import Credentials as UserCredentials
 from google.oauth2.service_account import Credentials as ServiceAccountCredentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
-from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload
+from googleapiclient.http import MediaFileUpload, MediaIoBaseDownload, MediaIoBaseUpload
 
 from .config import settings
 from . import supabase_store
@@ -20,6 +22,7 @@ from .runtime_paths import runtime_root
 
 DRIVE_SCOPES = ["https://www.googleapis.com/auth/drive"]
 _GOOGLE_DRIVE_OAUTH_TOKEN_DOMAIN = "app_google_drive_oauth_token"
+logger = logging.getLogger(__name__)
 
 
 class GoogleDriveSharedDriveRequiredError(RuntimeError):
@@ -421,6 +424,58 @@ def download_file(file_id: str, target_path: str | Path) -> Path:
         while not done:
             _, done = downloader.next_chunk()
     return target_path
+
+
+def ocr_image_bytes_to_text(image_bytes: bytes, *, name: str = "po-ocr-page.png") -> str:
+    """Convert an image to a temporary Google Doc and export its OCR text."""
+    service = _service()
+    temporary_file_id = ""
+    try:
+        metadata = {
+            "name": name,
+            "mimeType": "application/vnd.google-apps.document",
+        }
+        parent_id = str(settings.google_drive_orders_root_folder_id or "").strip()
+        if parent_id:
+            metadata["parents"] = [parent_id]
+        media = MediaIoBaseUpload(
+            io.BytesIO(image_bytes),
+            mimetype="image/png",
+            resumable=False,
+        )
+        created = service.files().create(
+            body=metadata,
+            media_body=media,
+            fields="id",
+            ocrLanguage="iw",
+            supportsAllDrives=True,
+        ).execute()
+        temporary_file_id = str(created.get("id") or "").strip()
+        if not temporary_file_id:
+            return ""
+
+        output = io.BytesIO()
+        request = service.files().export_media(
+            fileId=temporary_file_id,
+            mimeType="text/plain",
+        )
+        downloader = MediaIoBaseDownload(output, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        text = output.getvalue().decode("utf-8", errors="replace").strip()
+        logger.info("Google Drive OCR completed: text_length=%s", len(text))
+        return text
+    finally:
+        if temporary_file_id:
+            try:
+                service.files().update(
+                    fileId=temporary_file_id,
+                    body={"trashed": True},
+                    supportsAllDrives=True,
+                ).execute()
+            except Exception as exc:
+                logger.warning("Google Drive OCR cleanup failed: %s", exc)
 
 
 def delete_file(file_id: str) -> None:
