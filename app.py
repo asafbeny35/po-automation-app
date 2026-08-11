@@ -13070,14 +13070,30 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "84522303 - רישיון 2027.pdf",
     },
     "vehicle-white-niro-comprehensive": {
-        "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417225 מקיף.pdf",
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417226 מקיף.pdf",
         "folders": ("רכבים", "קיה נירו לבנה 2024"),
-        "drive_name": "84522303 - מקיף.pdf",
+        "drive_name": "84522303 - מקיף 2026-2027.pdf",
     },
     "vehicle-white-niro-mandatory": {
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417226 תעודת חובה.pdf",
+        "folders": ("רכבים", "קיה נירו לבנה 2024"),
+        "drive_name": "84522303 - חובה 2026-2027.pdf",
+    },
+    "vehicle-white-niro-lien": {
+        # עותק פוליסת המקיף שנושא את סעיף השעבוד לטובת בנק הפועלים
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417226 מקיף - עותק שעבוד בנק הפועלים.pdf",
+        "folders": ("רכבים", "קיה נירו לבנה 2024"),
+        "drive_name": "84522303 - שעבוד בנק הפועלים.pdf",
+    },
+    "vehicle-white-niro-comprehensive-2025": {
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417225 מקיף.pdf",
+        "folders": ("רכבים", "קיה נירו לבנה 2024"),
+        "drive_name": "84522303 - מקיף 2025-2026.pdf",
+    },
+    "vehicle-white-niro-mandatory-2025": {
         "local_path": ADMIN_VEHICLE_DOCS_DIR / "730250417225 תעודת חובה.pdf",
         "folders": ("רכבים", "קיה נירו לבנה 2024"),
-        "drive_name": "84522303 - חובה.pdf",
+        "drive_name": "84522303 - חובה 2025-2026.pdf",
     },
     "vehicle-swift-policy": {
         "local_path": ADMIN_VEHICLE_DOCS_DIR / "פוליסה 63199783900.pdf",
