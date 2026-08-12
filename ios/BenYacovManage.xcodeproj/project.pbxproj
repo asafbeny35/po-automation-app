@@ -1,0 +1,1798 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		014A2F7D0AF22CD96982D374 /* working_orders.json in Resources */ = {isa = PBXBuildFile; fileRef = B0B5FE2DBD551A45C53EAA62 /* working_orders.json */; };
+		015306CE209761DC287AEEAA /* SupplierPOComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C189C1D83DA4D10DF0B98E8 /* SupplierPOComposerView.swift */; };
+		023548906E0FB63251E285E9 /* supplier_delivery_notes.json in Resources */ = {isa = PBXBuildFile; fileRef = 43773EEDA615B76035466A8A /* supplier_delivery_notes.json */; };
+		04CD3A78E5440C1BE40AEADA /* DomainActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7DB6738F278CECC0C4B38D /* DomainActions.swift */; };
+		054312F1C39869E82DDE664D /* RobustnessAndPerfTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 655FE0AEB52E8B116A3098B0 /* RobustnessAndPerfTests.swift */; };
+		06B7B763BE5B928731C0AACF /* inventory_contacts.json in Resources */ = {isa = PBXBuildFile; fileRef = C7B32F7F19FF0CECDCDA6C0A /* inventory_contacts.json */; };
+		06DCF91287D28C3BB606F1DA /* hr_payslip_prep_history.json in Resources */ = {isa = PBXBuildFile; fileRef = 09DE9AC0EC6E0FAB7A6FCD13 /* hr_payslip_prep_history.json */; };
+		072CF309780CBD7436004666 /* FormattersTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 859FD180066E0D170FCCDE26 /* FormattersTests.swift */; };
+		078C8EEB032FB27C0A636A6C /* HREmployees.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20E419770A8E7F01E856DFC /* HREmployees.swift */; };
+		08F7C5E3997DD06EABE08297 /* hr_documents.json in Resources */ = {isa = PBXBuildFile; fileRef = 15A1A928EC8A9A45A57E0359 /* hr_documents.json */; };
+		095CF3464CBD793072088174 /* customers.json in Resources */ = {isa = PBXBuildFile; fileRef = C8AFF2AF6D83CB9D37F6F6F2 /* customers.json */; };
+		0ABE9D846E2C2ADC03D516DF /* order_composer_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 60C24E4B4E28F299F24211C7 /* order_composer_dark_ipad.png */; };
+		0AD06CB7947483223E05C342 /* LocalContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0841BEA2D7F9CFB5E7ED19EA /* LocalContractTests.swift */; };
+		0B13F13F6EE1018BE6F6276B /* AccountantSendSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D33FE5FF50D4B355752047B /* AccountantSendSheet.swift */; };
+		0B6DBE8C2700512838260105 /* installation_cases.json in Resources */ = {isa = PBXBuildFile; fileRef = 16B54E9BB0DD579D4654EF25 /* installation_cases.json */; };
+		0BAB391E95C745DCBAAD8B23 /* AdminLendingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7DEBEC5677D88F1BE84CEAC5 /* AdminLendingView.swift */; };
+		0BD96B56D2E933958C41A04F /* ClassicComposers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 029A647E640B1C8F445F262E /* ClassicComposers.swift */; };
+		0CB3A65314E4629437D52049 /* TabHubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = F88330896B6284D88E8E9921 /* TabHubs.swift */; };
+		0CEADA8765A40F9AF135A7CF /* marketing_history.json in Resources */ = {isa = PBXBuildFile; fileRef = 13C17D2D0B0155F6C9EA219C /* marketing_history.json */; };
+		0F5BE51414F7FD0292A21479 /* APIClientTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9534978E4E170F99EA836F8 /* APIClientTests.swift */; };
+		11515161504A3DE8AADB1A7B /* MoreHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AAD8D00B3537CD283A8E990A /* MoreHubView.swift */; };
+		1469471D2BE50E7025F00432 /* DomainRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B48ADA56DA87C31D19A70A6 /* DomainRecord.swift */; };
+		1523DF1BC23908BB317EFD11 /* sample_po.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 0E14085EB9E1D4D83B852593 /* sample_po.pdf */; };
+		161207F59D3E898A98B029DD /* pazomat.json in Resources */ = {isa = PBXBuildFile; fileRef = A287B9ADCC1E1C01642A5D4C /* pazomat.json */; };
+		1691B91A2B5CC4F462D63FD8 /* ClassicBiometricLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61B115C3B42B5E17F9E33F47 /* ClassicBiometricLock.swift */; };
+		16DBE17579C214E29EE0692E /* project_managers.json in Resources */ = {isa = PBXBuildFile; fileRef = EE7A26E7254AA441E6CE0106 /* project_managers.json */; };
+		182E89785EC6BF5D8CF6AA08 /* EditFormKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA18B39E9CB7108997A4C95D /* EditFormKind.swift */; };
+		1BE790455E322B142161C186 /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EA2E6292714A4346B2415D /* AppConfig.swift */; };
+		1CCFE405132C46CC7E1C311D /* more_screen_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 49A576DFDBBB48D5EBB3E165 /* more_screen_dark_ipad.png */; };
+		1E136BD8F77AF06732475271 /* order_composer_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = DFC49BF7C7EBE0D304714E38 /* order_composer_ipad.png */; };
+		1E2675DFF6B1760847165BB6 /* installation_visits.json in Resources */ = {isa = PBXBuildFile; fileRef = DBB21F38875E446A019E2499 /* installation_visits.json */; };
+		1EB0E433CA47FD1475A8DF05 /* finance_invoices.json in Resources */ = {isa = PBXBuildFile; fileRef = 78C0E0B3F34CD46AA5659979 /* finance_invoices.json */; };
+		1F39B74E4480419C3BE18355 /* ClassicSmokeUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2FC8DCEB0F7F1798C29F9A4 /* ClassicSmokeUITests.swift */; };
+		1F7F4411E5A784A380AF3341 /* customers_list_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 65FA8038945554191D0BC007 /* customers_list_ipad.png */; };
+		23486BC375F9116CC0D697EF /* LabelsOnlyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 058DB6BDE130999335C2674F /* LabelsOnlyView.swift */; };
+		23BB06B19CC1025EEEC38809 /* marketing_pipeline.json in Resources */ = {isa = PBXBuildFile; fileRef = D9ACD87A35A39590048A615C /* marketing_pipeline.json */; };
+		24179EC1A77C75514BA19B4E /* DomainActions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D7DB6738F278CECC0C4B38D /* DomainActions.swift */; };
+		2466C3947595A22F8F070170 /* SessionExpiryUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CDBF4B18E2F8C669ED43AA1F /* SessionExpiryUITests.swift */; };
+		24C1EF0B036EF06CB46DAFFC /* LocalMutationContractTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5BA6DE2B2886D72F4C551B9 /* LocalMutationContractTests.swift */; };
+		25E210B6016A03A45AB493D3 /* sibus.json in Resources */ = {isa = PBXBuildFile; fileRef = 5DDEB006B4F48E1A4495985B /* sibus.json */; };
+		26836A91F160A13A8787DF63 /* DeliveryConfirmations.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF09486426D314B9A38099B9 /* DeliveryConfirmations.swift */; };
+		299F25F2E4D89C89291AE704 /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA0D0B86BA9A1720C15E146 /* Domain.swift */; };
+		2A419A298C6F9EDE7AD05859 /* pazomat.json in Resources */ = {isa = PBXBuildFile; fileRef = A287B9ADCC1E1C01642A5D4C /* pazomat.json */; };
+		2AE7F8468318BA6B3FF2B172 /* inventory_finish.json in Resources */ = {isa = PBXBuildFile; fileRef = 41375222DDD53F8C483CC908 /* inventory_finish.json */; };
+		2CBDB276ABF8738C1296F052 /* sample_preview.png in Resources */ = {isa = PBXBuildFile; fileRef = 7E8CED24062704E1E2A89D57 /* sample_preview.png */; };
+		2D217011DEED63209BBC1F0B /* CustomerDomains.swift in Sources */ = {isa = PBXBuildFile; fileRef = 462EDCD65C7937EDE6CC5DE1 /* CustomerDomains.swift */; };
+		2D8B1DA6A1B7457FA0513A0F /* MockTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2698583C93CB089B556B6E /* MockTransport.swift */; };
+		2E35FCEC1346909330C2ADB6 /* login_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 716745F53B5AB480B84FE38D /* login_dark_ipad.png */; };
+		2EF0777571CE059E5E76E48A /* sibus.json in Resources */ = {isa = PBXBuildFile; fileRef = 5DDEB006B4F48E1A4495985B /* sibus.json */; };
+		342C0714E6422AE35552B664 /* inactive_customers.json in Resources */ = {isa = PBXBuildFile; fileRef = 2E24D6CECD52DAA34B6025FB /* inactive_customers.json */; };
+		3669B80E5F1E43A66255DDD2 /* BYTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925A8D8BE706453F76CE273B /* BYTheme.swift */; };
+		377C4F6A386E7E8BE311B37C /* customers.json in Resources */ = {isa = PBXBuildFile; fileRef = C8AFF2AF6D83CB9D37F6F6F2 /* customers.json */; };
+		3857F52D953802263DA1E03D /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21FD9D95320672D3198E086 /* APIClient.swift */; };
+		398D818A1AC5FA6E6FE40767 /* DocumentsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4874A6BCBD7C562DB5A78D96 /* DocumentsView.swift */; };
+		39B0063220731C639996ADE6 /* supplier_delivery_notes.json in Resources */ = {isa = PBXBuildFile; fileRef = 43773EEDA615B76035466A8A /* supplier_delivery_notes.json */; };
+		3BDB5A27E2C07C8459752A0D /* ComposerItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10A01EA0B3276F4D216C722 /* ComposerItem.swift */; };
+		3CF4FD91C98EB27300F2CFE7 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF50E527503A6DE31E68BC6 /* JSONValue.swift */; };
+		3D279CC827F5591742717A3A /* BenYacovManageApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 681DFC359E3128FD63826C49 /* BenYacovManageApp.swift */; };
+		3DD69B87C51B0461277C9AF6 /* ShareUploadCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1984D99412B1EF953FBF44DA /* ShareUploadCoreTests.swift */; };
+		3FA44D8D829198EC6C8CEEC0 /* hr_payroll.json in Resources */ = {isa = PBXBuildFile; fileRef = 27EFC9E27EC9E2FAD1D05359 /* hr_payroll.json */; };
+		419387C2B72A162AD4D65B27 /* CameraPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F243D88E8F83E75C50B93E9 /* CameraPicker.swift */; };
+		42C892C09A26896209363508 /* sample_preview.png in Resources */ = {isa = PBXBuildFile; fileRef = 7E8CED24062704E1E2A89D57 /* sample_preview.png */; };
+		42F0747D09E516845D7CB4DC /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = A21FD9D95320672D3198E086 /* APIClient.swift */; };
+		447E558D37F428ED61B36DBC /* installation_visits.json in Resources */ = {isa = PBXBuildFile; fileRef = DBB21F38875E446A019E2499 /* installation_visits.json */; };
+		468DCA2B3C19B9E26698112C /* login_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = DEDACFFE3E030B613ECECD01 /* login_dark.png */; };
+		49646771F24A2BC91D575A54 /* CoreModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1822247BEA87C5DBCFB6FF1B /* CoreModelTests.swift */; };
+		497A68B1F6813C7867657B58 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9DBCC08D9B3F3F2A9A059E0 /* Haptics.swift */; };
+		4A4E602B450589BEA805E95C /* working_orders.json in Resources */ = {isa = PBXBuildFile; fileRef = B0B5FE2DBD551A45C53EAA62 /* working_orders.json */; };
+		4B62B6A0C9E18F4C997286C8 /* payments_list_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 3D51CD6A361ADE9762D5A14C /* payments_list_dark_ipad.png */; };
+		4F36C1C5BC6205CDA69CC737 /* finance_settings.json in Resources */ = {isa = PBXBuildFile; fileRef = 722AF5B1BDDC4B4F4958DF0A /* finance_settings.json */; };
+		503C70B7345FF1CF8AFBADB3 /* RecordExtrasSuppliersAndViewers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2617D35751C8B74601FBC2E8 /* RecordExtrasSuppliersAndViewers.swift */; };
+		54796181954E8E58367FBABA /* MockTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC2698583C93CB089B556B6E /* MockTransport.swift */; };
+		552AD1684C7BF40B8194B89C /* customer_detail_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = A819E6CCD0380DBCA6BB9157 /* customer_detail_ipad.png */; };
+		55CA47F2FCF3B8111B366D7C /* RecordExtrasSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 043823B5381C80EC30115224 /* RecordExtrasSection.swift */; };
+		56F62E4F433030495B279382 /* hr_documents.json in Resources */ = {isa = PBXBuildFile; fileRef = 15A1A928EC8A9A45A57E0359 /* hr_documents.json */; };
+		57B0AEAACE3DD6982EBB795B /* inventory_purchase_orders.json in Resources */ = {isa = PBXBuildFile; fileRef = 2BC8E1FD172888D1F654B69B /* inventory_purchase_orders.json */; };
+		582319CBB9F0B095669C3633 /* RecordFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 813DD20F284A71404B879A83 /* RecordFormView.swift */; };
+		59D11CFC31FD1B9191439F70 /* NewFeaturesUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E9803A70C9C54B1AB47E0160 /* NewFeaturesUITests.swift */; };
+		5BFDA26011ED92A581971F6E /* delivery_confirmations.json in Resources */ = {isa = PBXBuildFile; fileRef = CF049365DA8451A5A2DA66F2 /* delivery_confirmations.json */; };
+		5D5CAA0C2C342D4172155E4C /* sample_invoice.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 39AC554A974851771190377E /* sample_invoice.pdf */; };
+		5E77D7FF112BC841B17B707F /* UITestHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2EAD5687FBC31312E506EF8 /* UITestHelpers.swift */; };
+		5EAAF28242966F9EC00E4196 /* finance_settings.json in Resources */ = {isa = PBXBuildFile; fileRef = 722AF5B1BDDC4B4F4958DF0A /* finance_settings.json */; };
+		5F1FB430E7635D0BDB7604D8 /* SnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A512F46F1F03C8A967812C6 /* SnapshotTests.swift */; };
+		60E29FA4FE7E170767D6A6F5 /* inventory_finish.json in Resources */ = {isa = PBXBuildFile; fileRef = 41375222DDD53F8C483CC908 /* inventory_finish.json */; };
+		61E0E2C417D5A5B39525B7E5 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9DBCC08D9B3F3F2A9A059E0 /* Haptics.swift */; };
+		6273E519BC15E21FD3D729A6 /* Components.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FDB5F7FF34EDE2C66850DBB /* Components.swift */; };
+		6327AD826EA422B83A5C4BC8 /* RecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6D9F29B7748EF0673AF279 /* RecordDetailView.swift */; };
+		6547C9CC87CE647F4BA56C68 /* customer_detail.png in Resources */ = {isa = PBXBuildFile; fileRef = 9F50BF5B4D91516FAB6B2879 /* customer_detail.png */; };
+		65E378B8F174136049E90876 /* JSONValue.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF50E527503A6DE31E68BC6 /* JSONValue.swift */; };
+		662129C1B9BE3E95D155B35B /* more_screen.png in Resources */ = {isa = PBXBuildFile; fileRef = E96AE253C981113C793DBB67 /* more_screen.png */; };
+		665034A846AAA6BC909F6FB7 /* InstallationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 253EB2D1723A9A25C138DD42 /* InstallationStatus.swift */; };
+		68BA5521A0BCEDCC189098FA /* marketing_construction_companies.json in Resources */ = {isa = PBXBuildFile; fileRef = 1E395736DB72EF6BE5C058B6 /* marketing_construction_companies.json */; };
+		6974F937186C5D4555969812 /* hr_payslip_prep_history.json in Resources */ = {isa = PBXBuildFile; fileRef = 09DE9AC0EC6E0FAB7A6FCD13 /* hr_payslip_prep_history.json */; };
+		6AC7355C79A95BCF33FCEAFA /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C01F28360140A158E6727A /* Formatters.swift */; };
+		6BE8B056988D6338A4CE1FC1 /* PaymentsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C54F293572F9041E33301F1 /* PaymentsMath.swift */; };
+		6CE6A6591A47EA7BD9092C52 /* inventory_raw.json in Resources */ = {isa = PBXBuildFile; fileRef = 5168CCBA865E6B071C623FE6 /* inventory_raw.json */; };
+		6E9C5642327B2C3FA2009EB9 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7E0C56E7C6F054210652C57 /* ShareViewController.swift */; };
+		6EBC46EA88ECE92B95C12FBE /* marketing_work_managers.json in Resources */ = {isa = PBXBuildFile; fileRef = 76D8C2F9FE2FCFC47C96A006 /* marketing_work_managers.json */; };
+		70503A2E4E9B3A93FD5B8D93 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 957FE3A4849D8CAE26FA8E90 /* Assets.xcassets */; };
+		740EAD9CD69BA971AA604DE4 /* ClassicMainView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85099042E51A55B187300066 /* ClassicMainView.swift */; };
+		754235117EF00F5A3BA256A4 /* NavigationUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 369279E154141CF8D8B8324D /* NavigationUITests.swift */; };
+		7654CCB4CAC72ACB0EB63048 /* ActionsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD061FEDBA2B3140DA7006DF /* ActionsUITests.swift */; };
+		76D0ECCA57A229269B0B1249 /* EditFormKind.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA18B39E9CB7108997A4C95D /* EditFormKind.swift */; };
+		77F3F7F58ADBF19F346632A5 /* FieldLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2FA0DEC334C54A5BAA02752 /* FieldLabels.swift */; };
+		7847353A5350A5C66D1E59D3 /* payments_transfer.json in Resources */ = {isa = PBXBuildFile; fileRef = 4657F29E5387CB7EEA0FC6A7 /* payments_transfer.json */; };
+		7EB3E4844A5AEB0B30C74649 /* payments_list.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DB5A12BD0683C829EF40910 /* payments_list.png */; };
+		7EE49E82801E50A7F4CFA8D8 /* inventory_raw.json in Resources */ = {isa = PBXBuildFile; fileRef = 5168CCBA865E6B071C623FE6 /* inventory_raw.json */; };
+		7F482687747A1ED13897A2CD /* delivery_contacts.json in Resources */ = {isa = PBXBuildFile; fileRef = 4765BEDAA34A4967C655AF5C /* delivery_contacts.json */; };
+		7F6B00C60D50D71FC8EE44E3 /* marketing_history.json in Resources */ = {isa = PBXBuildFile; fileRef = 13C17D2D0B0155F6C9EA219C /* marketing_history.json */; };
+		7F9BCEA8D5B573724928D928 /* BiometricLockTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B760C8A5F957E7CEAFDDEA5 /* BiometricLockTests.swift */; };
+		84AEBDE361F8F9FF4BF9B8D1 /* marketing_reminders.json in Resources */ = {isa = PBXBuildFile; fileRef = 81FB6903205C1043B3FD6717 /* marketing_reminders.json */; };
+		872577995AE2E86138D94AC2 /* login_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = A21F3F5493D77DD3BBEDEF39 /* login_ipad.png */; };
+		872BCD7FB60A882B2BE1D8E8 /* quote_history.json in Resources */ = {isa = PBXBuildFile; fileRef = CD23BBACBA8E11C272510167 /* quote_history.json */; };
+		87FFD3312DB9B79D52C04368 /* PaymentsMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C54F293572F9041E33301F1 /* PaymentsMath.swift */; };
+		8A46D9F8BF6EEAE2EE491F7B /* FinanceInvoicesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0B29CB3E69DE2B60ABE23D56 /* FinanceInvoicesTests.swift */; };
+		8A4C5BDF8D32A6B748643C84 /* DomainHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8083CA80A83E1B5D0609ADBF /* DomainHubView.swift */; };
+		8BD1500125894844FC960BB8 /* customers_list_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = F66F6193A5AE78A6929FE07D /* customers_list_dark.png */; };
+		8D87D2A3D77AEDE5AC680F11 /* NewFlowsAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1309576055880B54DFADE02B /* NewFlowsAPITests.swift */; };
+		907D0034A49C1E4755A40551 /* ErrorStateUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E43E2A2AF135F1517D1FFB3 /* ErrorStateUITests.swift */; };
+		92689691531C440015E3CFF4 /* APIClientFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEB009D8ECF70D324E0A48A /* APIClientFlows.swift */; };
+		94000A97EB88C785828F07FB /* pricing_components.json in Resources */ = {isa = PBXBuildFile; fileRef = 7C432EB82A0D745E76DDB37C /* pricing_components.json */; };
+		99219B998534139415A4A88D /* InstallationStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = 253EB2D1723A9A25C138DD42 /* InstallationStatus.swift */; };
+		995D32D83D238D35BD17E4EB /* Domain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AA0D0B86BA9A1720C15E146 /* Domain.swift */; };
+		9E26E2DC0124318A3943A75A /* hr_contributions.json in Resources */ = {isa = PBXBuildFile; fileRef = 4F2FB12809E52E99B2C64C9E /* hr_contributions.json */; };
+		9FBCA17CC09F4F82210057FB /* customers_list_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = EE9E27AB46D7A286B88FFD6F /* customers_list_dark_ipad.png */; };
+		A0695C51355ECA48E0DB6293 /* order_history.json in Resources */ = {isa = PBXBuildFile; fileRef = F6F48D7C409750DE0522A2A8 /* order_history.json */; };
+		A07676193E46895E0FCD6974 /* hr_employees.json in Resources */ = {isa = PBXBuildFile; fileRef = 1D1671AFAB86A40EE5D7F104 /* hr_employees.json */; };
+		A09E94475E16C38EDE226E1A /* ClassicLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA19139A7F4BA518EDE407FE /* ClassicLoginView.swift */; };
+		A13E52221AA052916CEABDF0 /* BiometricAuthenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B3444218345769CC1F642A /* BiometricAuthenticator.swift */; };
+		A2502D5E02BE9BA3E216B7DC /* FinanceInvoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504C178F02CB63D8CF436026 /* FinanceInvoices.swift */; };
+		A4932F3C5E1F6D6876D3BF79 /* APIClientFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFEB009D8ECF70D324E0A48A /* APIClientFlows.swift */; };
+		A7CBA8769DB7B2ADF6C3C412 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493498469308C529328FF26C /* LoginView.swift */; };
+		AC1071965B6C786768126A4A /* inventory_purchase_orders.json in Resources */ = {isa = PBXBuildFile; fileRef = 2BC8E1FD172888D1F654B69B /* inventory_purchase_orders.json */; };
+		AC8165C26B6A9734CB8BC9BD /* order_composer.png in Resources */ = {isa = PBXBuildFile; fileRef = 75817DD92385B11489CCE8A9 /* order_composer.png */; };
+		AC9E45F9F135B9D49679FBF7 /* payments_list_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = E965524D068DE3DFCD49B9D2 /* payments_list_ipad.png */; };
+		ADB7E935329EA55376F0DADB /* QuoteComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45C3DBF4723C5183A38850FC /* QuoteComposerView.swift */; };
+		ADBFD6C5C4AC79D3D1B9FD77 /* finance_customer_withholdings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4F8E58AE7861133E7592A7D2 /* finance_customer_withholdings.json */; };
+		AEE9188A94701CC897F70A08 /* ClassicApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AE377021292B79F3BF841D1B /* ClassicApp.swift */; };
+		B0023F4B17D416E0563DE6AC /* login.png in Resources */ = {isa = PBXBuildFile; fileRef = 7C6AEE8AA5A48F5D4BFF94CC /* login.png */; };
+		B04DC61B94B4A219D81D3217 /* ComposerItemsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3554924A395B2180B1DE8A2D /* ComposerItemsEditor.swift */; };
+		B1DBCFDABBD3E82EC550828F /* inactive_customers.json in Resources */ = {isa = PBXBuildFile; fileRef = 2E24D6CECD52DAA34B6025FB /* inactive_customers.json */; };
+		B37992FE5ED3B71289D6AE16 /* pricing_items.json in Resources */ = {isa = PBXBuildFile; fileRef = 8B3DF5941AE2ED924C55BE84 /* pricing_items.json */; };
+		B4A1940DCAD884ECDBD03374 /* DomainListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 064CA88501A77C0375AC45C4 /* DomainListView.swift */; };
+		B53C4AD32EE5C0739DBD08FD /* AppConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16EA2E6292714A4346B2415D /* AppConfig.swift */; };
+		B60C5E7CD4576BD6033A1154 /* AuthUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9721CA1AB2F01AAD30C3CB90 /* AuthUITests.swift */; };
+		B7555C1A3F67DD9582CBB2EA /* OrderComposerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8C7A7A1DA04F07EDFC7A17 /* OrderComposerView.swift */; };
+		B892C4E7053AD3461C1FF1C6 /* finance_customer_withholdings.json in Resources */ = {isa = PBXBuildFile; fileRef = 4F8E58AE7861133E7592A7D2 /* finance_customer_withholdings.json */; };
+		BC290E39F233B88C5DD5C3FA /* marketing_work_managers.json in Resources */ = {isa = PBXBuildFile; fileRef = 76D8C2F9FE2FCFC47C96A006 /* marketing_work_managers.json */; };
+		BC612F5279B7B0E63D247064 /* ClassicComposersMore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 565C596A040146E56EA2F1A0 /* ClassicComposersMore.swift */; };
+		BCBBB41AB3AB8443C8525350 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82A2648D760335D4524955DB /* HomeView.swift */; };
+		BF122310DC3A0F899B6453FF /* hr_employees.json in Resources */ = {isa = PBXBuildFile; fileRef = 1D1671AFAB86A40EE5D7F104 /* hr_employees.json */; };
+		BFD3CC24DEB937D995221BC4 /* payments_transfer.json in Resources */ = {isa = PBXBuildFile; fileRef = 4657F29E5387CB7EEA0FC6A7 /* payments_transfer.json */; };
+		BFE161C5C71F13C61B202F25 /* DomainRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAD778F3DC9A6172A60C246E /* DomainRowView.swift */; };
+		C0E5AB7E2A6F3D1C0B2CCC63 /* pricing_components.json in Resources */ = {isa = PBXBuildFile; fileRef = 7C432EB82A0D745E76DDB37C /* pricing_components.json */; };
+		C151FD76C227ADE511223C2C /* FlowsAPITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D36F909A9C7BE321066001F /* FlowsAPITests.swift */; };
+		C3199D0439BD795C143501E4 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8F9254D80B731A10D675CBB /* MainTabView.swift */; };
+		C75BE244EA2556FF7D36B317 /* inventory_contacts.json in Resources */ = {isa = PBXBuildFile; fileRef = C7B32F7F19FF0CECDCDA6C0A /* inventory_contacts.json */; };
+		C83CF157C48324F7874BC08A /* ShareUploadCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BFBD6411618D79F746FC60 /* ShareUploadCore.swift */; };
+		C8C0D39754F03B7430C780E9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A648491F8658B18F14281898 /* Assets.xcassets */; };
+		C8C20D56C389A71D2DD1E9AC /* customers_list.png in Resources */ = {isa = PBXBuildFile; fileRef = DFB801182574F14F66EAD120 /* customers_list.png */; };
+		C8FCCB6AA7FB2AE2205B914A /* QualityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F10602214F86FFF037035FD /* QualityUITests.swift */; };
+		CA38FAD2E01A63DCCCA554D3 /* DomainSweepUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3104147F23C8DFC5890BAD /* DomainSweepUITests.swift */; };
+		CA7A68831F38A009FACAE488 /* pricing_items.json in Resources */ = {isa = PBXBuildFile; fileRef = 8B3DF5941AE2ED924C55BE84 /* pricing_items.json */; };
+		CB6D0F6C05D39313737FEAAE /* DomainRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B48ADA56DA87C31D19A70A6 /* DomainRecord.swift */; };
+		CC18A05E605CE2F34129D1DE /* BYTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 925A8D8BE706453F76CE273B /* BYTheme.swift */; };
+		CD607943B7D5F5B7C24A0BD7 /* sample_invoice.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 39AC554A974851771190377E /* sample_invoice.pdf */; };
+		CEACADBBFA11723702956405 /* marketing_construction_companies.json in Resources */ = {isa = PBXBuildFile; fileRef = 1E395736DB72EF6BE5C058B6 /* marketing_construction_companies.json */; };
+		CFE95A363F375DE54E0BA87A /* sample_po.pdf in Resources */ = {isa = PBXBuildFile; fileRef = 0E14085EB9E1D4D83B852593 /* sample_po.pdf */; };
+		D23FFF9550433AEBE657FA2E /* FinanceInvoices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504C178F02CB63D8CF436026 /* FinanceInvoices.swift */; };
+		D3C89D860D3E3EBFED33036C /* payments_list_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 2100F0CBED10ECAA0A8E3CDB /* payments_list_dark.png */; };
+		D4E0D04A45C24F7EEFA864B2 /* DocumentPreviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BACD153C946077C4C3340CA /* DocumentPreviewView.swift */; };
+		D5736D7B770134F2606F15D8 /* ProductionSmokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 484B116016DB2653D64D61C7 /* ProductionSmokeTests.swift */; };
+		D58B76442AEE429BFD48BF0A /* finance_bank_movements.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D0653D4DB9B0F749F921999 /* finance_bank_movements.json */; };
+		D7360A52DF0741852B480467 /* ClassicHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5FC085E7BE0C7F6158E4CB81 /* ClassicHomeView.swift */; };
+		D831B7E6FF6B1667A2B35B15 /* RecordExtrasQuoteAndReceipt.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2059F3E5868F5746E88BAE7 /* RecordExtrasQuoteAndReceipt.swift */; };
+		D98ED38EEB57F66C6539417A /* InvoiceUploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E13EABD9A0E9D7336CD003 /* InvoiceUploadView.swift */; };
+		D99F9E9C1943730A98E29CBB /* installation_cases.json in Resources */ = {isa = PBXBuildFile; fileRef = 16B54E9BB0DD579D4654EF25 /* installation_cases.json */; };
+		DA3539C53AB5408288763880 /* quote_history.json in Resources */ = {isa = PBXBuildFile; fileRef = CD23BBACBA8E11C272510167 /* quote_history.json */; };
+		DA9CF612F72F3A103080C578 /* SessionStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0FA0488574C923F90A5D290 /* SessionStore.swift */; };
+		DB5417C7E36DAF37BD735844 /* marketing_reminders.json in Resources */ = {isa = PBXBuildFile; fileRef = 81FB6903205C1043B3FD6717 /* marketing_reminders.json */; };
+		DC940D27AD173667F8B05DEC /* ShareUploadCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44BFBD6411618D79F746FC60 /* ShareUploadCore.swift */; };
+		E0C3EE0B86EA0723E79D226B /* PaymentsMathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 927E4CB309199A12141BC1FD /* PaymentsMathTests.swift */; };
+		E6B27D28DF8B9D90608A9E2F /* BenYacovShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = B1EA1A4D5C45A0FED3BF184A /* BenYacovShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E8883F0BE4FF75F03BBAE0E1 /* marketing_pipeline.json in Resources */ = {isa = PBXBuildFile; fileRef = D9ACD87A35A39590048A615C /* marketing_pipeline.json */; };
+		E932527D5B9A16744ADDCDCD /* CustomerDomains.swift in Sources */ = {isa = PBXBuildFile; fileRef = 462EDCD65C7937EDE6CC5DE1 /* CustomerDomains.swift */; };
+		E96B62E070634F01B08A3536 /* more_screen_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 67E8FC871E916FA67389B5BC /* more_screen_dark.png */; };
+		EAA2004949CE4250436CF177 /* finance_invoices.json in Resources */ = {isa = PBXBuildFile; fileRef = 78C0E0B3F34CD46AA5659979 /* finance_invoices.json */; };
+		EBEE0083EE53A1A6A572A3A4 /* FieldLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2FA0DEC334C54A5BAA02752 /* FieldLabels.swift */; };
+		EC3E5483BFC77DCA1ACD217A /* finance_bank_movements.json in Resources */ = {isa = PBXBuildFile; fileRef = 9D0653D4DB9B0F749F921999 /* finance_bank_movements.json */; };
+		EC9414220A2E45085DA8B00B /* ClassicSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4EC2EA91F8CD2E565A22B4D /* ClassicSession.swift */; };
+		ECA14A1CA40E3F715FFEE6CB /* hr_payroll.json in Resources */ = {isa = PBXBuildFile; fileRef = 27EFC9E27EC9E2FAD1D05359 /* hr_payroll.json */; };
+		EE31C58710ED8186BB95E0BB /* hr_hours.json in Resources */ = {isa = PBXBuildFile; fileRef = A9581B478F6976F7C2AE7FF4 /* hr_hours.json */; };
+		EE77114A29500727A4F4594F /* order_history.json in Resources */ = {isa = PBXBuildFile; fileRef = F6F48D7C409750DE0522A2A8 /* order_history.json */; };
+		EF1691286D9F9A0D0EC0F8FD /* hr_hours.json in Resources */ = {isa = PBXBuildFile; fileRef = A9581B478F6976F7C2AE7FF4 /* hr_hours.json */; };
+		EF808A7AAB6BB87A82439972 /* FixtureSweepTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1E202EFE8AB604EC1609720 /* FixtureSweepTests.swift */; };
+		F096479EA63230C32C146B10 /* order_composer_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = 90C95FCF7639B23F2CB4DEAC /* order_composer_dark.png */; };
+		F39F0C887A6965C88499FEC0 /* delivery_confirmations.json in Resources */ = {isa = PBXBuildFile; fileRef = CF049365DA8451A5A2DA66F2 /* delivery_confirmations.json */; };
+		F3E9A9202E9A607E046EC649 /* ClassicDomainListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1417744394CCC96F1D4BA11 /* ClassicDomainListView.swift */; };
+		F4205EEA771C69032B423C97 /* BiometricLock.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8199A6887082064AC163B89A /* BiometricLock.swift */; };
+		F4C82734FEEBEE4967D7A7A5 /* FlowsUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2704E9AA41C0F223D08E9C9B /* FlowsUITests.swift */; };
+		F6E80152DE1FBA5DA11834DC /* CoverageGapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF629F8F63AF9C9C4257451 /* CoverageGapTests.swift */; };
+		F732D659181FCAA17BC84C58 /* customer_detail_dark_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = E9C66C7179CAD01559A8F160 /* customer_detail_dark_ipad.png */; };
+		F73C4C5F36B28F625175EEDF /* hr_contributions.json in Resources */ = {isa = PBXBuildFile; fileRef = 4F2FB12809E52E99B2C64C9E /* hr_contributions.json */; };
+		F77B6C5C37673D3DC948EF42 /* ClassicLendingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36A4705950F69C884899A813 /* ClassicLendingView.swift */; };
+		F833291508DFB01B7A43683E /* more_screen_ipad.png in Resources */ = {isa = PBXBuildFile; fileRef = 56AB1099BA8B83A9C782C6E0 /* more_screen_ipad.png */; };
+		FA7DA0A63F1C9326A14778DB /* project_managers.json in Resources */ = {isa = PBXBuildFile; fileRef = EE7A26E7254AA441E6CE0106 /* project_managers.json */; };
+		FAECB45180E9D5CC4A98600B /* delivery_contacts.json in Resources */ = {isa = PBXBuildFile; fileRef = 4765BEDAA34A4967C655AF5C /* delivery_contacts.json */; };
+		FC74A88674D895C86C225C19 /* customer_detail_dark.png in Resources */ = {isa = PBXBuildFile; fileRef = E740632248865A46F238D321 /* customer_detail_dark.png */; };
+		FD99659B0A697D3F371998AD /* ResilienceUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B30F3C4CBCE677CD44281737 /* ResilienceUITests.swift */; };
+		FE81E1BBF619025B9AA04FA9 /* ClassicRecordFormView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBCCA41042783B3BC26674D6 /* ClassicRecordFormView.swift */; };
+		FEE862913483FD30FD91F658 /* BiometricAuthenticator.swift in Sources */ = {isa = PBXBuildFile; fileRef = F8B3444218345769CC1F642A /* BiometricAuthenticator.swift */; };
+		FF7445B27BF72CC515A350CC /* ClassicRecordDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 613B736FEDD5DEFE431D3C1C /* ClassicRecordDetailView.swift */; };
+		FF9B818BDDC28E148372D24D /* Formatters.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2C01F28360140A158E6727A /* Formatters.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		1272EC0EA4E904260FF43BFA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0F9DE2F4D00231B6B5BD7D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185FA32F4626E558F2AD16FB;
+			remoteInfo = BenYacovManage;
+		};
+		1C5FE89C4B6817E388CBA7DE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0F9DE2F4D00231B6B5BD7D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = ED14FE0F332582D01FDB89AC;
+			remoteInfo = BenYacovShare;
+		};
+		2ACAA897DA33267C19298563 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0F9DE2F4D00231B6B5BD7D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 185FA32F4626E558F2AD16FB;
+			remoteInfo = BenYacovManage;
+		};
+		B7B9B9653F3CCBDE9F4921A5 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 4B0F9DE2F4D00231B6B5BD7D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = EE236D1462E1D58B4A510D86;
+			remoteInfo = BenYacovClassic;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		668D2314592EAF1361513721 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E6B27D28DF8B9D90608A9E2F /* BenYacovShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		029A647E640B1C8F445F262E /* ClassicComposers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicComposers.swift; sourceTree = "<group>"; };
+		043823B5381C80EC30115224 /* RecordExtrasSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordExtrasSection.swift; sourceTree = "<group>"; };
+		058DB6BDE130999335C2674F /* LabelsOnlyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LabelsOnlyView.swift; sourceTree = "<group>"; };
+		064CA88501A77C0375AC45C4 /* DomainListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainListView.swift; sourceTree = "<group>"; };
+		0841BEA2D7F9CFB5E7ED19EA /* LocalContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalContractTests.swift; sourceTree = "<group>"; };
+		09DE9AC0EC6E0FAB7A6FCD13 /* hr_payslip_prep_history.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_payslip_prep_history.json; sourceTree = "<group>"; };
+		0B29CB3E69DE2B60ABE23D56 /* FinanceInvoicesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceInvoicesTests.swift; sourceTree = "<group>"; };
+		0B760C8A5F957E7CEAFDDEA5 /* BiometricLockTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricLockTests.swift; sourceTree = "<group>"; };
+		0E14085EB9E1D4D83B852593 /* sample_po.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = sample_po.pdf; sourceTree = "<group>"; };
+		10E13EABD9A0E9D7336CD003 /* InvoiceUploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InvoiceUploadView.swift; sourceTree = "<group>"; };
+		1309576055880B54DFADE02B /* NewFlowsAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFlowsAPITests.swift; sourceTree = "<group>"; };
+		13C17D2D0B0155F6C9EA219C /* marketing_history.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = marketing_history.json; sourceTree = "<group>"; };
+		15A1A928EC8A9A45A57E0359 /* hr_documents.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_documents.json; sourceTree = "<group>"; };
+		16B54E9BB0DD579D4654EF25 /* installation_cases.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = installation_cases.json; sourceTree = "<group>"; };
+		16EA2E6292714A4346B2415D /* AppConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfig.swift; sourceTree = "<group>"; };
+		1822247BEA87C5DBCFB6FF1B /* CoreModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreModelTests.swift; sourceTree = "<group>"; };
+		1984D99412B1EF953FBF44DA /* ShareUploadCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareUploadCoreTests.swift; sourceTree = "<group>"; };
+		1D1671AFAB86A40EE5D7F104 /* hr_employees.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_employees.json; sourceTree = "<group>"; };
+		1E395736DB72EF6BE5C058B6 /* marketing_construction_companies.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = marketing_construction_companies.json; sourceTree = "<group>"; };
+		2100F0CBED10ECAA0A8E3CDB /* payments_list_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = payments_list_dark.png; sourceTree = "<group>"; };
+		253EB2D1723A9A25C138DD42 /* InstallationStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstallationStatus.swift; sourceTree = "<group>"; };
+		2617D35751C8B74601FBC2E8 /* RecordExtrasSuppliersAndViewers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordExtrasSuppliersAndViewers.swift; sourceTree = "<group>"; };
+		2704E9AA41C0F223D08E9C9B /* FlowsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowsUITests.swift; sourceTree = "<group>"; };
+		27EFC9E27EC9E2FAD1D05359 /* hr_payroll.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_payroll.json; sourceTree = "<group>"; };
+		2B48ADA56DA87C31D19A70A6 /* DomainRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainRecord.swift; sourceTree = "<group>"; };
+		2BC8E1FD172888D1F654B69B /* inventory_purchase_orders.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = inventory_purchase_orders.json; sourceTree = "<group>"; };
+		2C189C1D83DA4D10DF0B98E8 /* SupplierPOComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupplierPOComposerView.swift; sourceTree = "<group>"; };
+		2C54F293572F9041E33301F1 /* PaymentsMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsMath.swift; sourceTree = "<group>"; };
+		2E24D6CECD52DAA34B6025FB /* inactive_customers.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = inactive_customers.json; sourceTree = "<group>"; };
+		3554924A395B2180B1DE8A2D /* ComposerItemsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerItemsEditor.swift; sourceTree = "<group>"; };
+		369279E154141CF8D8B8324D /* NavigationUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NavigationUITests.swift; sourceTree = "<group>"; };
+		36A4705950F69C884899A813 /* ClassicLendingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicLendingView.swift; sourceTree = "<group>"; };
+		39AC554A974851771190377E /* sample_invoice.pdf */ = {isa = PBXFileReference; lastKnownFileType = image.pdf; path = sample_invoice.pdf; sourceTree = "<group>"; };
+		3A512F46F1F03C8A967812C6 /* SnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnapshotTests.swift; sourceTree = "<group>"; };
+		3D51CD6A361ADE9762D5A14C /* payments_list_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = payments_list_dark_ipad.png; sourceTree = "<group>"; };
+		41375222DDD53F8C483CC908 /* inventory_finish.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = inventory_finish.json; sourceTree = "<group>"; };
+		427D32D81274254481951CED /* BenYacovShare.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BenYacovShare.entitlements; sourceTree = "<group>"; };
+		43773EEDA615B76035466A8A /* supplier_delivery_notes.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = supplier_delivery_notes.json; sourceTree = "<group>"; };
+		44BFBD6411618D79F746FC60 /* ShareUploadCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareUploadCore.swift; sourceTree = "<group>"; };
+		45C3DBF4723C5183A38850FC /* QuoteComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuoteComposerView.swift; sourceTree = "<group>"; };
+		462EDCD65C7937EDE6CC5DE1 /* CustomerDomains.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomerDomains.swift; sourceTree = "<group>"; };
+		4657F29E5387CB7EEA0FC6A7 /* payments_transfer.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = payments_transfer.json; sourceTree = "<group>"; };
+		4765BEDAA34A4967C655AF5C /* delivery_contacts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = delivery_contacts.json; sourceTree = "<group>"; };
+		484B116016DB2653D64D61C7 /* ProductionSmokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProductionSmokeTests.swift; sourceTree = "<group>"; };
+		4874A6BCBD7C562DB5A78D96 /* DocumentsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentsView.swift; sourceTree = "<group>"; };
+		493498469308C529328FF26C /* LoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginView.swift; sourceTree = "<group>"; };
+		49A576DFDBBB48D5EBB3E165 /* more_screen_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more_screen_dark_ipad.png; sourceTree = "<group>"; };
+		4E43E2A2AF135F1517D1FFB3 /* ErrorStateUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorStateUITests.swift; sourceTree = "<group>"; };
+		4F10602214F86FFF037035FD /* QualityUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QualityUITests.swift; sourceTree = "<group>"; };
+		4F2FB12809E52E99B2C64C9E /* hr_contributions.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_contributions.json; sourceTree = "<group>"; };
+		4F8E58AE7861133E7592A7D2 /* finance_customer_withholdings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = finance_customer_withholdings.json; sourceTree = "<group>"; };
+		504C178F02CB63D8CF436026 /* FinanceInvoices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceInvoices.swift; sourceTree = "<group>"; };
+		5168CCBA865E6B071C623FE6 /* inventory_raw.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = inventory_raw.json; sourceTree = "<group>"; };
+		565C596A040146E56EA2F1A0 /* ClassicComposersMore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicComposersMore.swift; sourceTree = "<group>"; };
+		56AB1099BA8B83A9C782C6E0 /* more_screen_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more_screen_ipad.png; sourceTree = "<group>"; };
+		5A6D9F29B7748EF0673AF279 /* RecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordDetailView.swift; sourceTree = "<group>"; };
+		5BACD153C946077C4C3340CA /* DocumentPreviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPreviewView.swift; sourceTree = "<group>"; };
+		5DDEB006B4F48E1A4495985B /* sibus.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = sibus.json; sourceTree = "<group>"; };
+		5FC085E7BE0C7F6158E4CB81 /* ClassicHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicHomeView.swift; sourceTree = "<group>"; };
+		5FDB5F7FF34EDE2C66850DBB /* Components.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Components.swift; sourceTree = "<group>"; };
+		60C24E4B4E28F299F24211C7 /* order_composer_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = order_composer_dark_ipad.png; sourceTree = "<group>"; };
+		613B736FEDD5DEFE431D3C1C /* ClassicRecordDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicRecordDetailView.swift; sourceTree = "<group>"; };
+		61B115C3B42B5E17F9E33F47 /* ClassicBiometricLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicBiometricLock.swift; sourceTree = "<group>"; };
+		655FE0AEB52E8B116A3098B0 /* RobustnessAndPerfTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RobustnessAndPerfTests.swift; sourceTree = "<group>"; };
+		65FA8038945554191D0BC007 /* customers_list_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customers_list_ipad.png; sourceTree = "<group>"; };
+		669D04EFFC31FDE99628F4AB /* BenYacovClassic.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BenYacovClassic.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		67E8FC871E916FA67389B5BC /* more_screen_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more_screen_dark.png; sourceTree = "<group>"; };
+		681DFC359E3128FD63826C49 /* BenYacovManageApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenYacovManageApp.swift; sourceTree = "<group>"; };
+		6FF50E527503A6DE31E68BC6 /* JSONValue.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSONValue.swift; sourceTree = "<group>"; };
+		716745F53B5AB480B84FE38D /* login_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = login_dark_ipad.png; sourceTree = "<group>"; };
+		722AF5B1BDDC4B4F4958DF0A /* finance_settings.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = finance_settings.json; sourceTree = "<group>"; };
+		75817DD92385B11489CCE8A9 /* order_composer.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = order_composer.png; sourceTree = "<group>"; };
+		76D8C2F9FE2FCFC47C96A006 /* marketing_work_managers.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = marketing_work_managers.json; sourceTree = "<group>"; };
+		78C0E0B3F34CD46AA5659979 /* finance_invoices.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = finance_invoices.json; sourceTree = "<group>"; };
+		7C432EB82A0D745E76DDB37C /* pricing_components.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pricing_components.json; sourceTree = "<group>"; };
+		7C6AEE8AA5A48F5D4BFF94CC /* login.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = login.png; sourceTree = "<group>"; };
+		7DB5A12BD0683C829EF40910 /* payments_list.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = payments_list.png; sourceTree = "<group>"; };
+		7DEBEC5677D88F1BE84CEAC5 /* AdminLendingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminLendingView.swift; sourceTree = "<group>"; };
+		7E8CED24062704E1E2A89D57 /* sample_preview.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = sample_preview.png; sourceTree = "<group>"; };
+		7EE05D2B337246AD202586B0 /* BenYacovManage.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = BenYacovManage.entitlements; sourceTree = "<group>"; };
+		8083CA80A83E1B5D0609ADBF /* DomainHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainHubView.swift; sourceTree = "<group>"; };
+		813DD20F284A71404B879A83 /* RecordFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordFormView.swift; sourceTree = "<group>"; };
+		8199A6887082064AC163B89A /* BiometricLock.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricLock.swift; sourceTree = "<group>"; };
+		81FB6903205C1043B3FD6717 /* marketing_reminders.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = marketing_reminders.json; sourceTree = "<group>"; };
+		82A2648D760335D4524955DB /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		85099042E51A55B187300066 /* ClassicMainView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicMainView.swift; sourceTree = "<group>"; };
+		859FD180066E0D170FCCDE26 /* FormattersTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FormattersTests.swift; sourceTree = "<group>"; };
+		8B3DF5941AE2ED924C55BE84 /* pricing_items.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pricing_items.json; sourceTree = "<group>"; };
+		8D33FE5FF50D4B355752047B /* AccountantSendSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountantSendSheet.swift; sourceTree = "<group>"; };
+		8F243D88E8F83E75C50B93E9 /* CameraPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPicker.swift; sourceTree = "<group>"; };
+		90C95FCF7639B23F2CB4DEAC /* order_composer_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = order_composer_dark.png; sourceTree = "<group>"; };
+		925A8D8BE706453F76CE273B /* BYTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BYTheme.swift; sourceTree = "<group>"; };
+		927E4CB309199A12141BC1FD /* PaymentsMathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsMathTests.swift; sourceTree = "<group>"; };
+		957FE3A4849D8CAE26FA8E90 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		9721CA1AB2F01AAD30C3CB90 /* AuthUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthUITests.swift; sourceTree = "<group>"; };
+		9AA0D0B86BA9A1720C15E146 /* Domain.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Domain.swift; sourceTree = "<group>"; };
+		9D0653D4DB9B0F749F921999 /* finance_bank_movements.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = finance_bank_movements.json; sourceTree = "<group>"; };
+		9D36F909A9C7BE321066001F /* FlowsAPITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowsAPITests.swift; sourceTree = "<group>"; };
+		9D7DB6738F278CECC0C4B38D /* DomainActions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainActions.swift; sourceTree = "<group>"; };
+		9F32C43DD028F5D80BF719B0 /* BenYacovManageTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BenYacovManageTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F50BF5B4D91516FAB6B2879 /* customer_detail.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customer_detail.png; sourceTree = "<group>"; };
+		A10A01EA0B3276F4D216C722 /* ComposerItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ComposerItem.swift; sourceTree = "<group>"; };
+		A21F3F5493D77DD3BBEDEF39 /* login_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = login_ipad.png; sourceTree = "<group>"; };
+		A21FD9D95320672D3198E086 /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		A287B9ADCC1E1C01642A5D4C /* pazomat.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = pazomat.json; sourceTree = "<group>"; };
+		A2FA0DEC334C54A5BAA02752 /* FieldLabels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FieldLabels.swift; sourceTree = "<group>"; };
+		A5BA6DE2B2886D72F4C551B9 /* LocalMutationContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMutationContractTests.swift; sourceTree = "<group>"; };
+		A648491F8658B18F14281898 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A819E6CCD0380DBCA6BB9157 /* customer_detail_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customer_detail_ipad.png; sourceTree = "<group>"; };
+		A9581B478F6976F7C2AE7FF4 /* hr_hours.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_hours.json; sourceTree = "<group>"; };
+		AAD8D00B3537CD283A8E990A /* MoreHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreHubView.swift; sourceTree = "<group>"; };
+		AE377021292B79F3BF841D1B /* ClassicApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicApp.swift; sourceTree = "<group>"; };
+		B0B5FE2DBD551A45C53EAA62 /* working_orders.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = working_orders.json; sourceTree = "<group>"; };
+		B1EA1A4D5C45A0FED3BF184A /* BenYacovShare.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = BenYacovShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2FC8DCEB0F7F1798C29F9A4 /* ClassicSmokeUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicSmokeUITests.swift; sourceTree = "<group>"; };
+		B30F3C4CBCE677CD44281737 /* ResilienceUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResilienceUITests.swift; sourceTree = "<group>"; };
+		B7E0C56E7C6F054210652C57 /* ShareViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		BF09486426D314B9A38099B9 /* DeliveryConfirmations.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeliveryConfirmations.swift; sourceTree = "<group>"; };
+		C20E419770A8E7F01E856DFC /* HREmployees.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HREmployees.swift; sourceTree = "<group>"; };
+		C2C01F28360140A158E6727A /* Formatters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Formatters.swift; sourceTree = "<group>"; };
+		C39A100826DA147AF38E591B /* BenYacovManageUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BenYacovManageUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		C7B32F7F19FF0CECDCDA6C0A /* inventory_contacts.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = inventory_contacts.json; sourceTree = "<group>"; };
+		C8AFF2AF6D83CB9D37F6F6F2 /* customers.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = customers.json; sourceTree = "<group>"; };
+		CBCCA41042783B3BC26674D6 /* ClassicRecordFormView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicRecordFormView.swift; sourceTree = "<group>"; };
+		CC8C7A7A1DA04F07EDFC7A17 /* OrderComposerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderComposerView.swift; sourceTree = "<group>"; };
+		CD23BBACBA8E11C272510167 /* quote_history.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = quote_history.json; sourceTree = "<group>"; };
+		CDBF4B18E2F8C669ED43AA1F /* SessionExpiryUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionExpiryUITests.swift; sourceTree = "<group>"; };
+		CE3104147F23C8DFC5890BAD /* DomainSweepUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainSweepUITests.swift; sourceTree = "<group>"; };
+		CF049365DA8451A5A2DA66F2 /* delivery_confirmations.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = delivery_confirmations.json; sourceTree = "<group>"; };
+		CFF629F8F63AF9C9C4257451 /* CoverageGapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoverageGapTests.swift; sourceTree = "<group>"; };
+		D2EAD5687FBC31312E506EF8 /* UITestHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestHelpers.swift; sourceTree = "<group>"; };
+		D4EC2EA91F8CD2E565A22B4D /* ClassicSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicSession.swift; sourceTree = "<group>"; };
+		D9ACD87A35A39590048A615C /* marketing_pipeline.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = marketing_pipeline.json; sourceTree = "<group>"; };
+		D9DBCC08D9B3F3F2A9A059E0 /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		DAD778F3DC9A6172A60C246E /* DomainRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DomainRowView.swift; sourceTree = "<group>"; };
+		DBB21F38875E446A019E2499 /* installation_visits.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = installation_visits.json; sourceTree = "<group>"; };
+		DC2698583C93CB089B556B6E /* MockTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockTransport.swift; sourceTree = "<group>"; };
+		DD7643B3B05C0EA780B5AEE2 /* BenYacovClassicUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = BenYacovClassicUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DEDACFFE3E030B613ECECD01 /* login_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = login_dark.png; sourceTree = "<group>"; };
+		DFB801182574F14F66EAD120 /* customers_list.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customers_list.png; sourceTree = "<group>"; };
+		DFC49BF7C7EBE0D304714E38 /* order_composer_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = order_composer_ipad.png; sourceTree = "<group>"; };
+		E1417744394CCC96F1D4BA11 /* ClassicDomainListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicDomainListView.swift; sourceTree = "<group>"; };
+		E740632248865A46F238D321 /* customer_detail_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customer_detail_dark.png; sourceTree = "<group>"; };
+		E965524D068DE3DFCD49B9D2 /* payments_list_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = payments_list_ipad.png; sourceTree = "<group>"; };
+		E96AE253C981113C793DBB67 /* more_screen.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = more_screen.png; sourceTree = "<group>"; };
+		E9803A70C9C54B1AB47E0160 /* NewFeaturesUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewFeaturesUITests.swift; sourceTree = "<group>"; };
+		E9C66C7179CAD01559A8F160 /* customer_detail_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customer_detail_dark_ipad.png; sourceTree = "<group>"; };
+		EA18B39E9CB7108997A4C95D /* EditFormKind.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditFormKind.swift; sourceTree = "<group>"; };
+		EA2E6480086E623C68EEFD9D /* BenYacovManage.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BenYacovManage.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		EE7A26E7254AA441E6CE0106 /* project_managers.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = project_managers.json; sourceTree = "<group>"; };
+		EE9E27AB46D7A286B88FFD6F /* customers_list_dark_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customers_list_dark_ipad.png; sourceTree = "<group>"; };
+		F0FA0488574C923F90A5D290 /* SessionStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
+		F1E202EFE8AB604EC1609720 /* FixtureSweepTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FixtureSweepTests.swift; sourceTree = "<group>"; };
+		F2059F3E5868F5746E88BAE7 /* RecordExtrasQuoteAndReceipt.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordExtrasQuoteAndReceipt.swift; sourceTree = "<group>"; };
+		F66F6193A5AE78A6929FE07D /* customers_list_dark.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customers_list_dark.png; sourceTree = "<group>"; };
+		F6F48D7C409750DE0522A2A8 /* order_history.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = order_history.json; sourceTree = "<group>"; };
+		F88330896B6284D88E8E9921 /* TabHubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TabHubs.swift; sourceTree = "<group>"; };
+		F8B3444218345769CC1F642A /* BiometricAuthenticator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiometricAuthenticator.swift; sourceTree = "<group>"; };
+		F8F9254D80B731A10D675CBB /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		F9534978E4E170F99EA836F8 /* APIClientTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientTests.swift; sourceTree = "<group>"; };
+		FA19139A7F4BA518EDE407FE /* ClassicLoginView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicLoginView.swift; sourceTree = "<group>"; };
+		FD061FEDBA2B3140DA7006DF /* ActionsUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ActionsUITests.swift; sourceTree = "<group>"; };
+		FFEB009D8ECF70D324E0A48A /* APIClientFlows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClientFlows.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0AAE43DD8398DB21C39C2E7B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				681DFC359E3128FD63826C49 /* BenYacovManageApp.swift */,
+				F8F9254D80B731A10D675CBB /* MainTabView.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		0E15F406310940ED42962386 /* Finance */ = {
+			isa = PBXGroup;
+			children = (
+				8D33FE5FF50D4B355752047B /* AccountantSendSheet.swift */,
+				10E13EABD9A0E9D7336CD003 /* InvoiceUploadView.swift */,
+			);
+			path = Finance;
+			sourceTree = "<group>";
+		};
+		1651C6EC6566AEB035FDDCDD /* Snapshots */ = {
+			isa = PBXGroup;
+			children = (
+				E9C66C7179CAD01559A8F160 /* customer_detail_dark_ipad.png */,
+				E740632248865A46F238D321 /* customer_detail_dark.png */,
+				A819E6CCD0380DBCA6BB9157 /* customer_detail_ipad.png */,
+				9F50BF5B4D91516FAB6B2879 /* customer_detail.png */,
+				EE9E27AB46D7A286B88FFD6F /* customers_list_dark_ipad.png */,
+				F66F6193A5AE78A6929FE07D /* customers_list_dark.png */,
+				65FA8038945554191D0BC007 /* customers_list_ipad.png */,
+				DFB801182574F14F66EAD120 /* customers_list.png */,
+				716745F53B5AB480B84FE38D /* login_dark_ipad.png */,
+				DEDACFFE3E030B613ECECD01 /* login_dark.png */,
+				A21F3F5493D77DD3BBEDEF39 /* login_ipad.png */,
+				7C6AEE8AA5A48F5D4BFF94CC /* login.png */,
+				49A576DFDBBB48D5EBB3E165 /* more_screen_dark_ipad.png */,
+				67E8FC871E916FA67389B5BC /* more_screen_dark.png */,
+				56AB1099BA8B83A9C782C6E0 /* more_screen_ipad.png */,
+				E96AE253C981113C793DBB67 /* more_screen.png */,
+				60C24E4B4E28F299F24211C7 /* order_composer_dark_ipad.png */,
+				90C95FCF7639B23F2CB4DEAC /* order_composer_dark.png */,
+				DFC49BF7C7EBE0D304714E38 /* order_composer_ipad.png */,
+				75817DD92385B11489CCE8A9 /* order_composer.png */,
+				3D51CD6A361ADE9762D5A14C /* payments_list_dark_ipad.png */,
+				2100F0CBED10ECAA0A8E3CDB /* payments_list_dark.png */,
+				E965524D068DE3DFCD49B9D2 /* payments_list_ipad.png */,
+				7DB5A12BD0683C829EF40910 /* payments_list.png */,
+			);
+			path = Snapshots;
+			sourceTree = "<group>";
+		};
+		1B8FB8D119611BC9F9A7F5C9 /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				82A2648D760335D4524955DB /* HomeView.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
+		1E72141933E857AF85E63F3E /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				F91CDBB6463F00769079C80E /* Auth */,
+				2AB21F2A65EB718737DED6C4 /* Domains */,
+				0E15F406310940ED42962386 /* Finance */,
+				1B8FB8D119611BC9F9A7F5C9 /* Home */,
+				9BE64B35A33564455434F697 /* Hubs */,
+				FD7EEE7351806176715B6F92 /* More */,
+				DA2112F4144DA4A4785243A7 /* Orders */,
+				533B660E115D298D68AEF66F /* Shared */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		29A06675B1CFC707F34CDDC3 /* BenYacovShare */ = {
+			isa = PBXGroup;
+			children = (
+				427D32D81274254481951CED /* BenYacovShare.entitlements */,
+				B7E0C56E7C6F054210652C57 /* ShareViewController.swift */,
+			);
+			path = BenYacovShare;
+			sourceTree = "<group>";
+		};
+		2AB21F2A65EB718737DED6C4 /* Domains */ = {
+			isa = PBXGroup;
+			children = (
+				9D7DB6738F278CECC0C4B38D /* DomainActions.swift */,
+				064CA88501A77C0375AC45C4 /* DomainListView.swift */,
+				DAD778F3DC9A6172A60C246E /* DomainRowView.swift */,
+				5A6D9F29B7748EF0673AF279 /* RecordDetailView.swift */,
+				F2059F3E5868F5746E88BAE7 /* RecordExtrasQuoteAndReceipt.swift */,
+				043823B5381C80EC30115224 /* RecordExtrasSection.swift */,
+				2617D35751C8B74601FBC2E8 /* RecordExtrasSuppliersAndViewers.swift */,
+				813DD20F284A71404B879A83 /* RecordFormView.swift */,
+			);
+			name = Domains;
+			path = BenYacovManage/Features/Domains;
+			sourceTree = "<group>";
+		};
+		2E6D1B3F4AAB04F4BCB5FEAC /* BenYacovManage */ = {
+			isa = PBXGroup;
+			children = (
+				957FE3A4849D8CAE26FA8E90 /* Assets.xcassets */,
+				7EE05D2B337246AD202586B0 /* BenYacovManage.entitlements */,
+				0AAE43DD8398DB21C39C2E7B /* App */,
+				DC68C0C34BA682629431B3F4 /* Core */,
+				7013F28F6CE735C156A95B93 /* DesignSystem */,
+				1E72141933E857AF85E63F3E /* Features */,
+				CC1C8BA8040282EDCB517874 /* Resources */,
+				B965E41B387B63A0E8CF914C /* Shared */,
+			);
+			path = BenYacovManage;
+			sourceTree = "<group>";
+		};
+		533B660E115D298D68AEF66F /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				8F243D88E8F83E75C50B93E9 /* CameraPicker.swift */,
+				5BACD153C946077C4C3340CA /* DocumentPreviewView.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		5C5BF1C93B83E07019FF5BB8 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				C8AFF2AF6D83CB9D37F6F6F2 /* customers.json */,
+				CF049365DA8451A5A2DA66F2 /* delivery_confirmations.json */,
+				4765BEDAA34A4967C655AF5C /* delivery_contacts.json */,
+				9D0653D4DB9B0F749F921999 /* finance_bank_movements.json */,
+				4F8E58AE7861133E7592A7D2 /* finance_customer_withholdings.json */,
+				78C0E0B3F34CD46AA5659979 /* finance_invoices.json */,
+				722AF5B1BDDC4B4F4958DF0A /* finance_settings.json */,
+				4F2FB12809E52E99B2C64C9E /* hr_contributions.json */,
+				15A1A928EC8A9A45A57E0359 /* hr_documents.json */,
+				1D1671AFAB86A40EE5D7F104 /* hr_employees.json */,
+				A9581B478F6976F7C2AE7FF4 /* hr_hours.json */,
+				27EFC9E27EC9E2FAD1D05359 /* hr_payroll.json */,
+				09DE9AC0EC6E0FAB7A6FCD13 /* hr_payslip_prep_history.json */,
+				2E24D6CECD52DAA34B6025FB /* inactive_customers.json */,
+				16B54E9BB0DD579D4654EF25 /* installation_cases.json */,
+				DBB21F38875E446A019E2499 /* installation_visits.json */,
+				C7B32F7F19FF0CECDCDA6C0A /* inventory_contacts.json */,
+				41375222DDD53F8C483CC908 /* inventory_finish.json */,
+				2BC8E1FD172888D1F654B69B /* inventory_purchase_orders.json */,
+				5168CCBA865E6B071C623FE6 /* inventory_raw.json */,
+				1E395736DB72EF6BE5C058B6 /* marketing_construction_companies.json */,
+				13C17D2D0B0155F6C9EA219C /* marketing_history.json */,
+				D9ACD87A35A39590048A615C /* marketing_pipeline.json */,
+				81FB6903205C1043B3FD6717 /* marketing_reminders.json */,
+				76D8C2F9FE2FCFC47C96A006 /* marketing_work_managers.json */,
+				F6F48D7C409750DE0522A2A8 /* order_history.json */,
+				4657F29E5387CB7EEA0FC6A7 /* payments_transfer.json */,
+				A287B9ADCC1E1C01642A5D4C /* pazomat.json */,
+				7C432EB82A0D745E76DDB37C /* pricing_components.json */,
+				8B3DF5941AE2ED924C55BE84 /* pricing_items.json */,
+				EE7A26E7254AA441E6CE0106 /* project_managers.json */,
+				CD23BBACBA8E11C272510167 /* quote_history.json */,
+				39AC554A974851771190377E /* sample_invoice.pdf */,
+				0E14085EB9E1D4D83B852593 /* sample_po.pdf */,
+				7E8CED24062704E1E2A89D57 /* sample_preview.png */,
+				5DDEB006B4F48E1A4495985B /* sibus.json */,
+				43773EEDA615B76035466A8A /* supplier_delivery_notes.json */,
+				B0B5FE2DBD551A45C53EAA62 /* working_orders.json */,
+			);
+			name = Fixtures;
+			path = BenYacovManage/Resources/Fixtures;
+			sourceTree = "<group>";
+		};
+		7013F28F6CE735C156A95B93 /* DesignSystem */ = {
+			isa = PBXGroup;
+			children = (
+				925A8D8BE706453F76CE273B /* BYTheme.swift */,
+				5FDB5F7FF34EDE2C66850DBB /* Components.swift */,
+			);
+			name = DesignSystem;
+			path = BenYacovManage/DesignSystem;
+			sourceTree = "<group>";
+		};
+		72501C5E72B3732267461469 /* BenYacovManageUITests */ = {
+			isa = PBXGroup;
+			children = (
+				FD061FEDBA2B3140DA7006DF /* ActionsUITests.swift */,
+				9721CA1AB2F01AAD30C3CB90 /* AuthUITests.swift */,
+				CE3104147F23C8DFC5890BAD /* DomainSweepUITests.swift */,
+				4E43E2A2AF135F1517D1FFB3 /* ErrorStateUITests.swift */,
+				2704E9AA41C0F223D08E9C9B /* FlowsUITests.swift */,
+				369279E154141CF8D8B8324D /* NavigationUITests.swift */,
+				E9803A70C9C54B1AB47E0160 /* NewFeaturesUITests.swift */,
+				4F10602214F86FFF037035FD /* QualityUITests.swift */,
+				B30F3C4CBCE677CD44281737 /* ResilienceUITests.swift */,
+				CDBF4B18E2F8C669ED43AA1F /* SessionExpiryUITests.swift */,
+				D2EAD5687FBC31312E506EF8 /* UITestHelpers.swift */,
+			);
+			path = BenYacovManageUITests;
+			sourceTree = "<group>";
+		};
+		9BE64B35A33564455434F697 /* Hubs */ = {
+			isa = PBXGroup;
+			children = (
+				8083CA80A83E1B5D0609ADBF /* DomainHubView.swift */,
+				F88330896B6284D88E8E9921 /* TabHubs.swift */,
+			);
+			path = Hubs;
+			sourceTree = "<group>";
+		};
+		9C1A518F96B0DF4F22952970 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				669D04EFFC31FDE99628F4AB /* BenYacovClassic.app */,
+				DD7643B3B05C0EA780B5AEE2 /* BenYacovClassicUITests.xctest */,
+				EA2E6480086E623C68EEFD9D /* BenYacovManage.app */,
+				9F32C43DD028F5D80BF719B0 /* BenYacovManageTests.xctest */,
+				C39A100826DA147AF38E591B /* BenYacovManageUITests.xctest */,
+				B1EA1A4D5C45A0FED3BF184A /* BenYacovShare.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		9CB54FF88A1277CC26DA94D3 /* BenYacovClassic */ = {
+			isa = PBXGroup;
+			children = (
+				A648491F8658B18F14281898 /* Assets.xcassets */,
+				AE377021292B79F3BF841D1B /* ClassicApp.swift */,
+				61B115C3B42B5E17F9E33F47 /* ClassicBiometricLock.swift */,
+				029A647E640B1C8F445F262E /* ClassicComposers.swift */,
+				565C596A040146E56EA2F1A0 /* ClassicComposersMore.swift */,
+				E1417744394CCC96F1D4BA11 /* ClassicDomainListView.swift */,
+				5FC085E7BE0C7F6158E4CB81 /* ClassicHomeView.swift */,
+				36A4705950F69C884899A813 /* ClassicLendingView.swift */,
+				FA19139A7F4BA518EDE407FE /* ClassicLoginView.swift */,
+				85099042E51A55B187300066 /* ClassicMainView.swift */,
+				613B736FEDD5DEFE431D3C1C /* ClassicRecordDetailView.swift */,
+				CBCCA41042783B3BC26674D6 /* ClassicRecordFormView.swift */,
+				D4EC2EA91F8CD2E565A22B4D /* ClassicSession.swift */,
+			);
+			path = BenYacovClassic;
+			sourceTree = "<group>";
+		};
+		9F9DC6073C144D7E265BFA30 /* BenYacovClassicUITests */ = {
+			isa = PBXGroup;
+			children = (
+				B2FC8DCEB0F7F1798C29F9A4 /* ClassicSmokeUITests.swift */,
+			);
+			path = BenYacovClassicUITests;
+			sourceTree = "<group>";
+		};
+		B965E41B387B63A0E8CF914C /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				44BFBD6411618D79F746FC60 /* ShareUploadCore.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		BF7121362A3432474FED2876 /* BenYacovManageTests */ = {
+			isa = PBXGroup;
+			children = (
+				F9534978E4E170F99EA836F8 /* APIClientTests.swift */,
+				0B760C8A5F957E7CEAFDDEA5 /* BiometricLockTests.swift */,
+				1822247BEA87C5DBCFB6FF1B /* CoreModelTests.swift */,
+				CFF629F8F63AF9C9C4257451 /* CoverageGapTests.swift */,
+				0B29CB3E69DE2B60ABE23D56 /* FinanceInvoicesTests.swift */,
+				F1E202EFE8AB604EC1609720 /* FixtureSweepTests.swift */,
+				9D36F909A9C7BE321066001F /* FlowsAPITests.swift */,
+				859FD180066E0D170FCCDE26 /* FormattersTests.swift */,
+				0841BEA2D7F9CFB5E7ED19EA /* LocalContractTests.swift */,
+				A5BA6DE2B2886D72F4C551B9 /* LocalMutationContractTests.swift */,
+				1309576055880B54DFADE02B /* NewFlowsAPITests.swift */,
+				927E4CB309199A12141BC1FD /* PaymentsMathTests.swift */,
+				484B116016DB2653D64D61C7 /* ProductionSmokeTests.swift */,
+				655FE0AEB52E8B116A3098B0 /* RobustnessAndPerfTests.swift */,
+				1984D99412B1EF953FBF44DA /* ShareUploadCoreTests.swift */,
+				3A512F46F1F03C8A967812C6 /* SnapshotTests.swift */,
+				1651C6EC6566AEB035FDDCDD /* Snapshots */,
+			);
+			path = BenYacovManageTests;
+			sourceTree = "<group>";
+		};
+		C2A8EB6D9C457F643240D824 = {
+			isa = PBXGroup;
+			children = (
+				9CB54FF88A1277CC26DA94D3 /* BenYacovClassic */,
+				9F9DC6073C144D7E265BFA30 /* BenYacovClassicUITests */,
+				2E6D1B3F4AAB04F4BCB5FEAC /* BenYacovManage */,
+				BF7121362A3432474FED2876 /* BenYacovManageTests */,
+				72501C5E72B3732267461469 /* BenYacovManageUITests */,
+				29A06675B1CFC707F34CDDC3 /* BenYacovShare */,
+				DC68C0C34BA682629431B3F4 /* Core */,
+				7013F28F6CE735C156A95B93 /* DesignSystem */,
+				2AB21F2A65EB718737DED6C4 /* Domains */,
+				5C5BF1C93B83E07019FF5BB8 /* Fixtures */,
+				9C1A518F96B0DF4F22952970 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		CC1C8BA8040282EDCB517874 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				5C5BF1C93B83E07019FF5BB8 /* Fixtures */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		DA2112F4144DA4A4785243A7 /* Orders */ = {
+			isa = PBXGroup;
+			children = (
+				3554924A395B2180B1DE8A2D /* ComposerItemsEditor.swift */,
+				CC8C7A7A1DA04F07EDFC7A17 /* OrderComposerView.swift */,
+				45C3DBF4723C5183A38850FC /* QuoteComposerView.swift */,
+			);
+			path = Orders;
+			sourceTree = "<group>";
+		};
+		DC68C0C34BA682629431B3F4 /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				A21FD9D95320672D3198E086 /* APIClient.swift */,
+				FFEB009D8ECF70D324E0A48A /* APIClientFlows.swift */,
+				16EA2E6292714A4346B2415D /* AppConfig.swift */,
+				F8B3444218345769CC1F642A /* BiometricAuthenticator.swift */,
+				8199A6887082064AC163B89A /* BiometricLock.swift */,
+				A10A01EA0B3276F4D216C722 /* ComposerItem.swift */,
+				462EDCD65C7937EDE6CC5DE1 /* CustomerDomains.swift */,
+				BF09486426D314B9A38099B9 /* DeliveryConfirmations.swift */,
+				9AA0D0B86BA9A1720C15E146 /* Domain.swift */,
+				2B48ADA56DA87C31D19A70A6 /* DomainRecord.swift */,
+				EA18B39E9CB7108997A4C95D /* EditFormKind.swift */,
+				A2FA0DEC334C54A5BAA02752 /* FieldLabels.swift */,
+				504C178F02CB63D8CF436026 /* FinanceInvoices.swift */,
+				C2C01F28360140A158E6727A /* Formatters.swift */,
+				D9DBCC08D9B3F3F2A9A059E0 /* Haptics.swift */,
+				C20E419770A8E7F01E856DFC /* HREmployees.swift */,
+				253EB2D1723A9A25C138DD42 /* InstallationStatus.swift */,
+				6FF50E527503A6DE31E68BC6 /* JSONValue.swift */,
+				DC2698583C93CB089B556B6E /* MockTransport.swift */,
+				2C54F293572F9041E33301F1 /* PaymentsMath.swift */,
+				F0FA0488574C923F90A5D290 /* SessionStore.swift */,
+			);
+			name = Core;
+			path = BenYacovManage/Core;
+			sourceTree = "<group>";
+		};
+		F91CDBB6463F00769079C80E /* Auth */ = {
+			isa = PBXGroup;
+			children = (
+				493498469308C529328FF26C /* LoginView.swift */,
+			);
+			path = Auth;
+			sourceTree = "<group>";
+		};
+		FD7EEE7351806176715B6F92 /* More */ = {
+			isa = PBXGroup;
+			children = (
+				7DEBEC5677D88F1BE84CEAC5 /* AdminLendingView.swift */,
+				4874A6BCBD7C562DB5A78D96 /* DocumentsView.swift */,
+				058DB6BDE130999335C2674F /* LabelsOnlyView.swift */,
+				AAD8D00B3537CD283A8E990A /* MoreHubView.swift */,
+				2C189C1D83DA4D10DF0B98E8 /* SupplierPOComposerView.swift */,
+			);
+			path = More;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		02A29781F2C64CE1E0258136 /* BenYacovManageTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 932C8A9B0E306D4950EF1A8B /* Build configuration list for PBXNativeTarget "BenYacovManageTests" */;
+			buildPhases = (
+				E6FBC995CB0E1D693F1AE38A /* Sources */,
+				35C0F6DD7AAC27F4226170E5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				1B487EC310BD5A3DA6F5640F /* PBXTargetDependency */,
+			);
+			name = BenYacovManageTests;
+			packageProductDependencies = (
+			);
+			productName = BenYacovManageTests;
+			productReference = 9F32C43DD028F5D80BF719B0 /* BenYacovManageTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		185FA32F4626E558F2AD16FB /* BenYacovManage */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D4BA3197851F6B8D43F7EC66 /* Build configuration list for PBXNativeTarget "BenYacovManage" */;
+			buildPhases = (
+				9AE8812E652C9FC32D99B1A3 /* ביקורת פאריטי מול ראוטי השרת */,
+				19E3D03C3119F9B116F8EFAF /* ביקורת פאריטי payload מול הדסקטופ */,
+				FE8F9B708A194281A709F8DA /* ביקורת פאריטי פקדי UI מול הדסקטופ */,
+				B40998706C02E283A8C4F699 /* ביקורת מזהי טסטים מול קוד האפליקציה */,
+				30C561787B07BD94BADDE7B7 /* Sources */,
+				6C25942224689E89B493B1FA /* Resources */,
+				668D2314592EAF1361513721 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CA3F6F620B62DCE2944E406C /* PBXTargetDependency */,
+			);
+			name = BenYacovManage;
+			packageProductDependencies = (
+			);
+			productName = BenYacovManage;
+			productReference = EA2E6480086E623C68EEFD9D /* BenYacovManage.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B22A980A71014483F023E33D /* BenYacovManageUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E79C7A40BD867174145F7A0B /* Build configuration list for PBXNativeTarget "BenYacovManageUITests" */;
+			buildPhases = (
+				FAB6C6553D895BBFCFE1D804 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E35BED31BD4A11645F09F037 /* PBXTargetDependency */,
+			);
+			name = BenYacovManageUITests;
+			packageProductDependencies = (
+			);
+			productName = BenYacovManageUITests;
+			productReference = C39A100826DA147AF38E591B /* BenYacovManageUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		ED14FE0F332582D01FDB89AC /* BenYacovShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8A7FB4FDE68BF8CDF8EDE7B1 /* Build configuration list for PBXNativeTarget "BenYacovShare" */;
+			buildPhases = (
+				FF69DEE310AE6C8FC4C113D8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BenYacovShare;
+			packageProductDependencies = (
+			);
+			productName = BenYacovShare;
+			productReference = B1EA1A4D5C45A0FED3BF184A /* BenYacovShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		EE236D1462E1D58B4A510D86 /* BenYacovClassic */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 81ABB85ACB11F89D59DBBCAF /* Build configuration list for PBXNativeTarget "BenYacovClassic" */;
+			buildPhases = (
+				564AC8A252FE29395D8FF4F3 /* Sources */,
+				9034616E22E6E7C6B42A8417 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BenYacovClassic;
+			packageProductDependencies = (
+			);
+			productName = BenYacovClassic;
+			productReference = 669D04EFFC31FDE99628F4AB /* BenYacovClassic.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EEF3E0EC10828D13E5B8BCB6 /* BenYacovClassicUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 915692D649E712EF5194ADC1 /* Build configuration list for PBXNativeTarget "BenYacovClassicUITests" */;
+			buildPhases = (
+				9C13ADC9E2901251EEB952EF /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2823CCD7C870F71CBEBB0298 /* PBXTargetDependency */,
+			);
+			name = BenYacovClassicUITests;
+			packageProductDependencies = (
+			);
+			productName = BenYacovClassicUITests;
+			productReference = DD7643B3B05C0EA780B5AEE2 /* BenYacovClassicUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		4B0F9DE2F4D00231B6B5BD7D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					02A29781F2C64CE1E0258136 = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+					};
+					185FA32F4626E558F2AD16FB = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+					};
+					B22A980A71014483F023E33D = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+						TestTargetID = 185FA32F4626E558F2AD16FB;
+					};
+					ED14FE0F332582D01FDB89AC = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+					};
+					EE236D1462E1D58B4A510D86 = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+					};
+					EEF3E0EC10828D13E5B8BCB6 = {
+						DevelopmentTeam = PRY2S55YGY;
+						ProvisioningStyle = Automatic;
+						TestTargetID = EE236D1462E1D58B4A510D86;
+					};
+				};
+			};
+			buildConfigurationList = E350261FB310C75F42CAAF0F /* Build configuration list for PBXProject "BenYacovManage" */;
+			developmentRegion = he;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				he,
+			);
+			mainGroup = C2A8EB6D9C457F643240D824;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9C1A518F96B0DF4F22952970 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				EE236D1462E1D58B4A510D86 /* BenYacovClassic */,
+				EEF3E0EC10828D13E5B8BCB6 /* BenYacovClassicUITests */,
+				185FA32F4626E558F2AD16FB /* BenYacovManage */,
+				02A29781F2C64CE1E0258136 /* BenYacovManageTests */,
+				B22A980A71014483F023E33D /* BenYacovManageUITests */,
+				ED14FE0F332582D01FDB89AC /* BenYacovShare */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		35C0F6DD7AAC27F4226170E5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6547C9CC87CE647F4BA56C68 /* customer_detail.png in Resources */,
+				FC74A88674D895C86C225C19 /* customer_detail_dark.png in Resources */,
+				F732D659181FCAA17BC84C58 /* customer_detail_dark_ipad.png in Resources */,
+				552AD1684C7BF40B8194B89C /* customer_detail_ipad.png in Resources */,
+				C8C20D56C389A71D2DD1E9AC /* customers_list.png in Resources */,
+				8BD1500125894844FC960BB8 /* customers_list_dark.png in Resources */,
+				9FBCA17CC09F4F82210057FB /* customers_list_dark_ipad.png in Resources */,
+				1F7F4411E5A784A380AF3341 /* customers_list_ipad.png in Resources */,
+				B0023F4B17D416E0563DE6AC /* login.png in Resources */,
+				468DCA2B3C19B9E26698112C /* login_dark.png in Resources */,
+				2E35FCEC1346909330C2ADB6 /* login_dark_ipad.png in Resources */,
+				872577995AE2E86138D94AC2 /* login_ipad.png in Resources */,
+				662129C1B9BE3E95D155B35B /* more_screen.png in Resources */,
+				E96B62E070634F01B08A3536 /* more_screen_dark.png in Resources */,
+				1CCFE405132C46CC7E1C311D /* more_screen_dark_ipad.png in Resources */,
+				F833291508DFB01B7A43683E /* more_screen_ipad.png in Resources */,
+				AC8165C26B6A9734CB8BC9BD /* order_composer.png in Resources */,
+				F096479EA63230C32C146B10 /* order_composer_dark.png in Resources */,
+				0ABE9D846E2C2ADC03D516DF /* order_composer_dark_ipad.png in Resources */,
+				1E136BD8F77AF06732475271 /* order_composer_ipad.png in Resources */,
+				7EB3E4844A5AEB0B30C74649 /* payments_list.png in Resources */,
+				D3C89D860D3E3EBFED33036C /* payments_list_dark.png in Resources */,
+				4B62B6A0C9E18F4C997286C8 /* payments_list_dark_ipad.png in Resources */,
+				AC9E45F9F135B9D49679FBF7 /* payments_list_ipad.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6C25942224689E89B493B1FA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				70503A2E4E9B3A93FD5B8D93 /* Assets.xcassets in Resources */,
+				377C4F6A386E7E8BE311B37C /* customers.json in Resources */,
+				F39F0C887A6965C88499FEC0 /* delivery_confirmations.json in Resources */,
+				FAECB45180E9D5CC4A98600B /* delivery_contacts.json in Resources */,
+				D58B76442AEE429BFD48BF0A /* finance_bank_movements.json in Resources */,
+				B892C4E7053AD3461C1FF1C6 /* finance_customer_withholdings.json in Resources */,
+				EAA2004949CE4250436CF177 /* finance_invoices.json in Resources */,
+				4F36C1C5BC6205CDA69CC737 /* finance_settings.json in Resources */,
+				9E26E2DC0124318A3943A75A /* hr_contributions.json in Resources */,
+				56F62E4F433030495B279382 /* hr_documents.json in Resources */,
+				A07676193E46895E0FCD6974 /* hr_employees.json in Resources */,
+				EE31C58710ED8186BB95E0BB /* hr_hours.json in Resources */,
+				ECA14A1CA40E3F715FFEE6CB /* hr_payroll.json in Resources */,
+				06DCF91287D28C3BB606F1DA /* hr_payslip_prep_history.json in Resources */,
+				342C0714E6422AE35552B664 /* inactive_customers.json in Resources */,
+				D99F9E9C1943730A98E29CBB /* installation_cases.json in Resources */,
+				1E2675DFF6B1760847165BB6 /* installation_visits.json in Resources */,
+				C75BE244EA2556FF7D36B317 /* inventory_contacts.json in Resources */,
+				60E29FA4FE7E170767D6A6F5 /* inventory_finish.json in Resources */,
+				AC1071965B6C786768126A4A /* inventory_purchase_orders.json in Resources */,
+				6CE6A6591A47EA7BD9092C52 /* inventory_raw.json in Resources */,
+				CEACADBBFA11723702956405 /* marketing_construction_companies.json in Resources */,
+				0CEADA8765A40F9AF135A7CF /* marketing_history.json in Resources */,
+				E8883F0BE4FF75F03BBAE0E1 /* marketing_pipeline.json in Resources */,
+				84AEBDE361F8F9FF4BF9B8D1 /* marketing_reminders.json in Resources */,
+				6EBC46EA88ECE92B95C12FBE /* marketing_work_managers.json in Resources */,
+				EE77114A29500727A4F4594F /* order_history.json in Resources */,
+				BFD3CC24DEB937D995221BC4 /* payments_transfer.json in Resources */,
+				161207F59D3E898A98B029DD /* pazomat.json in Resources */,
+				C0E5AB7E2A6F3D1C0B2CCC63 /* pricing_components.json in Resources */,
+				B37992FE5ED3B71289D6AE16 /* pricing_items.json in Resources */,
+				FA7DA0A63F1C9326A14778DB /* project_managers.json in Resources */,
+				872BCD7FB60A882B2BE1D8E8 /* quote_history.json in Resources */,
+				CD607943B7D5F5B7C24A0BD7 /* sample_invoice.pdf in Resources */,
+				CFE95A363F375DE54E0BA87A /* sample_po.pdf in Resources */,
+				42C892C09A26896209363508 /* sample_preview.png in Resources */,
+				25E210B6016A03A45AB493D3 /* sibus.json in Resources */,
+				39B0063220731C639996ADE6 /* supplier_delivery_notes.json in Resources */,
+				014A2F7D0AF22CD96982D374 /* working_orders.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9034616E22E6E7C6B42A8417 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C8C0D39754F03B7430C780E9 /* Assets.xcassets in Resources */,
+				095CF3464CBD793072088174 /* customers.json in Resources */,
+				5BFDA26011ED92A581971F6E /* delivery_confirmations.json in Resources */,
+				7F482687747A1ED13897A2CD /* delivery_contacts.json in Resources */,
+				EC3E5483BFC77DCA1ACD217A /* finance_bank_movements.json in Resources */,
+				ADBFD6C5C4AC79D3D1B9FD77 /* finance_customer_withholdings.json in Resources */,
+				1EB0E433CA47FD1475A8DF05 /* finance_invoices.json in Resources */,
+				5EAAF28242966F9EC00E4196 /* finance_settings.json in Resources */,
+				F73C4C5F36B28F625175EEDF /* hr_contributions.json in Resources */,
+				08F7C5E3997DD06EABE08297 /* hr_documents.json in Resources */,
+				BF122310DC3A0F899B6453FF /* hr_employees.json in Resources */,
+				EF1691286D9F9A0D0EC0F8FD /* hr_hours.json in Resources */,
+				3FA44D8D829198EC6C8CEEC0 /* hr_payroll.json in Resources */,
+				6974F937186C5D4555969812 /* hr_payslip_prep_history.json in Resources */,
+				B1DBCFDABBD3E82EC550828F /* inactive_customers.json in Resources */,
+				0B6DBE8C2700512838260105 /* installation_cases.json in Resources */,
+				447E558D37F428ED61B36DBC /* installation_visits.json in Resources */,
+				06B7B763BE5B928731C0AACF /* inventory_contacts.json in Resources */,
+				2AE7F8468318BA6B3FF2B172 /* inventory_finish.json in Resources */,
+				57B0AEAACE3DD6982EBB795B /* inventory_purchase_orders.json in Resources */,
+				7EE49E82801E50A7F4CFA8D8 /* inventory_raw.json in Resources */,
+				68BA5521A0BCEDCC189098FA /* marketing_construction_companies.json in Resources */,
+				7F6B00C60D50D71FC8EE44E3 /* marketing_history.json in Resources */,
+				23BB06B19CC1025EEEC38809 /* marketing_pipeline.json in Resources */,
+				DB5417C7E36DAF37BD735844 /* marketing_reminders.json in Resources */,
+				BC290E39F233B88C5DD5C3FA /* marketing_work_managers.json in Resources */,
+				A0695C51355ECA48E0DB6293 /* order_history.json in Resources */,
+				7847353A5350A5C66D1E59D3 /* payments_transfer.json in Resources */,
+				2A419A298C6F9EDE7AD05859 /* pazomat.json in Resources */,
+				94000A97EB88C785828F07FB /* pricing_components.json in Resources */,
+				CA7A68831F38A009FACAE488 /* pricing_items.json in Resources */,
+				16DBE17579C214E29EE0692E /* project_managers.json in Resources */,
+				DA3539C53AB5408288763880 /* quote_history.json in Resources */,
+				5D5CAA0C2C342D4172155E4C /* sample_invoice.pdf in Resources */,
+				1523DF1BC23908BB317EFD11 /* sample_po.pdf in Resources */,
+				2CBDB276ABF8738C1296F052 /* sample_preview.png in Resources */,
+				2EF0777571CE059E5E76E48A /* sibus.json in Resources */,
+				023548906E0FB63251E285E9 /* supplier_delivery_notes.json in Resources */,
+				4A4E602B450589BEA805E95C /* working_orders.json in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		19E3D03C3119F9B116F8EFAF /* ביקורת פאריטי payload מול הדסקטופ */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "ביקורת פאריטי payload מול הדסקטופ";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$PROJECT_DIR\" && /usr/bin/python3 scripts/payload_parity_audit.py\n";
+		};
+		9AE8812E652C9FC32D99B1A3 /* ביקורת פאריטי מול ראוטי השרת */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "ביקורת פאריטי מול ראוטי השרת";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$PROJECT_DIR\" && /usr/bin/python3 scripts/parity_audit.py\n";
+		};
+		B40998706C02E283A8C4F699 /* ביקורת מזהי טסטים מול קוד האפליקציה */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "ביקורת מזהי טסטים מול קוד האפליקציה";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$PROJECT_DIR\" && /usr/bin/python3 scripts/testid_audit.py\n";
+		};
+		FE8F9B708A194281A709F8DA /* ביקורת פאריטי פקדי UI מול הדסקטופ */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "ביקורת פאריטי פקדי UI מול הדסקטופ";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "cd \"$PROJECT_DIR\" && /usr/bin/python3 scripts/ui_parity_audit.py\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		30C561787B07BD94BADDE7B7 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3857F52D953802263DA1E03D /* APIClient.swift in Sources */,
+				92689691531C440015E3CFF4 /* APIClientFlows.swift in Sources */,
+				0B13F13F6EE1018BE6F6276B /* AccountantSendSheet.swift in Sources */,
+				0BAB391E95C745DCBAAD8B23 /* AdminLendingView.swift in Sources */,
+				1BE790455E322B142161C186 /* AppConfig.swift in Sources */,
+				CC18A05E605CE2F34129D1DE /* BYTheme.swift in Sources */,
+				3D279CC827F5591742717A3A /* BenYacovManageApp.swift in Sources */,
+				FEE862913483FD30FD91F658 /* BiometricAuthenticator.swift in Sources */,
+				F4205EEA771C69032B423C97 /* BiometricLock.swift in Sources */,
+				419387C2B72A162AD4D65B27 /* CameraPicker.swift in Sources */,
+				6273E519BC15E21FD3D729A6 /* Components.swift in Sources */,
+				3BDB5A27E2C07C8459752A0D /* ComposerItem.swift in Sources */,
+				B04DC61B94B4A219D81D3217 /* ComposerItemsEditor.swift in Sources */,
+				E932527D5B9A16744ADDCDCD /* CustomerDomains.swift in Sources */,
+				26836A91F160A13A8787DF63 /* DeliveryConfirmations.swift in Sources */,
+				D4E0D04A45C24F7EEFA864B2 /* DocumentPreviewView.swift in Sources */,
+				398D818A1AC5FA6E6FE40767 /* DocumentsView.swift in Sources */,
+				995D32D83D238D35BD17E4EB /* Domain.swift in Sources */,
+				04CD3A78E5440C1BE40AEADA /* DomainActions.swift in Sources */,
+				8A4C5BDF8D32A6B748643C84 /* DomainHubView.swift in Sources */,
+				B4A1940DCAD884ECDBD03374 /* DomainListView.swift in Sources */,
+				CB6D0F6C05D39313737FEAAE /* DomainRecord.swift in Sources */,
+				BFE161C5C71F13C61B202F25 /* DomainRowView.swift in Sources */,
+				76D0ECCA57A229269B0B1249 /* EditFormKind.swift in Sources */,
+				77F3F7F58ADBF19F346632A5 /* FieldLabels.swift in Sources */,
+				D23FFF9550433AEBE657FA2E /* FinanceInvoices.swift in Sources */,
+				FF9B818BDDC28E148372D24D /* Formatters.swift in Sources */,
+				078C8EEB032FB27C0A636A6C /* HREmployees.swift in Sources */,
+				497A68B1F6813C7867657B58 /* Haptics.swift in Sources */,
+				BCBBB41AB3AB8443C8525350 /* HomeView.swift in Sources */,
+				99219B998534139415A4A88D /* InstallationStatus.swift in Sources */,
+				D98ED38EEB57F66C6539417A /* InvoiceUploadView.swift in Sources */,
+				65E378B8F174136049E90876 /* JSONValue.swift in Sources */,
+				23486BC375F9116CC0D697EF /* LabelsOnlyView.swift in Sources */,
+				A7CBA8769DB7B2ADF6C3C412 /* LoginView.swift in Sources */,
+				C3199D0439BD795C143501E4 /* MainTabView.swift in Sources */,
+				54796181954E8E58367FBABA /* MockTransport.swift in Sources */,
+				11515161504A3DE8AADB1A7B /* MoreHubView.swift in Sources */,
+				B7555C1A3F67DD9582CBB2EA /* OrderComposerView.swift in Sources */,
+				6BE8B056988D6338A4CE1FC1 /* PaymentsMath.swift in Sources */,
+				ADB7E935329EA55376F0DADB /* QuoteComposerView.swift in Sources */,
+				6327AD826EA422B83A5C4BC8 /* RecordDetailView.swift in Sources */,
+				D831B7E6FF6B1667A2B35B15 /* RecordExtrasQuoteAndReceipt.swift in Sources */,
+				55CA47F2FCF3B8111B366D7C /* RecordExtrasSection.swift in Sources */,
+				503C70B7345FF1CF8AFBADB3 /* RecordExtrasSuppliersAndViewers.swift in Sources */,
+				582319CBB9F0B095669C3633 /* RecordFormView.swift in Sources */,
+				DA9CF612F72F3A103080C578 /* SessionStore.swift in Sources */,
+				C83CF157C48324F7874BC08A /* ShareUploadCore.swift in Sources */,
+				015306CE209761DC287AEEAA /* SupplierPOComposerView.swift in Sources */,
+				0CB3A65314E4629437D52049 /* TabHubs.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		564AC8A252FE29395D8FF4F3 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				42F0747D09E516845D7CB4DC /* APIClient.swift in Sources */,
+				A4932F3C5E1F6D6876D3BF79 /* APIClientFlows.swift in Sources */,
+				B53C4AD32EE5C0739DBD08FD /* AppConfig.swift in Sources */,
+				3669B80E5F1E43A66255DDD2 /* BYTheme.swift in Sources */,
+				A13E52221AA052916CEABDF0 /* BiometricAuthenticator.swift in Sources */,
+				AEE9188A94701CC897F70A08 /* ClassicApp.swift in Sources */,
+				1691B91A2B5CC4F462D63FD8 /* ClassicBiometricLock.swift in Sources */,
+				0BD96B56D2E933958C41A04F /* ClassicComposers.swift in Sources */,
+				BC612F5279B7B0E63D247064 /* ClassicComposersMore.swift in Sources */,
+				F3E9A9202E9A607E046EC649 /* ClassicDomainListView.swift in Sources */,
+				D7360A52DF0741852B480467 /* ClassicHomeView.swift in Sources */,
+				F77B6C5C37673D3DC948EF42 /* ClassicLendingView.swift in Sources */,
+				A09E94475E16C38EDE226E1A /* ClassicLoginView.swift in Sources */,
+				740EAD9CD69BA971AA604DE4 /* ClassicMainView.swift in Sources */,
+				FF7445B27BF72CC515A350CC /* ClassicRecordDetailView.swift in Sources */,
+				FE81E1BBF619025B9AA04FA9 /* ClassicRecordFormView.swift in Sources */,
+				EC9414220A2E45085DA8B00B /* ClassicSession.swift in Sources */,
+				2D217011DEED63209BBC1F0B /* CustomerDomains.swift in Sources */,
+				299F25F2E4D89C89291AE704 /* Domain.swift in Sources */,
+				24179EC1A77C75514BA19B4E /* DomainActions.swift in Sources */,
+				1469471D2BE50E7025F00432 /* DomainRecord.swift in Sources */,
+				182E89785EC6BF5D8CF6AA08 /* EditFormKind.swift in Sources */,
+				EBEE0083EE53A1A6A572A3A4 /* FieldLabels.swift in Sources */,
+				A2502D5E02BE9BA3E216B7DC /* FinanceInvoices.swift in Sources */,
+				6AC7355C79A95BCF33FCEAFA /* Formatters.swift in Sources */,
+				61E0E2C417D5A5B39525B7E5 /* Haptics.swift in Sources */,
+				665034A846AAA6BC909F6FB7 /* InstallationStatus.swift in Sources */,
+				3CF4FD91C98EB27300F2CFE7 /* JSONValue.swift in Sources */,
+				2D8B1DA6A1B7457FA0513A0F /* MockTransport.swift in Sources */,
+				87FFD3312DB9B79D52C04368 /* PaymentsMath.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9C13ADC9E2901251EEB952EF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1F39B74E4480419C3BE18355 /* ClassicSmokeUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E6FBC995CB0E1D693F1AE38A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0F5BE51414F7FD0292A21479 /* APIClientTests.swift in Sources */,
+				7F9BCEA8D5B573724928D928 /* BiometricLockTests.swift in Sources */,
+				49646771F24A2BC91D575A54 /* CoreModelTests.swift in Sources */,
+				F6E80152DE1FBA5DA11834DC /* CoverageGapTests.swift in Sources */,
+				8A46D9F8BF6EEAE2EE491F7B /* FinanceInvoicesTests.swift in Sources */,
+				EF808A7AAB6BB87A82439972 /* FixtureSweepTests.swift in Sources */,
+				C151FD76C227ADE511223C2C /* FlowsAPITests.swift in Sources */,
+				072CF309780CBD7436004666 /* FormattersTests.swift in Sources */,
+				0AD06CB7947483223E05C342 /* LocalContractTests.swift in Sources */,
+				24C1EF0B036EF06CB46DAFFC /* LocalMutationContractTests.swift in Sources */,
+				8D87D2A3D77AEDE5AC680F11 /* NewFlowsAPITests.swift in Sources */,
+				E0C3EE0B86EA0723E79D226B /* PaymentsMathTests.swift in Sources */,
+				D5736D7B770134F2606F15D8 /* ProductionSmokeTests.swift in Sources */,
+				054312F1C39869E82DDE664D /* RobustnessAndPerfTests.swift in Sources */,
+				3DD69B87C51B0461277C9AF6 /* ShareUploadCoreTests.swift in Sources */,
+				5F1FB430E7635D0BDB7604D8 /* SnapshotTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FAB6C6553D895BBFCFE1D804 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7654CCB4CAC72ACB0EB63048 /* ActionsUITests.swift in Sources */,
+				B60C5E7CD4576BD6033A1154 /* AuthUITests.swift in Sources */,
+				CA38FAD2E01A63DCCCA554D3 /* DomainSweepUITests.swift in Sources */,
+				907D0034A49C1E4755A40551 /* ErrorStateUITests.swift in Sources */,
+				F4C82734FEEBEE4967D7A7A5 /* FlowsUITests.swift in Sources */,
+				754235117EF00F5A3BA256A4 /* NavigationUITests.swift in Sources */,
+				59D11CFC31FD1B9191439F70 /* NewFeaturesUITests.swift in Sources */,
+				C8FCCB6AA7FB2AE2205B914A /* QualityUITests.swift in Sources */,
+				FD99659B0A697D3F371998AD /* ResilienceUITests.swift in Sources */,
+				2466C3947595A22F8F070170 /* SessionExpiryUITests.swift in Sources */,
+				5E77D7FF112BC841B17B707F /* UITestHelpers.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FF69DEE310AE6C8FC4C113D8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DC940D27AD173667F8B05DEC /* ShareUploadCore.swift in Sources */,
+				6E9C5642327B2C3FA2009EB9 /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		1B487EC310BD5A3DA6F5640F /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185FA32F4626E558F2AD16FB /* BenYacovManage */;
+			targetProxy = 1272EC0EA4E904260FF43BFA /* PBXContainerItemProxy */;
+		};
+		2823CCD7C870F71CBEBB0298 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = EE236D1462E1D58B4A510D86 /* BenYacovClassic */;
+			targetProxy = B7B9B9653F3CCBDE9F4921A5 /* PBXContainerItemProxy */;
+		};
+		CA3F6F620B62DCE2944E406C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = ED14FE0F332582D01FDB89AC /* BenYacovShare */;
+			targetProxy = 1C5FE89C4B6817E388CBA7DE /* PBXContainerItemProxy */;
+		};
+		E35BED31BD4A11645F09F037 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 185FA32F4626E558F2AD16FB /* BenYacovManage */;
+			targetProxy = 2ACAA897DA33267C19298563 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		01DEA831CCC5F595461B477E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BenYacovShare/BenYacovShare.entitlements;
+				INFOPLIST_FILE = BenYacovShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0E229E621B50CAD40EBA9172 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = PRY2S55YGY;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 2.0.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.1;
+			};
+			name = Debug;
+		};
+		217AD5C19260836756DFF433 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BenYacovManage/BenYacovManage.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = BenYacovManage/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile;
+				PRODUCT_NAME = BenYacovManage;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		22F5AF51E87F2500DDDC9E06 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BenYacovManage.app/BenYacovManage";
+			};
+			name = Debug;
+		};
+		3184D2D701B96B689D2BE76D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = BenYacovManage/BenYacovManage.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
+				INFOPLIST_FILE = BenYacovManage/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב";
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.business";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile;
+				PRODUCT_NAME = BenYacovManage;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		6B981EC44AF7C0FC7CB56447 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BenYacovManage;
+			};
+			name = Debug;
+		};
+		6C6FE83AF43D3FDD0CA95822 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב קלאסי";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "הזיהוי הביומטרי משמש לנעילת האפליקציה ולכניסה מהירה.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.classic;
+				PRODUCT_NAME = BenYacovClassic;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		7AAF73339F1B7BE8E5B7C17C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.tests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/BenYacovManage.app/BenYacovManage";
+			};
+			name = Release;
+		};
+		97A2FFB2D6FD8839933F730C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.classic.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BenYacovClassic;
+			};
+			name = Debug;
+		};
+		B0F9A573C6732F7654265DE7 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.classic.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BenYacovClassic;
+			};
+			name = Release;
+		};
+		CA7F42346C028AE60CDDD080 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.uitests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = BenYacovManage;
+			};
+			name = Release;
+		};
+		D48A7FB1301D8A5E6BDA5C35 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב קלאסי";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "הזיהוי הביומטרי משמש לנעילת האפליקציה ולכניסה מהירה.";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.classic;
+				PRODUCT_NAME = BenYacovClassic;
+				SDKROOT = iphoneos;
+				SUPPORTS_MACCATALYST = NO;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+		DC1823EFDC0EF00BB941C30E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = BenYacovShare/BenYacovShare.entitlements;
+				INFOPLIST_FILE = BenYacovShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "בן יעקב";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.benyacov.mobile.share;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		EE6585EB02D23237B4FA0786 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = PRY2S55YGY;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 2.0.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		81ABB85ACB11F89D59DBBCAF /* Build configuration list for PBXNativeTarget "BenYacovClassic" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6C6FE83AF43D3FDD0CA95822 /* Debug */,
+				D48A7FB1301D8A5E6BDA5C35 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		8A7FB4FDE68BF8CDF8EDE7B1 /* Build configuration list for PBXNativeTarget "BenYacovShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DC1823EFDC0EF00BB941C30E /* Debug */,
+				01DEA831CCC5F595461B477E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		915692D649E712EF5194ADC1 /* Build configuration list for PBXNativeTarget "BenYacovClassicUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				97A2FFB2D6FD8839933F730C /* Debug */,
+				B0F9A573C6732F7654265DE7 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		932C8A9B0E306D4950EF1A8B /* Build configuration list for PBXNativeTarget "BenYacovManageTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				22F5AF51E87F2500DDDC9E06 /* Debug */,
+				7AAF73339F1B7BE8E5B7C17C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D4BA3197851F6B8D43F7EC66 /* Build configuration list for PBXNativeTarget "BenYacovManage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3184D2D701B96B689D2BE76D /* Debug */,
+				217AD5C19260836756DFF433 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E350261FB310C75F42CAAF0F /* Build configuration list for PBXProject "BenYacovManage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0E229E621B50CAD40EBA9172 /* Debug */,
+				EE6585EB02D23237B4FA0786 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		E79C7A40BD867174145F7A0B /* Build configuration list for PBXNativeTarget "BenYacovManageUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				6B981EC44AF7C0FC7CB56447 /* Debug */,
+				CA7F42346C028AE60CDDD080 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 4B0F9DE2F4D00231B6B5BD7D /* Project object */;
+}

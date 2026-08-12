@@ -1,0 +1,26 @@
+{
+ "rows": [
+  {
+   "component_id": "comp_felt",
+   "kind": "חומר גלם",
+   "name": "בד לבד",
+   "unit": "מטר",
+   "unit_cost": "8.90",
+   "waste_percent": "5",
+   "notes": "",
+   "active": "TRUE",
+   "updated_at": "2026-06-15T10:00:00"
+  },
+  {
+   "component_id": "comp_velcro",
+   "kind": "חומר גלם",
+   "name": "סקוטש תעשייתי",
+   "unit": "מטר",
+   "unit_cost": "2.40",
+   "waste_percent": "3",
+   "notes": "",
+   "active": "TRUE",
+   "updated_at": "2026-06-15T10:02:00"
+  }
+ ]
+}

@@ -1,0 +1,32 @@
+{
+ "rows": [
+  {
+   "record_id": "acc9ce61270d49a08cf6cee031ae3dcd",
+   "supplier_name": "ספק לדוגמה בע\"מ",
+   "parser_name": "generic",
+   "source_document_name": "DN-2026-0042.pdf",
+   "delivery_note_number": "DN-2026-0042",
+   "delivery_date": "20/06/2026",
+   "customer_name": "חברת בנייה בעמ",
+   "customer_id": "516000001",
+   "delivery_address": "רחוב הנמל 3, תל אביב",
+   "contact_name": "",
+   "contact_phone": "",
+   "item_index": "1",
+   "supplier_sku": "GYPSUM-13",
+   "item_description": "לוחות גבס 13 מ\"מ",
+   "product": "",
+   "material": "",
+   "length": "",
+   "width": "",
+   "thickness": "",
+   "quantity": "200.00",
+   "unit": "יחידות",
+   "notes": "",
+   "source_local_path": "",
+   "source_drive_file_id": "",
+   "source_drive_url": "",
+   "updated_at": "2026-06-24T00:20:28"
+  }
+ ]
+}

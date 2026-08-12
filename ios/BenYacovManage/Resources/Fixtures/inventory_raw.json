@@ -1,0 +1,49 @@
+{
+ "rows": [
+  {
+   "supplier": "ע.ר יצחק מזרחי",
+   "supplier_sku": "MZ-122",
+   "product": "מזונית 1.22*2.44",
+   "material": "מזונית",
+   "length": "2.44",
+   "width": "1.22",
+   "thickness": "3",
+   "price": "12.65",
+   "unit": "יח'",
+   "actual_quantity": "120",
+   "updated_at": "2026-06-30T10:00:00",
+   "notes": "",
+   "unit_count": "120"
+  },
+  {
+   "supplier": "טקסטיל גלוב",
+   "supplier_sku": "TG-55",
+   "product": "בד לבד 2מ'",
+   "material": "לבד",
+   "length": "50",
+   "width": "2",
+   "thickness": "4",
+   "price": "8.90",
+   "unit": "מטר",
+   "actual_quantity": "340",
+   "updated_at": "2026-06-28T09:30:00",
+   "notes": "גליל",
+   "unit_count": "7"
+  },
+  {
+   "supplier": "פוליגל",
+   "supplier_sku": "PG-10",
+   "product": "פוליגל 10ממ",
+   "material": "פוליקרבונט",
+   "length": "3.0",
+   "width": "1.05",
+   "thickness": "10",
+   "price": "45.00",
+   "unit": "לוח",
+   "actual_quantity": "25",
+   "updated_at": "2026-06-25T14:00:00",
+   "notes": "",
+   "unit_count": "25"
+  }
+ ]
+}

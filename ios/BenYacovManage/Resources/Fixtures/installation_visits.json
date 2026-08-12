@@ -1,0 +1,17 @@
+{
+ "rows": [
+  {
+   "visit_id": "visit_ab3ba99953f6",
+   "installation_id": "installation_5bc3545a629d4e7c97cb2a02aaf19b96",
+   "created_at": "2026-06-30T17:29:44",
+   "updated_at": "2026-06-30T17:29:44",
+   "visit_date": "",
+   "scheduled_date": "2026-06-30",
+   "status": "תואם",
+   "installed_items_json": "[{\"item_key\": \"150-0294|236/89|0\", \"description\": \"כיסוי להגנת דלתות 236/89 ס\\\"מ עבור דלתות כניסה של הדירות - מידות עפי מידה\", \"size_label\": \"236/89\", \"sku\": \"150-0294\", \"unit\": \"יח'\", \"quantity\": 24.0}]",
+   "installed_total_quantity": "24.00",
+   "notes": "",
+   "summary_text": "236/89 × 24"
+  }
+ ]
+}

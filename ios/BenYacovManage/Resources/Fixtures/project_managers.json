@@ -1,0 +1,23 @@
+{
+ "rows": [
+  {
+   "company": "ברוש ניר עבודות הנדסה ובנין בע\"מ",
+   "tax_id": "512598749",
+   "site_address": "לואי מרשל 2-4 ת\"א",
+   "contact_name": "עמית פרץ",
+   "order_date": "17/06/2026",
+   "item": "מגן לדלת 90/230",
+   "contact_phone": "054-4847360",
+   "history_dates": "",
+   "editable_company": "",
+   "editable_tax_id": "",
+   "editable_site_address": "",
+   "editable_contact_name": "",
+   "editable_order_date": "",
+   "editable_item": "",
+   "editable_contact_phone": "",
+   "source_key": "512598749|לואי מרשל 2-4 ת\"א|0544847360",
+   "updated_at": "2026-06-26T02:57:46"
+  }
+ ]
+}

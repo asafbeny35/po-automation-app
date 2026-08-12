@@ -1,0 +1,82 @@
+{
+ "rows": [
+  {
+   "history_id": "20260627165140136624",
+   "created_at": "2026-06-27T16:51:39",
+   "customer_key": "",
+   "customer_guid": "",
+   "customer_id": "",
+   "customer_name": "",
+   "action_type": "send_email",
+   "channel": "email_test",
+   "subject": "מסמך שיווקי - ברושור מלא בעברית",
+   "details_json": "{\"recipients\": [\"asafbeny@gmail.com\"], \"doc_asset_keys\": [\"brochure-hebrew\"], \"attachments_count\": 0}",
+   "result": "ok"
+  },
+  {
+   "history_id": "20260625112425245980",
+   "created_at": "2026-06-25T11:24:24",
+   "customer_key": "",
+   "customer_guid": "",
+   "customer_id": "",
+   "customer_name": "",
+   "action_type": "send_email",
+   "channel": "email_test",
+   "subject": "מסמך שיווקי - ברושור מלא בעברית",
+   "details_json": "{\"recipients\": [\"asafbeny@gmail.com\"], \"doc_asset_keys\": [\"brochure-hebrew\"], \"attachments_count\": 0}",
+   "result": "ok"
+  },
+  {
+   "history_id": "20260618142247649874",
+   "created_at": "2026-06-18T14:22:46",
+   "customer_key": "רם-לי-בניה-ופיתוח",
+   "customer_guid": "",
+   "customer_id": "",
+   "customer_name": "רם לי בניה ופיתוח",
+   "action_type": "set_reminder",
+   "channel": "email",
+   "subject": "תזכורת ל-2026-07-18",
+   "details_json": "{\"message\": \"מעקב מול הלקוח לגבי חידוש קשר שיווקי.\", \"status\": \"open\", \"due_date\": \"2026-07-18\", \"due_time\": \"10:00\"}",
+   "result": "ok"
+  },
+  {
+   "history_id": "20260615133610468596",
+   "created_at": "2026-06-15T13:36:10",
+   "customer_key": "guid:62ac4ec0-7603-4b8b-91e4-e37c0aef1948",
+   "customer_guid": "62ac4ec0-7603-4b8b-91e4-e37c0aef1948",
+   "customer_id": "",
+   "customer_name": "אקו סיטי",
+   "action_type": "pipeline_delete",
+   "channel": "internal",
+   "subject": "נמחקה שורת לקוח בתהליך שיווק",
+   "details_json": "{\"quote_number\": \"50251\"}",
+   "result": "ok"
+  },
+  {
+   "history_id": "20260615133556890762",
+   "created_at": "2026-06-15T13:35:56",
+   "customer_key": "guid:2609c6b6-fbef-4dfc-bfe8-d16d546bfb72",
+   "customer_guid": "2609c6b6-fbef-4dfc-bfe8-d16d546bfb72",
+   "customer_id": "",
+   "customer_name": "י.ח דימרי",
+   "action_type": "pipeline_delete",
+   "channel": "internal",
+   "subject": "נמחקה שורת לקוח בתהליך שיווק",
+   "details_json": "{\"quote_number\": \"50122\"}",
+   "result": "ok"
+  },
+  {
+   "history_id": "20260615133553519453",
+   "created_at": "2026-06-15T13:35:53",
+   "customer_key": "guid:fd3d50ab-cc20-423f-8be9-4707a7b75d90",
+   "customer_guid": "fd3d50ab-cc20-423f-8be9-4707a7b75d90",
+   "customer_id": "",
+   "customer_name": "כפיר",
+   "action_type": "pipeline_delete",
+   "channel": "internal",
+   "subject": "נמחקה שורת לקוח בתהליך שיווק",
+   "details_json": "{\"quote_number\": \"50258\"}",
+   "result": "ok"
+  }
+ ]
+}

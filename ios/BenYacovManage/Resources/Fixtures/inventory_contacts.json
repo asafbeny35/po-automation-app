@@ -1,0 +1,18 @@
+{
+ "rows": [
+  {
+   "company": "ע.ר יצחק מזרחי",
+   "name": "יצחק",
+   "company_phone": "03-5551234",
+   "direct_phone": "050-1112233",
+   "email": "orders@mizrahi.co.il"
+  },
+  {
+   "company": "טקסטיל גלוב",
+   "name": "מירי",
+   "company_phone": "04-8887766",
+   "direct_phone": "052-9998877",
+   "email": "miri@tglobe.co.il"
+  }
+ ]
+}

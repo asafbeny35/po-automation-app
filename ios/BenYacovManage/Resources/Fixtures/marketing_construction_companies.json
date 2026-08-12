@@ -1,0 +1,70 @@
+{
+ "rows": [
+  {
+   "row_id": "574099ec-374e-43cf-9c6e-8b4d54133d2c",
+   "company_name": "א א י ימין בע\"מ",
+   "company_id": "512078890",
+   "phone": "050-5352598",
+   "address": "ירושלים חומת הצלפים 18 שכ' עין כרם 0",
+   "email": "oren@ayamin.co.il",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:31"
+  },
+  {
+   "row_id": "33301f29-d584-415e-99a8-6ae445bfa002",
+   "company_name": "א אליזה הנדסה ובנייה בעמ",
+   "company_id": "516142049",
+   "phone": "052-7040337",
+   "address": "ירושלים דרך שועפאט 47",
+   "email": "e516142049@gmail.com",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:25"
+  },
+  {
+   "row_id": "86184e9f-752b-4bba-8ac0-d0d1df40e53f",
+   "company_name": "א ב לארא בניה 2014 בע\"מ",
+   "company_id": "515150134",
+   "phone": "053-5960377",
+   "address": "באקה",
+   "email": "kingmarble1@gmail.com",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:25"
+  },
+  {
+   "row_id": "2165e13f-2709-464e-af0e-78af3c0ee153",
+   "company_name": "א ח מ הנדסה אזרחית ומדידות בע\"מ",
+   "company_id": "514268671",
+   "phone": "052-5565932",
+   "address": "זמר זמר 1",
+   "email": "office@ahm-eng.co.il",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:25"
+  },
+  {
+   "row_id": "8c935285-ae9f-449c-8d01-21290a5ea416",
+   "company_name": "א ח עודה לעב' עפר ופיתוח בע\"מ",
+   "company_id": "513902643",
+   "phone": "050-5645271",
+   "address": "רומת היב רומת הייב 222",
+   "email": "hoseen75@walla.com",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:25"
+  },
+  {
+   "row_id": "58319c84-3211-4d7d-9d01-5b556747119f",
+   "company_name": "א ישראלי חברה לבניין ופיתוח בע\"מ",
+   "company_id": "514120682",
+   "phone": "052-2541511",
+   "address": "אשדוד הדס 8",
+   "email": "isrealiavi@gmail.com",
+   "details_url": "",
+   "notes": "",
+   "updated_at": "2026-05-13T14:40:25"
+  }
+ ]
+}

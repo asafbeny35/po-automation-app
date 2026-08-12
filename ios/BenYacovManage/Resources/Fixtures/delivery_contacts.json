@@ -1,0 +1,52 @@
+{
+ "rows": [
+  {
+   "company": "בן שלום יהושע בע״מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "",
+   "updated_at": "2026-06-26T02:57:10"
+  },
+  {
+   "company": "ברוש ניר עבודות הנדסה ובנין בע״מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "invoice@brosh.co.il",
+   "updated_at": "2026-06-26T02:57:10"
+  },
+  {
+   "company": "דניה סיבוס בע״מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "asafbeny@gmail.com",
+   "updated_at": "2026-06-26T02:57:10"
+  },
+  {
+   "company": "י.א אלון בניה בע״מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "",
+   "updated_at": "2026-06-26T02:57:10"
+  },
+  {
+   "company": "לאטי יזום ובניה בע\"מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "",
+   "updated_at": "2026-06-29T10:08:35"
+  },
+  {
+   "company": "לוינשטין נתיב הנדסה ובנין בע\"מ",
+   "accounting_contact_name": "",
+   "phone": "",
+   "mobile": "",
+   "email": "ofirm@levnativ.co.il",
+   "updated_at": "2026-06-29T10:08:35"
+  }
+ ]
+}

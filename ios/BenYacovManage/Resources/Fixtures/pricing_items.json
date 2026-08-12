@@ -1,0 +1,34 @@
+{
+ "rows": [
+  {
+   "item_id": "item_door_guard",
+   "kind": "מוצר",
+   "name": "מגן דלת פרו דור",
+   "pricing_unit": "יחידה",
+   "default_width_m": "0.95",
+   "default_length_m": "2.10",
+   "labor_minutes": "18",
+   "labor_hour_cost": "90",
+   "shipping_total_cost": "350",
+   "order_quantity": "50",
+   "notes": "",
+   "active": "TRUE",
+   "updated_at": "2026-06-15T10:00:00"
+  },
+  {
+   "item_id": "item_frame_guard",
+   "kind": "מוצר",
+   "name": "מגן משקוף",
+   "pricing_unit": "יחידה",
+   "default_width_m": "0.30",
+   "default_length_m": "2.20",
+   "labor_minutes": "8",
+   "labor_hour_cost": "90",
+   "shipping_total_cost": "200",
+   "order_quantity": "100",
+   "notes": "",
+   "active": "TRUE",
+   "updated_at": "2026-06-15T10:05:00"
+  }
+ ]
+}

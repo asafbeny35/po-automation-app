@@ -1,0 +1,28 @@
+{
+ "rows": [
+  {
+   "product": "מגן דלת פרו דור",
+   "width": "0.95",
+   "length": "2.10",
+   "actual_quantity": "48",
+   "updated_at": "2026-06-30T10:00:00",
+   "notes": ""
+  },
+  {
+   "product": "מגן משקוף",
+   "width": "0.30",
+   "length": "2.20",
+   "actual_quantity": "150",
+   "updated_at": "2026-06-29T16:00:00",
+   "notes": "מוכן למשלוח"
+  },
+  {
+   "product": "שטיח כניסה ממותג",
+   "width": "0.60",
+   "length": "0.90",
+   "actual_quantity": "12",
+   "updated_at": "2026-06-20T11:00:00",
+   "notes": ""
+  }
+ ]
+}

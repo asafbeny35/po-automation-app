@@ -14,7 +14,6 @@ gmail-oauth-token.json
 google-drive-oauth-client.json
 google-drive-oauth-token.json
 payments_transfer_cache.json
-/ios/
 /.venv/
 /tmp_ios/
 .claude/
@@ -26,6 +25,13 @@ payments_transfer_cache.json
 /backups/
 "PO Automation Launcher.app"/
 *.command
-/ios/
 tmp_ios/
 .env.railway
+
+# אפליקציית BenyacovMobile נמצאת בגיט (ios/), אבל תוצרי הבנייה לא — הם ~1GB
+/ios/.derived/
+/ios/.derived-device/
+/ios/.derived-mut/
+/ios/**/xcuserdata/
+/ios/**/__pycache__/
+/ios/**/*.xcresult

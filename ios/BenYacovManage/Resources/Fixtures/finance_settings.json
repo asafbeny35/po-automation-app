@@ -1,0 +1,34 @@
+{
+ "rows": [
+  {
+   "setting_key": "app_auth_state",
+   "setting_value": "",
+   "updated_at": "1782819221"
+  },
+  {
+   "setting_key": "app_delivery_confirmation_suppressions",
+   "setting_value": "",
+   "updated_at": "2026-06-28T21:00:44"
+  },
+  {
+   "setting_key": "app_gmail_oauth_token",
+   "setting_value": "",
+   "updated_at": "1782893622"
+  },
+  {
+   "setting_key": "app_hidden_customer_keys",
+   "setting_value": "",
+   "updated_at": "2026-06-26T02:51:26"
+  },
+  {
+   "setting_key": "app_hidden_marketing_pipeline_keys",
+   "setting_value": "",
+   "updated_at": "2026-06-15T13:36:10"
+  },
+  {
+   "setting_key": "app_inventory_purchase_order_hidden_keys",
+   "setting_value": "",
+   "updated_at": "2026-06-18T17:55:05.673291+00:00"
+  }
+ ]
+}
