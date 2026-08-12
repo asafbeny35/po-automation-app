@@ -13111,9 +13111,9 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "טרנספורטר - רישיון רכב.pdf",
     },
     "vehicle-forklift-license": {
-        "local_path": ADMIN_VEHICLE_DOCS_DIR / "מלגזה משולם 2026.pdf",
+        "local_path": ADMIN_VEHICLE_DOCS_DIR / "מלגזה 78662 רישיון 2027.pdf",
         "folders": ("רכבים", "מלגזה"),
-        "drive_name": "מלגזה - רישיון צמ\"ה.pdf",
+        "drive_name": "מלגזה - רישיון צמ\"ה עד 01-05-2027.pdf",
     },
     "vehicle-forklift-third-party": {
         "local_path": ADMIN_VEHICLE_DOCS_DIR / "110493396025 צד ג'.pdf",
