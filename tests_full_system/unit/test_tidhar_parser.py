@@ -41,11 +41,12 @@ ILS 3,894.00 ריחמ כ"הס
 REAL_PDF = Path("/Users/asafbeny/Downloads/POB2636264.pdf")
 
 
-def test_detects_tidhar_by_reversed_name_domain_and_dealer_id():
+def test_detects_tidhar_by_reversed_name_domain_and_ids():
     assert _detect(RAW_TEXT)
     assert _detect('מ"עב הינב רהדת')
     assert _detect("web site: https://www.tidhar.co.il/")
     assert _detect("512043266 :השרומ קסוע")
+    assert _detect("558427548 :מ\"עמב קית רפסמ")
     assert not _detect('מ"עב סוביס הינד')
 
 
@@ -54,8 +55,12 @@ def test_header_fields():
     assert customer_name == 'תדהר בניה בע"מ'
     assert header["po_number"] == "POB2636264"
     assert header["po_date"] == "18/08/2026"
-    # עוסק מורשה של תדהר — לא מספר תיק המע"מ (558427548) ולא שלנו (037017779)
-    assert header["customer_id"] == "512043266"
+    # תדהר מדווחת באיחוד עוסקים — החשבונית מוצאת למספר האיחוד, לא לעוסק המורשה
+    # של החברה (512043266) ובוודאי לא שלנו (037017779).
+    assert header["customer_id"] == "558427548"
+    assert header["extra"]["vat_group_number"] == "558427548"
+    assert header["extra"]["dealer_number"] == "512043266"
+    assert header["customer_id"] != "037017779"
     assert header["customer_email"] == "roman.d@tidhar.co.il"
 
 

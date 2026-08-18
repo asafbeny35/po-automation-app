@@ -21,7 +21,12 @@ from services.models import POItem
 from services.parsers.common import normalize_date, normalize_ws
 
 CUSTOMER_NAME = 'תדהר בניה בע"מ'
-CUSTOMER_ID = "512043266"          # עוסק מורשה של תדהר (לא מספר תיק במע"מ 558427548)
+# תדהר מדווחת למע"מ באיחוד עוסקים, והטופס אומר זאת במפורש:
+# "מדווח לצרכי מע\"מ באיחוד עוסקים מספר 558427548".
+# זה המספר שחייב להופיע על החשבונית שלנו — ולא מספר העוסק המורשה 512043266,
+# שהוא רישום החברה עצמה.
+CUSTOMER_ID = "558427548"
+DEALER_NUMBER = "512043266"        # עוסק מורשה של החברה, נשמר לצד המספר לחיוב
 CUSTOMER_PHONE = "09-7766111"
 
 # As pdfplumber sees it (Hebrew reversed) — 'תדהר בניה בע"מ'
@@ -71,6 +76,7 @@ def _detect(text: str) -> bool:
         _REVERSED_MARKER in cleaned
         or _EMAIL_DOMAIN in cleaned.lower()
         or CUSTOMER_ID in cleaned
+        or DEALER_NUMBER in cleaned
     )
 
 
@@ -222,6 +228,14 @@ def parse(text: str, pdf_path=None):
 
     buyer = _unheb(_first(r"(.+?)\s*:ןיינק", flat))
 
+    # מספר החיוב נקרא מהטופס: קודם שורת איחוד העוסקים, ואם אין — תיק המע"מ.
+    billing_id = _first(r"(\d{8,9})\s+רפסמ\s+םיקסוע\s+דוחיאב", flat)
+    if not billing_id:
+        billing_id = _first(r'(\d{8,9})\s*:מ"עמב\s+קית\s+רפסמ', flat)
+    dealer_number = _first(r"(\d{8,9})\s*:השרומ\s+קסוע(?!\s+\.סמ)", flat) or DEALER_NUMBER
+    if dealer_number == _OUR_DEALER_ID:
+        dealer_number = DEALER_NUMBER
+
     # The order email belongs to the site contact, not to Tidhar head office.
     customer_email = ""
     email_match = re.search(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", flat)
@@ -258,7 +272,7 @@ def parse(text: str, pdf_path=None):
 
     header = {
         "customer_name": CUSTOMER_NAME,
-        "customer_id": CUSTOMER_ID,
+        "customer_id": billing_id or CUSTOMER_ID,
         "customer_phone": CUSTOMER_PHONE,
         "customer_email": customer_email,
         "delivery_address": delivery.get("address") or "",
@@ -277,6 +291,8 @@ def parse(text: str, pdf_path=None):
             "project_number": project_number,
             "project_name": project_name,
             "buyer_name": buyer,
+            "dealer_number": dealer_number,
+            "vat_group_number": billing_id or CUSTOMER_ID,
             "parser_name": "tidhar",
         },
     }
