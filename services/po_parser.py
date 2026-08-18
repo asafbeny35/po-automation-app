@@ -32,6 +32,8 @@ from services.parsers.ya_alon import parse as parse_ya_alon
 from services.parsers.yuval_alon import parse as parse_yuval_alon
 from services.parsers.danya_cebus import parse as parse_danya_cebus
 from services.parsers.danya_cebus import _REVERSED_MARKER as _DANYA_MARKER, _EMAIL_DOMAIN as _DANYA_DOMAIN
+from services.parsers.tidhar import parse as parse_tidhar
+from services.parsers.tidhar import _detect as _detect_tidhar
 
 
 def _build_purchase_order(result, raw_text: str, parser_name: str = "") -> PurchaseOrderData | None:
@@ -80,6 +82,14 @@ def parse_purchase_order(pdf_path: str | Path):
     # Danya Cebus must be detected on RAW text (before fix_hebrew_text reverses numbers/emails/dates)
     if _DANYA_MARKER in raw_text or _DANYA_DOMAIN in raw_text.lower():
         parsed = _build_purchase_order(parse_danya_cebus(raw_text, pdf_path=pdf_path), raw_text, "danya_cebus")
+        if parsed:
+            return parsed
+
+    # תדהר חייבת להיבדק על הטקסט הגולמי ולפני הסמנים הגנריים: הזמנה שלה מכילה
+    # גם "תינובשח" (סמן של china_civil) וגם מק"ט QTP… (סמן של sivanb), ולכן בלי
+    # הקדימות הזאת היא נחטפת לפרסר הלא נכון.
+    if _detect_tidhar(raw_text):
+        parsed = _build_purchase_order(parse_tidhar(raw_text, pdf_path=pdf_path), raw_text, "tidhar")
         if parsed:
             return parsed
 
