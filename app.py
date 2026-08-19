@@ -27081,6 +27081,149 @@ def _hr_pdf_date(value: str) -> str:
     return parsed.strftime("%d/%m/%Y") if parsed else (str(value or "").strip() or "—")
 
 
+def _hr_pdf_styles() -> dict:
+    """סגנונות משותפים למסמכי ה-PDF של עובדים ושכר."""
+    styles = getSampleStyleSheet()
+    return {
+        "title": ParagraphStyle("HrPdfTitle", parent=styles["Heading2"],
+            fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, fontSize=18, leading=24,
+            alignment=TA_RIGHT, textColor=colors.HexColor("#1f2d3d")),
+        "sub": ParagraphStyle("HrPdfSub", parent=styles["BodyText"],
+            fontName=PDF_HEB_FONT, fontSize=10, leading=14, alignment=TA_RIGHT,
+            textColor=colors.HexColor("#64748b")),
+        "section": ParagraphStyle("HrPdfSection", parent=styles["Heading3"],
+            fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, fontSize=13, leading=18,
+            alignment=TA_RIGHT, textColor=colors.HexColor("#7c2d12")),
+        "cell": ParagraphStyle("HrPdfCell", parent=styles["BodyText"],
+            fontName=PDF_HEB_FONT, fontSize=9, leading=12, alignment=TA_RIGHT),
+    }
+
+
+def _hr_pdf_money(value) -> str:
+    return f"{_hr_installation_number(value, 0.0):,.2f} ₪"
+
+
+def _hr_pdf_table(headers: list[str], rows: list[list[str]], widths: list[float],
+                  cell_style, bold_last: bool = False) -> Table:
+    """טבלת PDF בעברית. ReportLab מציב את עמודה 0 בשמאל, ולכן המערכים נהפכים
+    כדי שהעמודה הראשונה תופיע בימין."""
+    def cell(value):
+        # כל שורה עוברת היפוך RTL בנפרד, אחרת שורה שנייה בתא נדבקת הפוך
+        parts = str(value or "").split("\n")
+        return Paragraph("<br/>".join(pdf_rtl(part) for part in parts), cell_style)
+
+    data = [[cell(c) for c in reversed(headers)]]
+    for row in rows:
+        data.append([cell(c) for c in reversed(row)])
+    table = Table(data, colWidths=list(reversed(widths)), repeatRows=1)
+    style = [
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#f4ede4")),
+        ("TEXTCOLOR", (0, 0), (-1, 0), colors.HexColor("#7c2d12")),
+        ("FONTNAME", (0, 0), (-1, 0), PDF_HEB_BOLD_FONT or PDF_HEB_FONT),
+        ("FONTNAME", (0, 1), (-1, -1), PDF_HEB_FONT),
+        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#d6d3d1")),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#fffaf6")]),
+        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+        ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 6),
+        ("LEFTPADDING", (0, 0), (-1, -1), 6),
+        ("TOPPADDING", (0, 0), (-1, -1), 5),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+    ]
+    if bold_last:
+        style += [
+            ("BACKGROUND", (0, len(data) - 1), (-1, len(data) - 1), colors.HexColor("#fdf1e5")),
+            ("FONTNAME", (0, len(data) - 1), (-1, len(data) - 1), PDF_HEB_BOLD_FONT or PDF_HEB_FONT),
+        ]
+    table.setStyle(TableStyle(style))
+    return table
+
+
+def _hr_installations_month_pdf_bytes(month: dict, door_rate: float) -> tuple[bytes, str]:
+    """ייצוא חודש התקנות שלם ל-PDF — אותה טבלה שרואים במסך, עם שורת סיכום."""
+    rows = list(month.get("rows") or [])
+    totals = dict(month.get("totals") or {})
+    label = str(month.get("label") or "").strip()
+    employee = str(month.get("employee_name") or "").strip()
+
+    st = _hr_pdf_styles()
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=28, leftMargin=28, topMargin=28, bottomMargin=24)
+
+    meta = [f"הופק בתאריך {date.today().strftime('%d/%m/%Y')}"]
+    meta.insert(0, f"עובד: {employee}" if employee else "לא שויך עובד")
+    if month.get("include_in_payroll"):
+        meta.append("נכלל בחישובי השכר לחודש זה")
+
+    story = [
+        Paragraph(pdf_rtl(label or "התקנות"), st["title"]),
+        Paragraph(pdf_rtl(" · ".join(meta)), st["sub"]),
+        Spacer(1, 14),
+    ]
+
+    if not rows:
+        story.append(Paragraph(pdf_rtl("לא תועדו התקנות בחודש הזה."), st["sub"]))
+    else:
+        headers = ["תאריך", "הותקנו", "התקנת דלתות", "אוכל", "דלק", "מפרעה", "סיכום"]
+        body: list[list[str]] = []
+        for row in rows:
+            doors = _hr_pdf_money(row.get("doors_amount"))
+            if row.get("is_min_doors"):
+                doors = f"{doors}\nבפועל {_hr_pdf_money(row.get('doors_amount_actual'))}"
+            marker = " ⚠" if row.get("is_duplicate") else ""
+            body.append([
+                _hr_pdf_date(str(row.get("install_date") or "")) + marker,
+                f"{_hr_installation_number(row.get('installed_quantity'), 0.0):g}",
+                doors,
+                _hr_pdf_money(row.get("food")),
+                _hr_pdf_money(row.get("fuel")),
+                _hr_pdf_money(row.get("advance")),
+                _hr_pdf_money(row.get("total")),
+            ])
+        body.append([
+            f"סה״כ · {len(rows)} התקנות",
+            f"{_hr_installation_number(totals.get('installed_quantity'), 0.0):g}",
+            _hr_pdf_money(totals.get("doors_amount")),
+            _hr_pdf_money(totals.get("food")),
+            _hr_pdf_money(totals.get("fuel")),
+            _hr_pdf_money(totals.get("advance")),
+            _hr_pdf_money(totals.get("total")),
+        ])
+        story.append(_hr_pdf_table(headers, body, [168, 78, 140, 96, 96, 96, 100], st["cell"], bold_last=True))
+
+        notes = []
+        if any(r.get("is_min_doors") for r in rows):
+            notes.append(f"התקנת דלתות מחויבת בתשלום מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות לפי חוק, גם כשהותקנו פחות.")
+        dupes = sum(1 for r in rows if r.get("is_duplicate"))
+        if dupes:
+            notes.append(f"⚠ {dupes} שורות מסומנות ככפילות — אותה התקנה מופיעה יותר מפעם אחת ונספרת פעמיים בסיכום.")
+        for note in notes:
+            story += [Spacer(1, 5), Paragraph(pdf_rtl(note), st["sub"])]
+
+    doc.build(story)
+    safe = f"{label or 'התקנות'}{(' - ' + employee) if employee else ''}.pdf".replace("/", "-")
+    return buffer.getvalue(), safe
+
+
+@app.get("/hr-installations-pdf")
+async def hr_installations_pdf(request: Request):
+    month_key = str(request.query_params.get("month_key") or "").strip()
+    if not re.match(r"^\d{4}-\d{2}$", month_key):
+        return JSONResponse({"error": "חסר חודש תקין לייצוא."}, status_code=400)
+    try:
+        payload = _build_hr_installations_payload()
+        month = next((m for m in payload.get("months") or [] if m.get("month_key") == month_key), None)
+        if month is None:
+            return JSONResponse({"error": "לא נמצא חודש תואם."}, status_code=404)
+        pdf_bytes, filename = _hr_installations_month_pdf_bytes(month, payload.get("door_rate") or HR_INSTALLATIONS_DOOR_RATE)
+        return Response(content=pdf_bytes, media_type="application/pdf",
+                        headers={"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename)}"})
+    except Exception as exc:
+        log_handled_error("hr_installations_pdf failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי להפיק את קובץ ההתקנות: {exc}"}, status_code=500)
+
+
 def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[bytes, str]:
     """פירוט הימים והשעות של עובד לחודש, ואם החודש משויך לו בהתקנות — גם
     טבלת ההתקנות, המפרעות וסיכום סה״כ לתשלום."""

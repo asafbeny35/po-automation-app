@@ -4098,6 +4098,13 @@ tr[data-hr-inst-dirty] td { background: #fffbeb; }
 tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
 .hr-inst-add-row { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .hr-inst-save-area { display: flex; align-items: center; gap: 10px; }
+.hr-inst-pdf-btn {
+  padding: 9px 18px; border: 1px solid rgba(148, 163, 184, 0.35); border-radius: 9px;
+  background: #fff; color: #334155; font: inherit; font-size: 13.5px; font-weight: 700; cursor: pointer;
+  transition: border-color .16s ease, color .16s ease, background .16s ease;
+}
+.hr-inst-pdf-btn:hover:not([disabled]) { border-color: rgba(255,125,18,.45); color: #b45309; background: rgba(255,247,237,.9); }
+.hr-inst-pdf-btn[disabled] { opacity: .5; cursor: not-allowed; }
 .hr-inst-dirty-note { font-size: 12.5px; color: #b45309; font-weight: 600; }
 .hr-inst-save-btn {
   padding: 9px 20px; border: none; border-radius: 9px; background: #e2e8f0; color: #94a3b8;
@@ -49837,6 +49844,9 @@ document.addEventListener("DOMContentLoaded", () => {
               <button type="button" class="hr-inst-add-btn" data-hr-inst-add><span>+</span> הוסף התקנה ידנית</button>
               <div class="hr-inst-save-area">
                 ${pendingCount ? `<span class="hr-inst-dirty-note">${pendingCount} שורות עם שינויים שלא נשמרו</span>` : ""}
+                <button type="button" class="hr-inst-pdf-btn" data-hr-inst-pdf="${escapeHtml(key)}"
+                        ${(month.rows || []).length ? "" : "disabled"}
+                        title="${(month.rows || []).length ? "הורד את נתוני ההתקנות של החודש כ-PDF" : "אין התקנות לייצוא בחודש הזה"}">הורד PDF</button>
                 <button type="button" class="hr-inst-save-btn${pendingCount ? " is-dirty" : ""}" data-hr-inst-save ${pendingCount ? "" : "disabled"}>שמור שינויים</button>
               </div>
             </div>
@@ -49955,6 +49965,41 @@ document.addEventListener("DOMContentLoaded", () => {
           else hrInstEditing.add(rowId);
           renderHrInstallations();
         });
+      });
+
+      card.querySelector("[data-hr-inst-pdf]")?.addEventListener("click", async (event) => {
+        const button = event.currentTarget;
+        const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
+        if (hrInstMonthPendingCount(month) > 0
+            && !window.confirm("יש בחודש הזה שינויים שלא נשמרו. ה-PDF יופק מהנתונים השמורים בלבד. להמשיך?")) {
+          return;
+        }
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = "מפיק...";
+        try {
+          const res = await fetch(`/hr-installations-pdf?month_key=${encodeURIComponent(monthKey)}`);
+          if (!res.ok) {
+            let message = "לא הצלחתי להפיק את הקובץ.";
+            try { message = (await res.json()).error || message; } catch (_) {}
+            throw new Error(message);
+          }
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `${month?.label || ("התקנות " + monthKey)}.pdf`;
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+          notify("נתוני ההתקנות הורדו כ-PDF.");
+        } catch (error) {
+          notify(error.message || "לא הצלחתי להפיק את הקובץ.");
+        } finally {
+          button.textContent = original;
+          button.disabled = false;
+        }
       });
 
       card.querySelector("[data-hr-inst-save]")?.addEventListener("click", async () => {
