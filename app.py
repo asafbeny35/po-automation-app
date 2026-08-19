@@ -914,10 +914,11 @@ def _app_state_row_is_hollow(row: dict) -> bool:
     ולכן בלי הבדיקה הזאת הקוראים מקבלים "מצב ריק" ומאבדים את הנתונים בשקט
     במקום ליפול לקובץ המקומי.
     """
-    meaningful = {k for k, v in (row or {}).items()
-                  if k not in ("setting_key", "setting_value", "updated_at", "key")
-                  and v not in (None, "", {}, [])}
-    return not meaningful
+    # נוכחות המפתח היא הקובעת, לא התוכן שלו: hidden_ids ריק הוא מצב אמיתי
+    # ("אין מה להסתיר") ואסור להתייחס אליו כאילו המטען אבד.
+    payload_keys = {k for k in (row or {})
+                    if k not in ("setting_key", "setting_value", "updated_at", "key")}
+    return not payload_keys
 
 
 def _load_supabase_app_state(domain: str) -> dict | None:
