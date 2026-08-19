@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "po_auth",
+      "value": "eyJzdWIiOiJhc2FmIiwiaWF0IjoxNzgyMzk2MzY2LCJleHAiOjE3ODI0Mzk1NjYsInJlbWVtYmVyIjpmYWxzZSwibm9uY2UiOiI4OTY2ZjE2MGYxNjlhYTVjIn0.N6N8_cBsLHgTFDiMqczGF2vSPOb-TTivrPu6EUIeC0k",
+      "domain": "poautomationapp.vercel.app",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

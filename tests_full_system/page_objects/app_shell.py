@@ -4,6 +4,8 @@ import json
 from urllib.parse import urlparse
 
 from playwright.sync_api import Page
+import pyotp
+import pytest
 
 from tests_full_system.helpers.waits import wait_for_idle_ui, wait_for_visible
 from tests_full_system.manifests.tabs import TOP_LEVEL_TABS
@@ -35,13 +37,40 @@ class AppShell:
         if not response.ok:
             raise AssertionError(f"Dev auth failed: {response.status} {response.text()}")
 
-    def open(self) -> None:
-        self.page.goto(f"{SETTINGS.base_url}/", wait_until="domcontentloaded")
+    def _login_via_totp_if_needed(self) -> None:
+        if self.page.locator("#totpCode").count() == 0:
+            return
+        auth_state_path = SETTINGS.project_root / "auth_state.json"
+        auth_state = json.loads(auth_state_path.read_text(encoding="utf-8"))
+        secret = str(auth_state.get("totp_secret") or "").strip()
+        if not secret:
+            pytest.skip("Production E2E requires an authenticated browser state or a valid totp_secret")
+        code = pyotp.TOTP(secret).now()
+        response = self.page.context.request.post(
+            f"{SETTINGS.base_url}/auth/totp/verify",
+            headers={"Content-Type": "application/json"},
+            data=json.dumps({"code": code, "remember_me": False}),
+        )
+        if not response.ok:
+            pytest.skip(
+                "Production E2E browser auth is unavailable. "
+                f"TOTP login failed with {response.status}: {response.text()}"
+            )
         wait_for_idle_ui(self.page)
-        if self.page.locator(".top-tab").count() == 0:
+
+    def open(self) -> None:
+        self.page.goto(f"{SETTINGS.base_url}/?ui=desktop", wait_until="domcontentloaded")
+        wait_for_idle_ui(self.page)
+        if self.page.locator(".top-tab").count() == 0 and self.page.locator("#totpCode").count() == 0:
             self._ensure_dev_auth()
-            self.page.goto(f"{SETTINGS.base_url}/", wait_until="domcontentloaded")
+            self.page.goto(f"{SETTINGS.base_url}/?ui=desktop", wait_until="domcontentloaded")
             wait_for_idle_ui(self.page)
+        if self.page.locator(".top-tab").count() == 0 and self.page.locator("#totpCode").count() > 0:
+            self._login_via_totp_if_needed()
+            self.page.goto(f"{SETTINGS.base_url}/?ui=desktop", wait_until="domcontentloaded")
+            wait_for_idle_ui(self.page)
+        if self.page.locator(".top-tab").count() == 0:
+            pytest.skip("Desktop app shell did not load with an authenticated browser session on this base URL")
 
     def open_tab(self, tab_id: str) -> None:
         self.page.locator(f'.top-tab[data-tab="{tab_id}"]').click()

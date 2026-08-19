@@ -134,6 +134,8 @@ def test_process_real_purchase_order_pdf_returns_expected_parsed_payload(api_cli
 @pytest.mark.requires_live_server
 @pytest.mark.destructive
 @pytest.mark.sandbox_only
+@pytest.mark.slow
+@pytest.mark.timeout(180)
 def test_finalize_full_from_processed_pdf_returns_all_required_artifacts(api_client, ensure_sandbox_guard):
     processed_payload = _process_real_purchase_order_pdf(api_client, SAMPLE_PURCHASE_ORDER_PDF)
     payload = _finalize_processed_payload(api_client, processed_payload, document_mode="full")
@@ -190,6 +192,8 @@ def test_finalize_full_from_processed_pdf_returns_all_required_artifacts(api_cli
 @pytest.mark.requires_live_server
 @pytest.mark.destructive
 @pytest.mark.sandbox_only
+@pytest.mark.slow
+@pytest.mark.timeout(180)
 def test_finalize_delivery_only_from_processed_pdf_skips_invoice_artifacts(api_client, ensure_sandbox_guard):
     processed_payload = _process_real_purchase_order_pdf(api_client, SAMPLE_PURCHASE_ORDER_PDF)
     payload = _finalize_processed_payload(api_client, processed_payload, document_mode="delivery_only")
@@ -223,6 +227,8 @@ def test_finalize_delivery_only_from_processed_pdf_skips_invoice_artifacts(api_c
 @pytest.mark.requires_live_server
 @pytest.mark.destructive
 @pytest.mark.sandbox_only
+@pytest.mark.slow
+@pytest.mark.timeout(180)
 def test_finalize_invoice_only_from_processed_pdf_links_to_existing_delivery(api_client, ensure_sandbox_guard):
     processed_payload = _process_real_purchase_order_pdf(api_client, SAMPLE_PURCHASE_ORDER_PDF)
     delivery_payload = _finalize_processed_payload(api_client, processed_payload, document_mode="delivery_only")

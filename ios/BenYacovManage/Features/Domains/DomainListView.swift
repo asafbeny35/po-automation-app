@@ -28,6 +28,19 @@ struct DomainListView: View {
     @State private var hrShowFormer = false
     /// תיקי התקנה — שלב: הכול / תואמו·ממתינים / הושלמו·בוטלו.
     @State private var installationsPhase: InstallationsPhase = .all
+    /// תשלומים — סינון לפי אות ראשונה של שם הלקוח וטווח תאריכים, כמו בדסקטופ.
+    @State private var paymentsLetter: String?
+    @State private var paymentsDateField: PaymentsDateField = .due
+    @State private var paymentsFrom: Date?
+    @State private var paymentsTo: Date?
+
+    enum PaymentsDateField: String, CaseIterable {
+        case due, invoice
+        var key: String { self == .due ? "due_date" : "invoice_date" }
+        func title(_ direction: PaymentsDirection) -> String {
+            self == .due ? (direction == .collection ? "מועד הגבייה" : "מועד התשלום") : "תאריך חשבונית"
+        }
+    }
 
     enum InstallationsPhase: String, CaseIterable {
         case all, open, closed
@@ -116,6 +129,12 @@ struct DomainListView: View {
             rows = paymentsDirection == .payment ? buckets.payment : buckets.collection
             if let paymentsStatus {
                 rows = rows.filter { PaymentsMath.status(of: $0) == paymentsStatus }
+            }
+            if paymentsFrom != nil || paymentsTo != nil {
+                rows = rows.filter { PaymentsFilters.inRange($0, field: paymentsDateField.key, from: paymentsFrom, to: paymentsTo) }
+            }
+            if let paymentsLetter {
+                rows = rows.filter { PaymentsFilters.letter(of: $0) == paymentsLetter }
             }
         }
         let query = searchText.trimmingCharacters(in: .whitespaces)
@@ -438,8 +457,88 @@ struct DomainListView: View {
                 statusChip(.open, id: "payments-status-open", tint: BYTheme.Palette.blue)
                 statusChip(.overdue, id: "payments-status-overdue", tint: BYTheme.Palette.red)
             }
+            paymentsDateBar
+            paymentsLetterBar
         }
         .padding(.bottom, 6)
+    }
+
+    /// טווח תאריכים מעל סינון הסטטוס — לפי מועד או לפי תאריך החשבונית.
+    private var paymentsDateBar: some View {
+        VStack(spacing: 8) {
+            Picker("שדה תאריך", selection: $paymentsDateField) {
+                ForEach(PaymentsDateField.allCases, id: \.self) { field in
+                    Text(field.title(paymentsDirection)).tag(field)
+                }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("payments-date-field")
+
+            HStack(spacing: 10) {
+                dateSlot("מ־", date: $paymentsFrom, id: "payments-date-from")
+                dateSlot("עד", date: $paymentsTo, id: "payments-date-to")
+                if paymentsFrom != nil || paymentsTo != nil {
+                    Button {
+                        Haptics.tap()
+                        paymentsFrom = nil
+                        paymentsTo = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill").foregroundStyle(BYTheme.Palette.red)
+                    }
+                    .accessibilityIdentifier("payments-date-clear")
+                }
+            }
+        }
+    }
+
+    private func dateSlot(_ label: String, date: Binding<Date?>, id: String) -> some View {
+        HStack(spacing: 4) {
+            Text(label).font(.byCaption).foregroundStyle(BYTheme.textSecondary)
+            DatePicker(
+                label,
+                selection: Binding(get: { date.wrappedValue ?? Date() }, set: { date.wrappedValue = $0 }),
+                displayedComponents: .date
+            )
+            .labelsHidden()
+            .opacity(date.wrappedValue == nil ? 0.55 : 1)
+            .accessibilityIdentifier(id)
+        }
+    }
+
+    /// סינון לפי האות הראשונה של שם הלקוח. האותיות נגזרות אחרי הסטטוס והתאריכים,
+    /// כדי שלא תוצג אות שתחזיר רשימה ריקה.
+    private var paymentsLetterBar: some View {
+        var rows = session.records(for: .paymentsTransfer)
+        let buckets = PaymentsMath.categorize(rows)
+        rows = paymentsDirection == .payment ? buckets.payment : buckets.collection
+        if let paymentsStatus { rows = rows.filter { PaymentsMath.status(of: $0) == paymentsStatus } }
+        if paymentsFrom != nil || paymentsTo != nil {
+            rows = rows.filter { PaymentsFilters.inRange($0, field: paymentsDateField.key, from: paymentsFrom, to: paymentsTo) }
+        }
+        let letters = PaymentsFilters.availableLetters(rows)
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(letters, id: \.self) { letter in
+                    let isActive = paymentsLetter == letter
+                    Button {
+                        Haptics.tap()
+                        withAnimation(.snappy(duration: 0.18)) {
+                            paymentsLetter = isActive ? nil : letter
+                        }
+                    } label: {
+                        Text(letter)
+                            .font(.byCaption.weight(.bold))
+                            .padding(.horizontal, 12).padding(.vertical, 6)
+                            .background(isActive ? BYTheme.Palette.brand.opacity(0.16) : BYTheme.insetBackground)
+                            .foregroundStyle(isActive ? BYTheme.Palette.brand : BYTheme.textSecondary)
+                            .clipShape(Capsule())
+                    }
+                    .accessibilityIdentifier("payments-letter-\(letter)")
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+        .accessibilityIdentifier("payments-letter-filter")
     }
 
     private func statusChip(_ status: PaymentsMath.RowStatus, id: String, tint: Color) -> some View {

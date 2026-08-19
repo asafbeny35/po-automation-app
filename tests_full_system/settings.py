@@ -12,6 +12,8 @@ class TestSettings:
     sandbox_mode: str
     allow_prod_creation: bool
     whatsapp_test_number: str
+    whatsapp_railway_url: str
+    whatsapp_railway_secret: str
     browser_name: str
     headless: bool
     browser_storage_state: str
@@ -37,10 +39,12 @@ def load_settings() -> TestSettings:
         sandbox_mode=os.getenv("PO_TEST_GREENINVOICE_MODE", "sandbox"),
         allow_prod_creation=os.getenv("PO_TEST_ALLOW_PROD", "false").strip().lower() == "true",
         whatsapp_test_number=os.getenv("PO_TEST_WHATSAPP_NUMBER", "0547720142"),
+        whatsapp_railway_url=os.getenv("WHATSAPP_RAILWAY_URL", "").rstrip("/"),
+        whatsapp_railway_secret=os.getenv("WHATSAPP_RAILWAY_SECRET", ""),
         browser_name=os.getenv("PO_TEST_BROWSER", "chromium"),
         headless=os.getenv("PO_TEST_HEADLESS", "true").strip().lower() == "true",
         browser_storage_state=browser_storage_state,
-        api_session_cookie_name=os.getenv("PO_TEST_SESSION_COOKIE_NAME", "session"),
+        api_session_cookie_name=os.getenv("PO_TEST_SESSION_COOKIE_NAME", "po_auth"),
         api_session_cookie_value=os.getenv("PO_TEST_SESSION_COOKIE_VALUE", ""),
         request_timeout_seconds=float(os.getenv("PO_TEST_REQUEST_TIMEOUT", "30")),
         screenshot_dir=project_root / "tests_full_system" / "artifacts" / "screenshots",

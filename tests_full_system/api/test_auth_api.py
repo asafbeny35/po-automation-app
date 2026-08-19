@@ -2,6 +2,7 @@
 
 Coverage:
   GET  /auth/login
+  GET  /auth/session-status
   POST /auth/dev-login
   POST /auth/logout
   POST /auth/totp/verify
@@ -43,6 +44,30 @@ def test_auth_login_redirects_authenticated_user(api_client):
     """When already authenticated the login page should redirect to / or return the app."""
     response = api_client.get("/auth/login")
     assert response.status_code in {200, 302}
+
+
+# ---------------------------------------------------------------------------
+# GET /auth/session-status
+# ---------------------------------------------------------------------------
+
+@pytest.mark.api
+@pytest.mark.requires_live_server
+def test_auth_session_status_returns_authenticated_for_active_session(api_client):
+    response = api_client.get("/auth/session-status")
+    assert response.status_code == 200
+    assert isinstance(response.payload, dict)
+    assert response.payload.get("authenticated") is True
+    assert int(response.payload.get("expires_at") or 0) > 0
+
+
+@pytest.mark.api
+@pytest.mark.requires_live_server
+def test_auth_session_status_returns_401_after_logout(api_client):
+    api_client.post("/auth/logout")
+    response = api_client.get("/auth/session-status", allow_unauthenticated=True)
+    assert response.status_code == 401
+    assert isinstance(response.payload, dict)
+    assert response.payload.get("authenticated") is False
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +129,22 @@ def test_auth_dev_login_empty_user_id_still_resolves(api_client):
     )
     assert response.status_code == 200
     assert response.payload.get("status") == "ok"
+
+
+@pytest.mark.api
+@pytest.mark.requires_live_server
+@pytest.mark.localhost_only
+def test_auth_dev_login_remember_me_sets_persistent_cookie(api_client):
+    response = api_client.request(
+        "POST",
+        "/auth/dev-login",
+        headers={"X-PO-Debug-Auth": "1"},
+        json={"user_id": "asaf", "remember_me": True},
+    )
+    assert response.status_code == 200
+    set_cookie = response.headers.get("set-cookie", "")
+    assert "Max-Age=2592000" in set_cookie or "max-age=2592000" in set_cookie
+    assert "expires=" in set_cookie.lower()
 
 
 # ---------------------------------------------------------------------------

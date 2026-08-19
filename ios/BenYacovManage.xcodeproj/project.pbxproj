@@ -168,6 +168,7 @@
 		C8C0D39754F03B7430C780E9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A648491F8658B18F14281898 /* Assets.xcassets */; };
 		C8C20D56C389A71D2DD1E9AC /* customers_list.png in Resources */ = {isa = PBXBuildFile; fileRef = DFB801182574F14F66EAD120 /* customers_list.png */; };
 		C8FCCB6AA7FB2AE2205B914A /* QualityUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F10602214F86FFF037035FD /* QualityUITests.swift */; };
+		C97691CAFFF6C5786FC08256 /* PaymentsFilters.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9374996A1863502999BC43F /* PaymentsFilters.swift */; };
 		CA38FAD2E01A63DCCCA554D3 /* DomainSweepUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE3104147F23C8DFC5890BAD /* DomainSweepUITests.swift */; };
 		CA7A68831F38A009FACAE488 /* pricing_items.json in Resources */ = {isa = PBXBuildFile; fileRef = 8B3DF5941AE2ED924C55BE84 /* pricing_items.json */; };
 		CB6D0F6C05D39313737FEAAE /* DomainRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B48ADA56DA87C31D19A70A6 /* DomainRecord.swift */; };
@@ -377,6 +378,7 @@
 		A5BA6DE2B2886D72F4C551B9 /* LocalMutationContractTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalMutationContractTests.swift; sourceTree = "<group>"; };
 		A648491F8658B18F14281898 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A819E6CCD0380DBCA6BB9157 /* customer_detail_ipad.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = customer_detail_ipad.png; sourceTree = "<group>"; };
+		A9374996A1863502999BC43F /* PaymentsFilters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaymentsFilters.swift; sourceTree = "<group>"; };
 		A9581B478F6976F7C2AE7FF4 /* hr_hours.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = hr_hours.json; sourceTree = "<group>"; };
 		AAD8D00B3537CD283A8E990A /* MoreHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreHubView.swift; sourceTree = "<group>"; };
 		AE377021292B79F3BF841D1B /* ClassicApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicApp.swift; sourceTree = "<group>"; };
@@ -768,6 +770,7 @@
 				253EB2D1723A9A25C138DD42 /* InstallationStatus.swift */,
 				6FF50E527503A6DE31E68BC6 /* JSONValue.swift */,
 				DC2698583C93CB089B556B6E /* MockTransport.swift */,
+				A9374996A1863502999BC43F /* PaymentsFilters.swift */,
 				2C54F293572F9041E33301F1 /* PaymentsMath.swift */,
 				F0FA0488574C923F90A5D290 /* SessionStore.swift */,
 			);
@@ -1222,6 +1225,7 @@
 				54796181954E8E58367FBABA /* MockTransport.swift in Sources */,
 				11515161504A3DE8AADB1A7B /* MoreHubView.swift in Sources */,
 				B7555C1A3F67DD9582CBB2EA /* OrderComposerView.swift in Sources */,
+				C97691CAFFF6C5786FC08256 /* PaymentsFilters.swift in Sources */,
 				6BE8B056988D6338A4CE1FC1 /* PaymentsMath.swift in Sources */,
 				ADB7E935329EA55376F0DADB /* QuoteComposerView.swift in Sources */,
 				6327AD826EA422B83A5C4BC8 /* RecordDetailView.swift in Sources */,

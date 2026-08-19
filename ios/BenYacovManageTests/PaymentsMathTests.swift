@@ -129,8 +129,15 @@ final class PaymentsMathTests: XCTestCase {
 
         XCTAssertEqual(collect, 25452.04, accuracy: 0.01,
                        "לגבייה = שורות גבייה פתוחות ותקפות, כולל מועד גבייה שחלף")
-        XCTAssertEqual(PaymentsMath.overdueTotal(categories.collection), 1111.0, accuracy: 0.01,
-                       "פירוט הפיגור חייב לשקף את שורת הפיגור בנתוני הבדיקה")
+        // הסכום נגזר מהפיקסצ'ר ולא מקובע: הפיקסצ'ר מכיל תאריכי מועד קבועים, וכל
+        // אחד מהם הופך ל"בפיגור" ביום שהוא חולף. הקיבוע הקודם (1,111) נשבר מעצמו
+        // ב-01/08/2026 כשעוד שורה עברה את מועדה, בלי ששום קוד השתנה.
+        let expectedOverdue = categories.collection
+            .filter { PaymentsMath.status(of: $0) == .overdue }
+            .reduce(0.0) { $0 + ($1.number("amount") ?? 0) }
+        XCTAssertGreaterThan(expectedOverdue, 0, "הפיקסצ'ר חייב לכלול לפחות שורת פיגור אחת")
+        XCTAssertEqual(PaymentsMath.overdueTotal(categories.collection), expectedOverdue, accuracy: 0.01,
+                       "פירוט הפיגור חייב לשקף את שורות הפיגור בנתוני הבדיקה")
         XCTAssertEqual(pay, 7009.0, accuracy: 0.01,
                        "לתשלום חייב לסכום רק שורות תשלום פתוחות ותקפות")
     }

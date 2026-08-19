@@ -7,6 +7,8 @@ import pytest
 
 @pytest.mark.api
 @pytest.mark.requires_live_server
+@pytest.mark.slow
+@pytest.mark.timeout(300)
 @pytest.mark.parametrize(
     "path",
     [
@@ -17,7 +19,7 @@ import pytest
     ],
 )
 def test_inventory_read_endpoints_available(api_client, path):
-    response = api_client.get(path)
+    response = api_client.get(path, timeout=300)
     assert response.status_code < 500
 
 

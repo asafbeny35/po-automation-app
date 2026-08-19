@@ -8,6 +8,7 @@ from services import whatsapp_service
 @pytest.mark.unit
 def test_resolve_provider_prefers_meta_when_auto_and_meta_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_provider", "auto", raising=False)
+    monkeypatch.setattr(whatsapp_service.settings, "whatsapp_railway_url", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_access_token", "token", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_phone_number_id", "phone-id", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_twilio_account_sid", "", raising=False)
@@ -20,6 +21,7 @@ def test_resolve_provider_prefers_meta_when_auto_and_meta_configured(monkeypatch
 @pytest.mark.unit
 def test_resolve_provider_prefers_twilio_when_auto_and_only_twilio_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_provider", "auto", raising=False)
+    monkeypatch.setattr(whatsapp_service.settings, "whatsapp_railway_url", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_access_token", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_phone_number_id", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_twilio_account_sid", "sid", raising=False)
@@ -32,6 +34,7 @@ def test_resolve_provider_prefers_twilio_when_auto_and_only_twilio_configured(mo
 @pytest.mark.unit
 def test_resolve_provider_falls_back_to_web_when_auto_and_no_provider_configured(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_provider", "auto", raising=False)
+    monkeypatch.setattr(whatsapp_service.settings, "whatsapp_railway_url", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_access_token", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_meta_phone_number_id", "", raising=False)
     monkeypatch.setattr(whatsapp_service.settings, "whatsapp_twilio_account_sid", "", raising=False)
