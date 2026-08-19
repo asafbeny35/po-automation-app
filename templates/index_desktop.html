@@ -4058,6 +4058,19 @@ table.hr-inst-table tfoot td { background: #f8fafc; font-weight: 800; border-top
 .hr-inst-input[readonly] { background: #f8fafc; color: #64748b; cursor: not-allowed; }
 .hr-inst-money { font-variant-numeric: tabular-nums; }
 .hr-inst-doors-actual { color: #94a3b8; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.hr-inst-table tr[data-hr-inst-duplicate] { background: rgba(254, 226, 226, 0.55); }
+.hr-inst-table tr[data-hr-inst-duplicate] td:first-child { box-shadow: inset -3px 0 0 #dc2626; }
+.hr-inst-dup-banner {
+  margin: 0 0 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(220, 38, 38, 0.3);
+  background: rgba(254, 242, 242, 0.95);
+  color: #b91c1c;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.6;
+}
 .hr-inst-total { font-weight: 800; color: #15803d; font-variant-numeric: tabular-nums; }
 .hr-inst-empty { padding: 20px; text-align: center; color: #94a3b8; font-size: 13.5px; }
 
@@ -49755,7 +49768,7 @@ document.addEventListener("DOMContentLoaded", () => {
           return `<td><input type="number" min="0" step="1" class="hr-inst-input" data-hr-inst-field="installed_quantity" value="${escapeHtml(String(value ?? 0))}" ${qtyEditable ? "" : "readonly title=\"בתיק הזה יש כמה פריטים — עדכן את הכמות בטאב ההתקנות\""}></td>`;
         };
         return `
-        <tr data-hr-inst-row="${escapeHtml(id)}"${r.is_manual ? " data-hr-inst-manual" : ""}${editing ? " data-hr-inst-editing" : ""}${dirty ? " data-hr-inst-dirty" : ""}>
+        <tr data-hr-inst-row="${escapeHtml(id)}"${r.is_manual ? " data-hr-inst-manual" : ""}${editing ? " data-hr-inst-editing" : ""}${dirty ? " data-hr-inst-dirty" : ""}${r.is_duplicate ? ` data-hr-inst-duplicate title="${escapeHtml(r.duplicate_note || "כפילות")}"` : ""}>
           ${textCell("location")}
           ${textCell("customer_name")}
           ${textCell("po_number")}
@@ -49772,7 +49785,16 @@ document.addEventListener("DOMContentLoaded", () => {
           </td>
         </tr>`;
       }).join("");
+      const dupCount = (month.rows || []).filter(r => r.is_duplicate).length;
+      const dupBanner = dupCount ? `
+        <div class="hr-inst-dup-banner" data-hr-inst-dup-banner>
+          <strong>${dupCount === 1 ? "שורה כפולה אחת" : `${dupCount} שורות כפולות`}</strong>
+          ${dupCount === 1 ? "מסומנת" : "מסומנות"} באדום — אותה התקנה מופיעה יותר מפעם אחת
+          ${dupCount === 1 ? "ותיספר" : "ויספרו"} פעמיים בשכר.
+          ${dupCount === 1 ? "מחק את השורה הידנית המיותרת." : "מחק את השורות הידניות המיותרות."}
+        </div>` : "";
       const tableHtml = (month.rows || []).length ? `
+        ${dupBanner}
         <div class="hr-inst-table-wrap">
           <table class="hr-inst-table">
             <thead>
@@ -50002,6 +50024,7 @@ document.addEventListener("DOMContentLoaded", () => {
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "הפעולה נכשלה.");
+          if (data.duplicate) throw new Error(data.error);
           hrInstallationsData = { months: data.months || [], door_rate: data.door_rate || 14, min_doors: data.min_doors || 35, orders: data.orders || hrInstallationsData.orders || [] };
           hrInstOpenMonths.add(monthKey);
           renderHrInstallations();

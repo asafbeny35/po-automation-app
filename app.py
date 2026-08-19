@@ -1513,6 +1513,70 @@ def _hr_installation_doors_amounts(installed: float, door_rate: float) -> dict:
     }
 
 
+def _hr_installation_manual_clash(candidate: dict, exclude_manual_id: str = "") -> str:
+    """מחזיר תיאור השורה המתנגשת, או מחרוזת ריקה כשאין התנגשות."""
+    key = _hr_installation_dup_key(candidate)
+    if not key[0] or not key[1]:
+        return ""  # בלי תאריך ולקוח אין מה להשוות — שורה שרק נוצרה
+    for month in _build_hr_installations_payload().get("months") or []:
+        for row in month.get("rows") or []:
+            if str(row.get("visit_id") or "") == str(exclude_manual_id or ""):
+                continue
+            if _hr_installation_dup_key(row) != key:
+                continue
+            return "כבר קיימת שורה מטאב ההתקנות" if not row.get("is_manual") else "כבר קיימת שורה ידנית"
+    return ""
+
+
+def _hr_installation_dup_key(row: dict) -> tuple:
+    """מפתח זהות של התקנה: תאריך + לקוח + הזמנה.
+
+    הרכיב מושך שורות חיות מטאב ההתקנות וגם מאפשר הזנה ידנית, ולכן אותה התקנה
+    יכולה להיכנס פעמיים. הכמות לא נכללת במפתח בכוונה — שורה שהוזנה ידנית עם
+    כמות שונה במקצת היא עדיין אותה התקנה, וזה בדיוק המקרה שקשה לתפוס בעין.
+    """
+    def norm(value: str) -> str:
+        return re.sub(r"\s+", " ", str(value or "").strip()).strip().lower()
+
+    return (
+        str((row or {}).get("install_date") or "").strip(),
+        norm((row or {}).get("customer_name")),
+        norm((row or {}).get("po_number")),
+    )
+
+
+def _hr_installations_mark_duplicates(rows: list[dict]) -> list[dict]:
+    """מסמן שורות שמופיעות פעמיים באותו חודש. שורה מטאב ההתקנות היא המקור,
+    ולכן היא נשארת נקייה והשורה הידנית היא זו שמסומנת ככפילות."""
+    buckets: dict[tuple, list[dict]] = {}
+    for row in rows:
+        key = _hr_installation_dup_key(row)
+        if not key[0] and not key[1]:
+            continue  # שורה ריקה שנוצרה זה עתה — אין מה להשוות
+        buckets.setdefault(key, []).append(row)
+
+    for row in rows:
+        row.setdefault("is_duplicate", False)
+        row.setdefault("duplicate_note", "")
+
+    for key, group in buckets.items():
+        if len(group) < 2:
+            continue
+        from_tab = [r for r in group if not r.get("is_manual")]
+        # אם יש שורה מטאב ההתקנות היא הקובעת; אחרת הראשונה שנוצרה
+        keeper = from_tab[0] if from_tab else group[0]
+        for row in group:
+            if row is keeper:
+                continue
+            row["is_duplicate"] = True
+            row["duplicate_note"] = (
+                "כפילות: ההתקנה הזו כבר מופיעה כשורה מטאב ההתקנות."
+                if from_tab else
+                "כפילות: כבר קיימת שורה זהה לאותו תאריך, לקוח והזמנה."
+            )
+    return rows
+
+
 def _build_hr_installations_payload() -> dict:
     """בונה את טבלת ההתקנות של עובדים ושכר מביקורי ההתקנה החיים + תוספות השכר."""
     state = _load_hr_installations_state()
@@ -1601,6 +1665,7 @@ def _build_hr_installations_payload() -> dict:
     months: list[dict] = []
     for month_key in HR_INSTALLATIONS_MONTHS:
         rows = sorted(rows_by_month.get(month_key) or [], key=lambda r: (r.get("install_date") or "", r.get("customer_name") or ""))
+        _hr_installations_mark_duplicates(rows)
         month_meta = _normalize_hr_installation_month(months_state.get(month_key) or {})
         months.append({
             "month_key": month_key,
@@ -1618,6 +1683,7 @@ def _build_hr_installations_payload() -> dict:
                 "advance": round(sum(r["advance"] for r in rows), 2),
                 "total": round(sum(r["total"] for r in rows), 2),
                 "rows_count": len(rows),
+                "duplicate_rows": sum(1 for r in rows if r.get("is_duplicate")),
             },
         })
     # חודשים עם ביקורים מחוץ לטווח המוגדר — מוצגים גם הם כדי שלא ייעלמו נתונים
@@ -1625,6 +1691,7 @@ def _build_hr_installations_payload() -> dict:
         if month_key in HR_INSTALLATIONS_MONTHS:
             continue
         rows = sorted(rows_by_month[month_key], key=lambda r: (r.get("install_date") or "", r.get("customer_name") or ""))
+        _hr_installations_mark_duplicates(rows)
         month_meta = _normalize_hr_installation_month(months_state.get(month_key) or {})
         months.append({
             "month_key": month_key,
@@ -1642,6 +1709,7 @@ def _build_hr_installations_payload() -> dict:
                 "advance": round(sum(r["advance"] for r in rows), 2),
                 "total": round(sum(r["total"] for r in rows), 2),
                 "rows_count": len(rows),
+                "duplicate_rows": sum(1 for r in rows if r.get("is_duplicate")),
             },
         })
     months.sort(key=lambda m: m["month_key"])
@@ -26468,7 +26536,21 @@ async def hr_installations_save_row(request: Request):
                 parsed = _hr_parse_iso_date(str(body.get("install_date") or "").strip())
                 if parsed:
                     manual_row["month_key"] = f"{parsed.year:04d}-{parsed.month:02d}"
-            manual_rows[visit_id] = _normalize_hr_installation_manual({**manual_row, "manual_id": visit_id})
+            normalized = _normalize_hr_installation_manual({**manual_row, "manual_id": visit_id})
+
+            # חסימת כפילות: אם ההתקנה כבר קיימת כשורה מטאב ההתקנות, עדיף לעצור
+            # כאן מאשר לתת לשתי שורות זהות להיספר פעמיים בשכר.
+            clash = _hr_installation_manual_clash(normalized, exclude_manual_id=visit_id)
+            if clash and not bool(body.get("allow_duplicate")):
+                return JSONResponse({
+                    "error": (
+                        f"ההתקנה הזו כבר מופיעה בטבלה — {clash} "
+                        "לתאריך, ללקוח ולהזמנה האלה. שמירה תיצור כפילות שתיספר פעמיים בשכר."
+                    ),
+                    "duplicate": True,
+                }, status_code=409)
+
+            manual_rows[visit_id] = normalized
             state["manual"] = manual_rows
             _save_hr_installations_state(state)
             return JSONResponse({"status": "ok", "writeback": {"status": "manual"}, **_build_hr_installations_payload()})
