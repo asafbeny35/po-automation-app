@@ -35960,6 +35960,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  async function parseFinanceInvoiceSaveResponse(response) {
+    const responseText = await response.text();
+    if (!responseText.trim()) {
+      throw new Error(`השרת לא החזיר תשובה לשמירת החשבונית (HTTP ${response.status || 500}).`);
+    }
+    try {
+      return JSON.parse(responseText);
+    } catch (error) {
+      throw new Error(`שירות שמירת החשבוניות אינו זמין כרגע (HTTP ${response.status || 500}). נסה שוב בעוד רגע.`);
+    }
+  }
+
   async function saveFinanceInvoiceParseDraft() {
     const row = collectFinanceInvoiceParseRow();
     if (!row) return;
@@ -35970,7 +35982,7 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ row }),
       });
-      const payload = await response.json();
+      const payload = await parseFinanceInvoiceSaveResponse(response);
       if (!response.ok) throw new Error(payload.error || "לא הצלחתי לשמור את החשבונית.");
       upsertFinanceInvoiceRowClient(payload.row || row);
       financeInvoicesLoaded = true;
@@ -36724,7 +36736,7 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ row }),
       });
-      const payload = await response.json();
+      const payload = await parseFinanceInvoiceSaveResponse(response);
       if (!response.ok) throw new Error(payload.error || "לא הצלחתי לשמור את הרשומה.");
       upsertFinanceInvoiceRowClient(payload.row || row);
       financeInvoicesEditingIds = financeInvoicesEditingIds.filter(item => item !== rowId);
