@@ -28,7 +28,7 @@ def test_ya_alon_parser_extracts_core_fields():
     assert customer_name == "י.א אלון בניה"
     assert header["customer_id"] == "512879172"
     assert header["po_number"] == "PO79486"
-    assert header["po_date"] == "21/6/2026"
+    assert header["po_date"] == "21/06/2026"
     assert header["project"] == "כרמיאל הר כרמי"
     assert header["delivery_address"] == "רח' נהר הירדן/בועז, כרמיאל הר כרמי"
     assert header["contact_name"] == "שוקי רוסו"

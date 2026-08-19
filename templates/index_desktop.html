@@ -2821,6 +2821,29 @@ body {
   color: var(--muted);
 }
 
+.payments-date-filter {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 12px; padding: 9px 12px;
+  border: 1px solid rgba(148, 163, 184, 0.22); border-radius: 12px;
+  background: rgba(248, 250, 252, 0.75);
+}
+.payments-date-label { font-size: 12.5px; font-weight: 800; color: #64748b; }
+.payments-date-field {
+  border: 1px solid rgba(148, 163, 184, 0.3); background: #fff; color: #64748b;
+  font: inherit; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.payments-date-field.active { background: #0f172a; border-color: #0f172a; color: #fff; }
+.payments-date-input { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 700; color: #475569; }
+.payments-date-input input {
+  border: 1px solid rgba(148, 163, 184, 0.32); border-radius: 8px; padding: 5px 8px;
+  font: inherit; font-size: 12.5px; background: #fff;
+}
+.payments-date-clear {
+  border: 1px solid rgba(220, 38, 38, 0.3); background: rgba(254, 242, 242, 0.9); color: #b91c1c;
+  font: inherit; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; cursor: pointer;
+}
+.payments-date-count { font-size: 12px; font-weight: 700; color: #0f766e; margin-inline-start: auto; }
+
 .payments-filter-row {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -15231,6 +15254,15 @@ input:focus {
           <button type="button" class="payments-filter-btn" data-payments-filter="collection:open" title="מציג רק שורות גבייה שעדיין פתוחות ולא עבר מועד הגבייה שלהן, כלומר השורות הלבנות. לחיצה נוספת מחזירה את כל הרשימה.">לגבייה</button>
           <button type="button" class="payments-filter-btn" data-payments-filter="collection:overdue" title="מציג רק שורות גבייה שעדיין לא התקבלו ומועד הגבייה שלהן כבר חלף, כלומר השורות האדומות.">מועד הגבייה חלף</button>
         </div>
+        <div class="payments-date-filter" data-payments-date-scope="collection">
+          <span class="payments-date-label">סינון לפי</span>
+          <button type="button" class="payments-date-field active" data-payments-date-field="collection:due_date">מועד הגבייה</button>
+          <button type="button" class="payments-date-field" data-payments-date-field="collection:invoice_date">תאריך חשבונית</button>
+          <label class="payments-date-input">מ־<input type="date" data-payments-date-from="collection"></label>
+          <label class="payments-date-input">עד<input type="date" data-payments-date-to="collection"></label>
+          <button type="button" class="payments-date-clear" data-payments-date-clear="collection" hidden>נקה</button>
+          <span class="payments-date-count" data-payments-date-count="collection"></span>
+        </div>
         <div id="paymentsTransfer2026CollectionAlphaNav" class="customers-alpha-nav" style="margin: 0 0 14px;" aria-label="סינון אלפביתי לפי לקוח או ספק בטבלת לגבייה"></div>
         <div class="payments-legend" aria-label="מקרא פעולות בטבלת לגבייה">
           <span class="payments-legend-item"><span class="payments-legend-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="m3 17.25 9.06-9.06 3.75 3.75L6.75 21H3zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></span>עריכת השורה</span>
@@ -15278,6 +15310,16 @@ input:focus {
           <button type="button" class="payments-filter-btn" data-payments-filter="payment:open" title="מציג רק שורות תשלום שעדיין פתוחות ולא עבר מועד התשלום שלהן, כלומר השורות הלבנות.">לתשלום</button>
           <button type="button" class="payments-filter-btn" data-payments-filter="payment:overdue" title="מציג רק שורות תשלום שעדיין לא שולמו ומועד התשלום שלהן כבר חלף, כלומר השורות האדומות.">מועד התשלום חלף</button>
         </div>
+        <div class="payments-date-filter" data-payments-date-scope="payment">
+          <span class="payments-date-label">סינון לפי</span>
+          <button type="button" class="payments-date-field active" data-payments-date-field="payment:due_date">מועד התשלום</button>
+          <button type="button" class="payments-date-field" data-payments-date-field="payment:invoice_date">תאריך חשבונית</button>
+          <label class="payments-date-input">מ־<input type="date" data-payments-date-from="payment"></label>
+          <label class="payments-date-input">עד<input type="date" data-payments-date-to="payment"></label>
+          <button type="button" class="payments-date-clear" data-payments-date-clear="payment" hidden>נקה</button>
+          <span class="payments-date-count" data-payments-date-count="payment"></span>
+        </div>
+        <div id="paymentsTransfer2026PaymentAlphaNav" class="customers-alpha-nav" style="margin: 0 0 14px;" aria-label="סינון אלפביתי לפי ספק בטבלת לתשלום"></div>
         <div class="payments-legend" aria-label="מקרא פעולות בטבלת לתשלום">
           <span class="payments-legend-item"><span class="payments-legend-icon"><svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="m3 17.25 9.06-9.06 3.75 3.75L6.75 21H3zM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.3a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></span>עריכת השורה</span>
           <span class="payments-legend-item"><span class="payments-legend-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg></span>מחיקת השורה</span>
@@ -21814,6 +21856,12 @@ document.addEventListener("DOMContentLoaded", () => {
     payment: "",
   };
   let paymentTransferCollectionAlphaFilter = "";
+  // סינון אלפביתי וטווח תאריכים לכל אחת משתי הטבלאות, מעל סינון הסטטוס.
+  let paymentTransferAlphaFilter = { collection: "", payment: "" };
+  let paymentTransferDateFilter = {
+    collection: { field: "due_date", from: "", to: "" },
+    payment: { field: "due_date", from: "", to: "" },
+  };
   let paymentsCollectionPagination = { page: 1, pageSize: 20 };
   let paymentTransferEditing = {};
   let paymentEditPresence = {};
@@ -31841,6 +31889,35 @@ document.addEventListener("DOMContentLoaded", () => {
     return parsedInvoiceDate >= minimumDate;
   }
 
+  /** תאריך השורה לפי השדה שנבחר, כ-Date או null. */
+  function paymentRowDateValue(row, field) {
+    const raw = String(row?.[field] || "").trim();
+    return raw ? parseDisplayDate(raw) : null;
+  }
+
+  /** האם השורה בתוך טווח התאריכים שנבחר לאותה טבלה. */
+  function paymentRowInDateRange(row, scope) {
+    const cfg = paymentTransferDateFilter[scope] || {};
+    if (!cfg.from && !cfg.to) return true;
+    const value = paymentRowDateValue(row, cfg.field || "due_date");
+    if (!value) return false;  // בלי תאריך אי אפשר לומר שהיא בטווח
+    // new Date("2026-06-30") נקרא כחצות UTC, בעוד תאריכי השורות הם מקומיים —
+    // בישראל זה מזיז את הגבול ב-3 שעות ומפיל יום שלם מהטווח. לכן בונים את
+    // התאריך מהחלקים במפורש, כזמן מקומי.
+    const localDate = (value, endOfDay) => {
+      const parts = String(value || "").split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+      return endOfDay
+        ? new Date(parts[0], parts[1] - 1, parts[2], 23, 59, 59, 999)
+        : new Date(parts[0], parts[1] - 1, parts[2], 0, 0, 0, 0);
+    };
+    const from = localDate(cfg.from, false);
+    if (from && value < from) return false;
+    const to = localDate(cfg.to, true);
+    if (to && value > to) return false;
+    return true;
+  }
+
   function paymentCollectionAlphaKey(row) {
     const value = String(row?.customer_name || "").trim().replace(/^["'״׳\s\-–—._,]+/, "");
     if (!value) return "";
@@ -31858,9 +31935,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getFilteredPaymentRows(rows, scope) {
     let filteredRows = getPaymentRowsAfterStatusFilter(rows, scope);
-    if (scope === "collection" && paymentTransferCollectionAlphaFilter) {
-      filteredRows = filteredRows.filter(row => paymentCollectionAlphaKey(row) === paymentTransferCollectionAlphaFilter);
+    const letter = paymentTransferAlphaFilter[scope] || "";
+    if (letter) {
+      filteredRows = filteredRows.filter(row => paymentCollectionAlphaKey(row) === letter);
     }
+    filteredRows = filteredRows.filter(row => paymentRowInDateRange(row, scope));
     return filteredRows;
   }
 
@@ -31870,17 +31949,60 @@ document.addEventListener("DOMContentLoaded", () => {
       payment: "",
     };
     paymentTransferCollectionAlphaFilter = "";
+    paymentTransferAlphaFilter = { collection: "", payment: "" };
+    paymentTransferDateFilter = {
+      collection: { field: "due_date", from: "", to: "" },
+      payment: { field: "due_date", from: "", to: "" },
+    };
+  }
+
+  function renderPaymentsAlphaNav(scope, rows = []) {
+    const host = scope === "payment"
+      ? document.getElementById("paymentsTransfer2026PaymentAlphaNav")
+      : paymentsTransfer2026CollectionAlphaNav;
+    if (!host) return;
+    // האותיות הזמינות נגזרות אחרי סינון הסטטוס והתאריכים, כדי שאות לא תיראה
+    // לחיצה אבל תחזיר טבלה ריקה.
+    const baseRows = getPaymentRowsAfterStatusFilter(Array.isArray(rows) ? rows : [], scope)
+      .filter(row => paymentRowInDateRange(row, scope));
+    const available = new Set(baseRows.map(paymentCollectionAlphaKey).filter(Boolean));
+    const active = paymentTransferAlphaFilter[scope] || "";
+    host.innerHTML = customerAlphabet.map(letter => {
+      const enabled = available.has(letter) || active === letter;
+      return `<button type="button" class="customers-alpha-btn${active === letter ? " active" : ""}" data-payments-letter="${escapeHtml(scope)}:${escapeHtml(letter)}" ${enabled ? "" : "disabled"}>${escapeHtml(letter)}</button>`;
+    }).join("");
+  }
+
+  /** מסנכרן את פקדי התאריך למצב הנוכחי ומראה כמה שורות סוננו. */
+  function renderPaymentsDateFilter(scope, rows = []) {
+    const bar = document.querySelector(`[data-payments-date-scope="${scope}"]`);
+    if (!bar) return;
+    const cfg = paymentTransferDateFilter[scope] || {};
+    bar.querySelectorAll("[data-payments-date-field]").forEach(button => {
+      const [, field] = String(button.dataset.paymentsDateField || "").split(":");
+      button.classList.toggle("active", (cfg.field || "due_date") === field);
+    });
+    const from = bar.querySelector(`[data-payments-date-from="${scope}"]`);
+    const to = bar.querySelector(`[data-payments-date-to="${scope}"]`);
+    if (from && from.value !== (cfg.from || "")) from.value = cfg.from || "";
+    if (to && to.value !== (cfg.to || "")) to.value = cfg.to || "";
+    const active = !!(cfg.from || cfg.to);
+    const clear = bar.querySelector(`[data-payments-date-clear="${scope}"]`);
+    if (clear) clear.hidden = !active;
+    const count = bar.querySelector(`[data-payments-date-count="${scope}"]`);
+    if (count) {
+      if (!active) { count.textContent = ""; return; }
+      const before = getPaymentRowsAfterStatusFilter(Array.isArray(rows) ? rows : [], scope);
+      const after = before.filter(row => paymentRowInDateRange(row, scope));
+      count.textContent = `${after.length} מתוך ${before.length} שורות בטווח`;
+    }
   }
 
   function renderPaymentsCollectionAlphaNav(rows = []) {
-    if (!paymentsTransfer2026CollectionAlphaNav) return;
-    const baseRows = getPaymentRowsAfterStatusFilter(Array.isArray(rows) ? rows : [], "collection");
-    const available = new Set(baseRows.map(paymentCollectionAlphaKey).filter(Boolean));
-    paymentsTransfer2026CollectionAlphaNav.innerHTML = customerAlphabet.map(letter => {
-      const enabled = available.has(letter);
-      const active = paymentTransferCollectionAlphaFilter === letter;
-      return `<button type="button" class="customers-alpha-btn${active ? " active" : ""}" data-payments-collection-letter="${escapeHtml(letter)}" ${enabled ? "" : "disabled"}>${escapeHtml(letter)}</button>`;
-    }).join("");
+    renderPaymentsAlphaNav("collection", rows);
+    renderPaymentsAlphaNav("payment", rows);
+    renderPaymentsDateFilter("collection", rows);
+    renderPaymentsDateFilter("payment", rows);
   }
 
   function sortPaymentRows(rows, scope) {
@@ -32462,8 +32584,8 @@ document.addEventListener("DOMContentLoaded", () => {
   function paymentFilterSummaryHtml(rows, scope) {
     const filter = paymentTransferViewFilter[scope] || "";
     const total = rows.reduce((sum, row) => sum + paymentAmountValue(row.amount), 0);
-    const alphaHint = scope === "collection" && paymentTransferCollectionAlphaFilter
-      ? ` מסונן כרגע גם לפי האות <strong>${escapeHtml(paymentTransferCollectionAlphaFilter)}</strong>.`
+    const alphaHint = paymentTransferAlphaFilter[scope]
+      ? ` מסונן כרגע גם לפי האות <strong>${escapeHtml(paymentTransferAlphaFilter[scope])}</strong>.`
       : "";
     if (!rows.length) {
       if (filter === "paid") {
@@ -33451,8 +33573,8 @@ document.addEventListener("DOMContentLoaded", () => {
         .map(paymentCollectionAlphaKey)
         .filter(Boolean)
     );
-    if (paymentTransferCollectionAlphaFilter && !availableCollectionLetters.has(paymentTransferCollectionAlphaFilter)) {
-      paymentTransferCollectionAlphaFilter = "";
+    if (paymentTransferAlphaFilter.collection && !availableCollectionLetters.has(paymentTransferAlphaFilter.collection)) {
+      paymentTransferAlphaFilter.collection = "";
     }
     renderPaymentsCollectionAlphaNav(paymentTransferState.payments_2026_collection);
     renderPaymentTransferRows(paymentsTransfer2026CollectionBody, paymentTransferState.payments_2026_collection, "collection");
@@ -45586,12 +45708,47 @@ document.addEventListener("DOMContentLoaded", () => {
     renderFinanceInvoicesTable();
   });
 
-  paymentsTransfer2026CollectionAlphaNav?.addEventListener("click", event => {
-    const button = event.target.closest("[data-payments-collection-letter]");
+  // סינון אלפביתי — אותו טיפול לשתי הטבלאות
+  document.addEventListener("click", event => {
+    const button = event.target.closest("[data-payments-letter]");
     if (!button || button.hasAttribute("disabled")) return;
-    const letter = String(button.dataset.paymentsCollectionLetter || "").trim();
-    paymentTransferCollectionAlphaFilter = paymentTransferCollectionAlphaFilter === letter ? "" : letter;
-    paymentsCollectionPagination.page = 1;
+    const [scope, letter] = String(button.dataset.paymentsLetter || "").split(":");
+    if (!scope) return;
+    paymentTransferAlphaFilter[scope] = paymentTransferAlphaFilter[scope] === letter ? "" : letter;
+    if (scope === "collection") paymentsCollectionPagination.page = 1;
+    renderPaymentsTransferState(paymentTransferState);
+  });
+
+  // סינון לפי טווח תאריכים — בחירת שדה, טווח, וניקוי
+  document.addEventListener("click", event => {
+    const fieldButton = event.target.closest("[data-payments-date-field]");
+    if (fieldButton) {
+      const [scope, field] = String(fieldButton.dataset.paymentsDateField || "").split(":");
+      if (!scope || !paymentTransferDateFilter[scope]) return;
+      paymentTransferDateFilter[scope].field = field;
+      renderPaymentsTransferState(paymentTransferState);
+      return;
+    }
+    const clearButton = event.target.closest("[data-payments-date-clear]");
+    if (clearButton) {
+      const scope = String(clearButton.dataset.paymentsDateClear || "");
+      if (!paymentTransferDateFilter[scope]) return;
+      paymentTransferDateFilter[scope].from = "";
+      paymentTransferDateFilter[scope].to = "";
+      if (scope === "collection") paymentsCollectionPagination.page = 1;
+      renderPaymentsTransferState(paymentTransferState);
+    }
+  });
+
+  document.addEventListener("change", event => {
+    const target = event.target;
+    if (!target || target.tagName !== "INPUT") return;
+    const fromScope = target.getAttribute("data-payments-date-from");
+    const toScope = target.getAttribute("data-payments-date-to");
+    const scope = fromScope || toScope;
+    if (!scope || !paymentTransferDateFilter[scope]) return;
+    paymentTransferDateFilter[scope][fromScope ? "from" : "to"] = String(target.value || "");
+    if (scope === "collection") paymentsCollectionPagination.page = 1;
     renderPaymentsTransferState(paymentTransferState);
   });
 
