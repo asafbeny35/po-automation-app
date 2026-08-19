@@ -224,6 +224,7 @@ ROUTE_MANIFEST = [
     {"method": "GET", "path": "/debug-whatsapp", "category": "whatsapp", "safe": True},
     {"method": "POST", "path": "/finance-invoice-set-paid", "category": "finance", "safe": False},
     {"method": "GET", "path": "/hr-hours-detail-pdf", "category": "hr", "safe": True},
+    {"method": "GET", "path": "/hr-installations-pdf", "category": "hr", "safe": True},
     {"method": "POST", "path": "/hr-installations-add-manual", "category": "hr", "safe": False},
     {"method": "POST", "path": "/hr-installations-delete-manual", "category": "hr", "safe": False},
     {"method": "POST", "path": "/hr-installations-save-month", "category": "hr", "safe": False},
