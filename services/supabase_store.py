@@ -385,6 +385,12 @@ TABLE_CONFIGS: dict[str, JsonDict] = {
         "table": "app_settings",
         "pk_field": "key",
         "select": "key,value,updated_at",
+        # בלי הסינון הזה finance_settings "מחזיק" את כל טבלת app_settings: שמירת
+        # הגדרה אחת טוענת את כל השורות, ממפה כל אחת דרך _map_finance_setting
+        # ומחזירה אותן — מה שהופך כל מצב-אפליקציה אחר למעטפת ריקה, ומוחק כל
+        # מפתח שלא נכלל בשמירה. מצבי האפליקציה שמורים תחת התחילית app_ ולכן
+        # הם אינם שייכים לדומיין הזה.
+        "filter": {"key": "not.like.app_*"},
         "id_getter": _id_finance_setting,
         "mapper": _map_finance_setting,
         "decoder": _decode_finance_setting,

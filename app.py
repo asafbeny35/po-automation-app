@@ -906,6 +906,20 @@ async def _log_activity(
         pass
 
 
+def _app_state_row_is_hollow(row: dict) -> bool:
+    """שורת app_settings שנשארה בלי המטען שלה.
+
+    כשדומיין אחר כותב מעל טבלת app_settings, השורה נשמרת כמעטפת בלבד —
+    setting_key/setting_value/updated_at ותו לא. מעטפת כזאת היא dict תקין,
+    ולכן בלי הבדיקה הזאת הקוראים מקבלים "מצב ריק" ומאבדים את הנתונים בשקט
+    במקום ליפול לקובץ המקומי.
+    """
+    meaningful = {k for k, v in (row or {}).items()
+                  if k not in ("setting_key", "setting_value", "updated_at", "key")
+                  and v not in (None, "", {}, [])}
+    return not meaningful
+
+
 def _load_supabase_app_state(domain: str) -> dict | None:
     if not _app_state_enabled(domain):
         return None
@@ -915,6 +929,12 @@ def _load_supabase_app_state(domain: str) -> dict | None:
         return None
     for row in rows:
         if isinstance(row, dict):
+            if _app_state_row_is_hollow(row):
+                log_handled_error(
+                    f"app state row for {domain} came back hollow — falling back to the local file",
+                    RuntimeError(f"hollow app_settings row: {sorted(row)}"),
+                )
+                return None
             return dict(row)
     return None
 
