@@ -10,6 +10,7 @@ import httpx
 from .config import settings
 from .runtime_paths import runtime_root
 from .models import PurchaseOrderData
+from .payment_terms import business_today, calculate_net_due_date
 from .parsers.common import fix_hebrew_text
 
 
@@ -763,6 +764,8 @@ class GreenInvoiceClient:
         safe_customer = _safe_folder_name(customer_val)
         safe_po = _safe_folder_name(po_val)
         folder_name = f"{safe_customer} - {safe_po}"
+        document_date = business_today()
+        due_date = calculate_net_due_date(document_date, po.payment_terms_days)
 
         return {
             "token": token,
@@ -771,6 +774,21 @@ class GreenInvoiceClient:
             "footer_text": footer_text,
             "client_payload": client_payload,
             "folder_name": folder_name,
+            "document_date": document_date.isoformat(),
+            "due_date": due_date.isoformat(),
+        }
+
+    def _base_sales_document_payload(self, po: PurchaseOrderData, ctx: dict) -> dict:
+        return {
+            "lang": "he",
+            "currency": "ILS",
+            "vatType": 0,
+            "date": ctx["document_date"],
+            "dueDate": ctx["due_date"],
+            "client": ctx["client_payload"],
+            "description": f"הזמנת רכש {po.po_number or ''}",
+            "remarks": ctx["footer_text"],
+            "bottomText": ctx["footer_text"],
         }
 
     def _sales_output_dir(self, po: PurchaseOrderData, output_dir=None) -> Path:
@@ -794,14 +812,8 @@ class GreenInvoiceClient:
     async def create_delivery_only(self, po: PurchaseOrderData, output_dir=None):
         ctx = await self._build_sales_document_context(po)
         delivery_payload = {
+            **self._base_sales_document_payload(po, ctx),
             "type": ctx["delivery_type"],
-            "lang": "he",
-            "currency": "ILS",
-            "vatType": 0,
-            "client": ctx["client_payload"],
-            "description": f"הזמנת רכש {po.po_number or ''}",
-            "remarks": ctx["footer_text"],
-            "bottomText": ctx["footer_text"],
             "income": self._rows_for_delivery(po),
             "incomeRows": self._rows_for_delivery(po),
         }
@@ -820,14 +832,8 @@ class GreenInvoiceClient:
     async def create_invoice_only(self, po: PurchaseOrderData, output_dir=None, linked_document_id: str = ""):
         ctx = await self._build_sales_document_context(po)
         invoice_payload = {
+            **self._base_sales_document_payload(po, ctx),
             "type": ctx["invoice_type"],
-            "lang": "he",
-            "currency": "ILS",
-            "vatType": 0,
-            "client": ctx["client_payload"],
-            "description": f"הזמנת רכש {po.po_number or ''}",
-            "remarks": ctx["footer_text"],
-            "bottomText": ctx["footer_text"],
             "linkedDocumentIds": [linked_document_id] if str(linked_document_id or "").strip() else [],
             "income": self._rows_for_invoice(po),
             "incomeRows": self._rows_for_invoice(po),
@@ -848,27 +854,15 @@ class GreenInvoiceClient:
         ctx = await self._build_sales_document_context(po)
 
         delivery_payload = {
+            **self._base_sales_document_payload(po, ctx),
             "type": ctx["delivery_type"],
-            "lang": "he",
-            "currency": "ILS",
-            "vatType": 0,
-            "client": ctx["client_payload"],
-            "description": f"הזמנת רכש {po.po_number or ''}",
-            "remarks": ctx["footer_text"],
-            "bottomText": ctx["footer_text"],
             "income": self._rows_for_delivery(po),
             "incomeRows": self._rows_for_delivery(po),
         }
 
         invoice_payload = {
+            **self._base_sales_document_payload(po, ctx),
             "type": ctx["invoice_type"],
-            "lang": "he",
-            "currency": "ILS",
-            "vatType": 0,
-            "client": ctx["client_payload"],
-            "description": f"הזמנת רכש {po.po_number or ''}",
-            "remarks": ctx["footer_text"],
-            "bottomText": ctx["footer_text"],
             "linkedDocumentIds": [],
             "income": self._rows_for_invoice(po),
             "incomeRows": self._rows_for_invoice(po),

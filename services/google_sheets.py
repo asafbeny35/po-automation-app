@@ -13,6 +13,7 @@ from .config import settings
 from .greeninvoice import GreenInvoiceClient, _canonical_income_customer_name
 from . import supabase_store
 from .google_service_account import build_service_account_credentials
+from .payment_terms import calculate_net_due_date
 from .runtime_paths import runtime_root
 
 SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
@@ -1771,22 +1772,7 @@ def _sheetof_due_date(issue_date_value: str, payment_terms_value: str | int | fl
         parsed_issue_date = datetime.strptime(issue_date, "%d/%m/%Y").date()
     except Exception:
         return ""
-    try:
-        terms_days = int(float(str(payment_terms_value or 0).strip() or 0))
-    except Exception:
-        terms_days = 0
-
-    if parsed_issue_date.month == 12:
-        base_date = date(parsed_issue_date.year + 1, 1, 1)
-    else:
-        base_date = date(parsed_issue_date.year, parsed_issue_date.month + 1, 1)
-
-    due_date = base_date + timedelta(days=terms_days)
-    if due_date.day != 1:
-        if due_date.month == 12:
-            due_date = date(due_date.year + 1, 1, 1)
-        else:
-            due_date = date(due_date.year, due_date.month + 1, 1)
+    due_date = calculate_net_due_date(parsed_issue_date, payment_terms_value)
     return due_date.strftime("%d/%m/%Y")
 
 
