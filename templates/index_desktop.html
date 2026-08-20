@@ -42106,8 +42106,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const driveSync = result.drive_sync_result || {};
-    const driveUrl = (fileId) => fileId ? `https://drive.google.com/uc?export=download&id=${fileId}` : null;
+    // צורת הקישור שכל שאר המערכת משתמשת בה. הצורה הישנה, /uc?export=download,
+    // מנותבת ל-drive.usercontent עם authuser=0 — כלומר לחשבון הגוגל הראשון
+    // בדפדפן. אם זה לא החשבון שיש לו גישה, הקישור פשוט נשבר.
+    const driveUrl = (fileId) => fileId ? `https://drive.google.com/file/d/${fileId}/view` : null;
+    // קבצים מקומיים לא שורדים על Vercel — הבקשה הבאה מגיעה למכונה אחרת שבה
+    // הקובץ כבר לא קיים. משתמשים בהם רק כשאין מזהה דרייב.
     const localUrl = (file) => file ? `/files/${encodeURIComponent(file).replace(/%2F/g, "/")}` : null;
+    const labelIds = (Array.isArray(result.label_drive_file_ids) ? result.label_drive_file_ids
+                      : (driveSync.label_drive_file_ids || [])).filter(Boolean);
 
     const links = [
       {
@@ -42129,6 +42136,16 @@ document.addEventListener("DOMContentLoaded", () => {
         label: "PDF משלוח",
         sublabel: "העותק שנשמר לתיקיית ההזמנה",
         href: localUrl(result.transport_label_file)
+      },
+      {
+        label: "מדבקה",
+        sublabel: labelIds.length > 1 ? `${labelIds.length} מדבקות` : "המדבקה שנוצרה להזמנה",
+        href: driveUrl(labelIds[0])
+      },
+      {
+        label: "תיקיית ההזמנה ב-Drive",
+        sublabel: "כל הקבצים שנוצרו להזמנה הזו",
+        href: driveSync.order_folder_id ? `https://drive.google.com/drive/folders/${driveSync.order_folder_id}` : null
       }
     ].filter(item => item.href);
 
