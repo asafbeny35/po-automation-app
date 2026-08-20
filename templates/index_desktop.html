@@ -42019,6 +42019,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderDownloadLinks(result) {
     // כישלון ביצירת מדבקה חייב לצוף — הזמנה בלי המדבקה שלה נראתה "הושלמה" עד
     // שהתגלה בשטח שאין מדבקה על הסחורה.
+    if (result && result.coc_failure) {
+      showToast(
+        "error",
+        "תעודת C.O.C לא נוצרה",
+        `${result.coc_failure} פלסן דורשים אותה — צור אותה לפני שליחת אישור המסירה.`,
+        12000
+      );
+    }
     if (result && result.label_failure) {
       showToast(
         "error",

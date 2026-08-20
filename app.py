@@ -29083,6 +29083,7 @@ async def finalize(request: Request):
     if label_expected and not label_pdf_paths and not label_failure:
         label_failure = "המדבקה לא נוצרה ולא הוחזרה שגיאה."
     # ===== COC (PLASAN ONLY) =====
+    coc_failure = ""
     try:
         import subprocess
 
@@ -29091,39 +29092,42 @@ async def finalize(request: Request):
             target_dir.mkdir(parents=True, exist_ok=True)
 
             coc_path = target_dir / f"coc_{po.po_number}.pdf"
-            coc_result = subprocess.run(
-                [
-                    sys.executable,
-                    "scripts/generate_coc.py",
-                    json.dumps(
-                        {
-                            "po": po.po_number,
-                            "sku": po.items[0].sku,
-                            "desc": po.items[0].description,
-                            "qty": po.items[0].quantity,
-                            "date": po.po_date,
-                            "rolls": label_count_for_coc,
-                        }
-                    ),
-                    str(coc_path),
-                ],
-                cwd=str(BASE_DIR),
-                capture_output=True,
-                text=True,
-                check=False,
-            )
-            if coc_result.returncode != 0:
-                raise RuntimeError(
-                    f"COC generator exited with {coc_result.returncode}: "
-                    f"{(coc_result.stderr or coc_result.stdout or '').strip()}"
+            coc_payload = {
+                "po": po.po_number,
+                "sku": po.items[0].sku,
+                "desc": po.items[0].description,
+                "qty": po.items[0].quantity,
+                "date": po.po_date,
+                "rolls": label_count_for_coc,
+            }
+            if IS_VERCEL:
+                # scripts/generate_coc.py מרנדר דרך Chromium, ו-Playwright לא מותקן
+                # על Vercel — לכן תעודות של פלסן שנוצרו מהענן פשוט לא נוצרו.
+                from services.coc_generator_pdf import generate_coc_pdf as _generate_coc_pdf
+
+                await asyncio.to_thread(_generate_coc_pdf, coc_payload, str(coc_path))
+            else:
+                coc_result = subprocess.run(
+                    [sys.executable, "scripts/generate_coc.py", json.dumps(coc_payload), str(coc_path)],
+                    cwd=str(BASE_DIR),
+                    capture_output=True,
+                    text=True,
+                    check=False,
                 )
+                if coc_result.returncode != 0:
+                    raise RuntimeError(
+                        f"COC generator exited with {coc_result.returncode}: "
+                        f"{(coc_result.stderr or coc_result.stdout or '').strip()}"
+                    )
             if not coc_path.exists():
                 raise FileNotFoundError(f"COC was not created at {coc_path}")
 
             print("COC CREATED:", coc_path)
 
     except Exception as e:
-        print("COC ERROR:", repr(e))
+        # תעודת C.O.C היא מסמך שהלקוח דורש; כישלון שקט כאן התגלה רק אחרי האספקה.
+        coc_failure = str(e) or e.__class__.__name__
+        log_handled_error(f"COC generation failed for PO {po.po_number}", e)
 
     source_po_copy_path = None
     transport_label_output_path = None
@@ -29648,6 +29652,7 @@ async def finalize(request: Request):
             "label_files": label_files,
             "label_expected": label_expected,
             "label_failure": label_failure,
+            "coc_failure": coc_failure,
             "merged_file": str(Path(merged_pdf_path).relative_to(OUTPUT_DIR)) if merged_pdf_path else "",
             "transport_label_file": str(Path(transport_label_output_path).relative_to(OUTPUT_DIR)) if transport_label_output_path else "",
             "source_po_file": str(Path(source_po_copy_path).relative_to(OUTPUT_DIR)) if source_po_copy_path else "",
