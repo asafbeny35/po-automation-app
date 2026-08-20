@@ -97,13 +97,20 @@ enum ShareUploadCore {
     /// מעלה קובץ ששותף, לפי הסוג שנבחר. מחזיר הודעת הצלחה בעברית.
     /// `markUnpaid` (חשבונית בלבד): כמו הטוגל "טרם שולמה" בדסקטופ — החשבונית
     /// מצטרפת גם לטבלת "לתשלום" בתשלומים והעברות.
+    /// אחרי התקנה מחדש של האפליקציה ה-Keychain המשותף יכול לחזור ריק, וה-Extension
+    /// נשאר בלי session עד שנפתחת האפליקציה הראשית פעם אחת. עדיף לומר את זה מיד
+    /// מאשר להעלות קובץ שלם ואז ליפול על 401.
+    private static func requireSession(_ cookieHeader: String) throws {
+        guard !cookieHeader.isEmpty else {
+            throw UploadError(message: "אין התחברות פעילה — פתח את אפליקציית בן יעקב, התחבר ונסה שוב.")
+        }
+    }
+
     static func upload(kind: Kind, fileData: Data, filename: String, mimeType: String,
                        markUnpaid: Bool = false,
                        requiresInstallation: Bool = false,
                        baseURL: URL, cookieHeader: String, send: Sender) async throws -> String {
-        guard !cookieHeader.isEmpty else {
-            throw UploadError(message: "אין התחברות פעילה — פתח את אפליקציית בן יעקב, התחבר ונסה שוב.")
-        }
+        try requireSession(cookieHeader)
         switch kind {
         case .order:
             // עולה כהזמנה בעבודה — מחכה להשלמה בטאב הזמנות.
@@ -182,6 +189,7 @@ enum ShareUploadCore {
         guard !cookieHeader.isEmpty else {
             throw UploadError(message: "אין התחברות פעילה — פתח את אפליקציית בן יעקב, התחבר ונסה שוב.")
         }
+        try requireSession(cookieHeader)
         var request = URLRequest(url: baseURL.appendingPathComponent("mobile/domains/delivery_confirmations"))
         request.httpMethod = "GET"
         request.setValue(cookieHeader, forHTTPHeaderField: "Cookie")
@@ -209,6 +217,7 @@ enum ShareUploadCore {
     static func uploadSignedDelivery(to target: DeliveryTarget,
                                      fileData: Data, filename: String, mimeType: String,
                                      baseURL: URL, cookieHeader: String, send: Sender) async throws {
+        try requireSession(cookieHeader)
         _ = try await postMultipart(
             path: "delivery-confirmations-upload",
             query: [
@@ -228,6 +237,7 @@ enum ShareUploadCore {
     static func sendDeliveryConfirmation(for target: DeliveryTarget,
                                          baseURL: URL, cookieHeader: String,
                                          send: Sender) async throws -> String {
+        try requireSession(cookieHeader)
         let data = try await postJSON(path: "delivery-confirmations-send", body: [
             "fulfillment_id": target.fulfillmentID,
             "po_number": target.poNumber,
