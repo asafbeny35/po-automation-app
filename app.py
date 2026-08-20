@@ -17543,14 +17543,20 @@ async def auth_logout(request: Request):
 
 @app.post("/open-output-folder")
 async def open_output_folder():
-    if IS_VERCEL:
-        return JSONResponse({"error": "פתיחת תיקייה אינה זמינה בסביבת ענן"}, status_code=501)
+    """מחזיר את הקישור לתיקיית ההזמנות ב-Drive.
+
+    בעבר זה הריץ `open` על תיקיית output המקומית — שריד מהתקופה שבה האפליקציה
+    רצה רק על המחשב. מאז המסמכים נשמרים ב-Drive, והכפתור הצביע על תיקייה
+    שרובה ריקה (ובענן פשוט החזיר שגיאה).
+    """
     try:
-        subprocess.run(["open", str(OUTPUT_DIR)], check=True)
-        return {"ok": True}
+        folder_id = await asyncio.to_thread(managed_storage_root_folder_id)
+        if not folder_id:
+            return JSONResponse({"error": "לא נמצאה תיקיית ההזמנות ב-Drive."}, status_code=404)
+        return {"ok": True, "url": f"https://drive.google.com/drive/folders/{folder_id}", "folder_id": folder_id}
     except Exception as exc:
         log_handled_error("open_output_folder failed", exc)
-        return JSONResponse({"error": f"לא הצלחתי לפתוח את תיקיית output: {exc}"}, status_code=500)
+        return JSONResponse({"error": f"לא הצלחתי לאתר את תיקיית ההזמנות ב-Drive: {exc}"}, status_code=500)
 
 
 def _quote_file_relative_to_output(path: Path | str | None) -> str:

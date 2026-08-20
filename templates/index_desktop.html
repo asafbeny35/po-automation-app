@@ -14441,7 +14441,7 @@ input:focus {
               </svg>
               <span>התחל מחדש</span>
             </button>
-            <button class="ghost-btn" type="button" id="openOutputButton">פתח תיקיית Output</button>
+            <button class="ghost-btn" type="button" id="openOutputButton">פתח תיקיית מסמכים ב-Drive</button>
           </div>
         </div>
 
@@ -22862,7 +22862,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     setTitle("#logoutButton", "מנתק את הסשן הפעיל, מוחק את הזכירה של המחשב אם צריך, ומחזיר אותך למסך ההתחברות.");
     setTitle("#dropZone", "פותח בחירת קובץ או מקבל גרירה של PDF הזמנת רכש. אחר כך הקובץ יפוענח בשלב ההפקה והיצירה.");
-    setTitle("#openOutputButton", "פותח ב-Finder את תיקיית Output שבה נשמרים כל המסמכים, המיזוגים והקבצים שנוצרו מההזמנות.");
+    setTitle("#openOutputButton", "פותח ב-Drive את התיקייה שבה נשמרים כל מסמכי ההזמנות — תעודות משלוח, חשבוניות, מדבקות והקבצים המאוחדים, מסודרים לפי לקוח והזמנה.");
     setTitle("#resetButton", "מנקה את ההזמנה הנוכחית מהמסך: קובץ, שדות שחולצו, תווית משלוח והבחירות ששמורות בטיוטה.");
     setTitle("#transportReplaceButton", "פותח בחירת קובץ חדשה ל-PDF משלוח, מחליף את הקובץ השמור, והוא יצורף אוטומטית לכל יצירה עם משלוח.");
     setTitle("#transportClearButton", "מסיר מהטיוטה את PDF המשלוח ששמור כרגע, כדי שהיצירה הבאה לא תצרף אותו בטעות.");
@@ -42834,15 +42834,24 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   openOutputButton.addEventListener("click", async () => {
+    // נפתח מיד, לפני ה-fetch: חוסמי חלונות קופצים חוסמים window.open שמגיע
+    // אחרי await, כי הוא כבר לא נחשב תגובה ישירה ללחיצה.
+    const tab = window.open("", "_blank", "noopener");
     try {
       const response = await fetch("/open-output-folder", { method: "POST" });
       const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.error || "לא הצלחתי לפתוח את תיקיית output.");
+      if (!response.ok || !result.url) {
+        throw new Error(result.error || "לא הצלחתי לאתר את תיקיית ההזמנות ב-Drive.");
       }
-      showToast("success", "תיקיית output נפתחה", "Finder נפתח ישירות על תיקיית הקבצים של האפליקציה.");
+      if (tab) {
+        tab.location = result.url;
+      } else {
+        window.open(result.url, "_blank", "noopener");
+      }
+      showToast("success", "תיקיית המסמכים נפתחה", "כל מסמכי ההזמנות ב-Drive, מסודרים לפי לקוח והזמנה.");
     } catch (error) {
-      showToast("error", "שגיאה בפתיחת output", error.message || "לא הצלחתי לפתוח את התיקייה.");
+      if (tab) tab.close();
+      showToast("error", "שגיאה בפתיחת התיקייה", error.message || "לא הצלחתי לפתוח את התיקייה.");
     }
   });
 
