@@ -42017,6 +42017,16 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderDownloadLinks(result) {
+    // כישלון ביצירת מדבקה חייב לצוף — הזמנה בלי המדבקה שלה נראתה "הושלמה" עד
+    // שהתגלה בשטח שאין מדבקה על הסחורה.
+    if (result && result.label_failure) {
+      showToast(
+        "error",
+        "ההזמנה נוצרה — אבל המדבקה לא",
+        `${result.label_failure} צור את המדבקה ידנית ב"מדבקות משלוח" לפני שהסחורה יוצאת.`,
+        12000
+      );
+    }
     if (result && result.is_quote) {
       const quoteNumber = String(result.quote_document_number || "").trim() || "ללא מספר";
       const quoteFile = String(result.quote_file || "").trim();

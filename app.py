@@ -28913,6 +28913,8 @@ async def finalize(request: Request):
     label_pdf_path = None
     label_pdf_paths = []
     label_count_for_coc = 1
+    label_failure = ""       # סיבת הכישלון, אם המדבקה לא נוצרה למרות שהיא נדרשת
+    label_expected = False   # האם בכלל היו פריטי סחורה שדורשים מדבקה
     try:
         if IS_VERCEL:
             from services.label_generator_v2 import generate_label_pdf
@@ -28926,6 +28928,7 @@ async def finalize(request: Request):
         item = merchandise_items[0] if merchandise_items else _primary_merchandise_po_item(po)
         if not merchandise_items or not item:
             raise RuntimeError("skip_label_generation")
+        label_expected = True
         label_dir = Path(delivery_pdf_path).parent if delivery_pdf_path else OUTPUT_DIR
         label_dir.mkdir(parents=True, exist_ok=True)
 
@@ -29073,7 +29076,12 @@ async def finalize(request: Request):
 
     except Exception as e:
         if str(e) != "skip_label_generation":
-            print("LABEL ERROR:", repr(e))
+            # לא לבלוע: הזמנה שנוצרה בלי המדבקה שלה נראתה "הושלמה בהצלחה"
+            # והפער התגלה רק כשהסחורה כבר הייתה צריכה לצאת.
+            label_failure = str(e) or e.__class__.__name__
+            log_handled_error(f"label generation failed for PO {po.po_number}", e)
+    if label_expected and not label_pdf_paths and not label_failure:
+        label_failure = "המדבקה לא נוצרה ולא הוחזרה שגיאה."
     # ===== COC (PLASAN ONLY) =====
     try:
         import subprocess
@@ -29638,6 +29646,8 @@ async def finalize(request: Request):
                 str(Path(invoice_pdf_path).relative_to(OUTPUT_DIR)) if invoice_pdf_path else "",
             ],
             "label_files": label_files,
+            "label_expected": label_expected,
+            "label_failure": label_failure,
             "merged_file": str(Path(merged_pdf_path).relative_to(OUTPUT_DIR)) if merged_pdf_path else "",
             "transport_label_file": str(Path(transport_label_output_path).relative_to(OUTPUT_DIR)) if transport_label_output_path else "",
             "source_po_file": str(Path(source_po_copy_path).relative_to(OUTPUT_DIR)) if source_po_copy_path else "",
