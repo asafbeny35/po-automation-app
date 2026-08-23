@@ -49910,6 +49910,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const hrInstPending = {};          // rowId -> {field: value} — שינויים שטרם נשמרו
     const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
 
+    // רשת ביטחון: שינוי שטרם נשמר חי רק בזיכרון, ורענון דף מחק אותו בשקט.
+    window.addEventListener("beforeunload", (event) => {
+      if (!Object.keys(hrInstPending).length) return;
+      event.preventDefault();
+      event.returnValue = "";
+    });
+
     /** הערך להצגה: מה שנערך ועדיין לא נשמר גובר על מה שהגיע מהשרת. */
     function hrInstRowValue(row, field) {
       const pending = hrInstPending[String(row.visit_id || "")];
@@ -50181,9 +50188,16 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", () => {
           const rowId = btn.closest("[data-hr-inst-row]")?.dataset.hrInstRow;
           if (!rowId) return;
-          if (hrInstEditing.has(rowId)) hrInstEditing.delete(rowId);
-          else hrInstEditing.add(rowId);
-          renderHrInstallations();
+          if (!hrInstEditing.has(rowId)) {
+            hrInstEditing.add(rowId);
+            renderHrInstallations();
+            return;
+          }
+          // סגירת העריכה שומרת מיד. קודם השינויים נשארו בזיכרון עד ללחיצה על
+          // "שמור שינויים", ורענון דף מחק אותם בלי לומר מילה.
+          hrInstEditing.delete(rowId);
+          if (hrInstPending[rowId]) saveHrInstDirtyRows([rowId]);
+          else renderHrInstallations();
         });
       });
 
@@ -50222,11 +50236,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      card.querySelector("[data-hr-inst-save]")?.addEventListener("click", async () => {
-        const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
-        const dirtyIds = (month?.rows || [])
-          .map(r => String(r.visit_id || ""))
-          .filter(id => hrInstPending[id]);
+      const saveHrInstDirtyRows = async (dirtyIds) => {
         if (!dirtyIds.length) return;
         const saveBtn = card.querySelector("[data-hr-inst-save]");
         if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = "שומר..."; }
@@ -50256,7 +50266,12 @@ document.addEventListener("DOMContentLoaded", () => {
           notify(err.message || "לא הצלחתי לשמור את השינויים.");
           renderHrInstallations();
         }
-      });
+      };
+      const hrInstDirtyIdsOfMonth = () => {
+        const month = (hrInstallationsData.months || []).find(m => m.month_key === monthKey);
+        return (month?.rows || []).map(r => String(r.visit_id || "")).filter(id => hrInstPending[id]);
+      };
+      card.querySelector("[data-hr-inst-save]")?.addEventListener("click", () => saveHrInstDirtyRows(hrInstDirtyIdsOfMonth()));
       const saveMonth = async (payload) => {
         try {
           const res = await fetch("/hr-installations-save-month", {
