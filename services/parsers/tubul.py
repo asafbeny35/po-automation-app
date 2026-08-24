@@ -1,10 +1,20 @@
 import re
 
 from services.models import POItem
-from services.parsers.common import fix_hebrew_text, sanitize_contact_pair
+from services.parsers.common import fix_hebrew_text, fix_hebrew_rtl_text, sanitize_contact_pair
 
 
-CUSTOMER_NAME = 'טובול חומרי בניין בע"מ'
+# השם כפי שהוא רשום בקטלוג הלקוחות ובהזמנות הקודמות (ח.פ 511529414). שם אחר
+# כאן גורם להזמנה להיראות כלקוח חדש, וזה מה שקרה בהזמנה 1208144146.
+CUSTOMER_NAME = "טובול ציוד וחומרי בניין"
+
+# טובול שולחת שני סוגי מסמכים. הוותיק הוא "הזמנת רכש", והשני — שנפתח מול לקוח
+# קצה — הוא "הזמנת אספקה ישירות ללקוח". שדות הזיהוי, הכותרת ושורת הפריט שונים
+# בין השניים, ולכן לכל אחד נתיב משלו.
+_TUBUL_MARKERS = (
+    'מרלו"ג מודיעין', "מרכז עינב", "טובול חומרי בניין",
+    "הזמנת אספקה ישירות ללקוח", "למזמין טובול",
+)
 
 
 def _parse_amount(value: str) -> float:
@@ -50,10 +60,108 @@ def _extract_customer_email(text: str) -> str:
     return ""
 
 
+def _unmirror(value: str) -> str:
+    """סוגריים לא מתהפכים ב-fix_hebrew_rtl_text כי הם לא טוקן עברי, ולכן
+    "בע''מ ]1983[" חוזר עם הסוגריים הפוכים. כאן מיישרים אותם ואת הגרשיים."""
+    text = str(value or "").strip().replace("''", '"')
+    if "]" in text and "[" in text and text.index("]") < text.index("["):
+        text = text.replace("]", "\x00").replace("[", "]").replace("\x00", "[")
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _normalize_phone(value: str) -> str:
+    digits = re.sub(r"\D", "", str(value or ""))
+    if len(digits) == 10 and digits.startswith("05"):
+        return f"{digits[:3]}-{digits[3:]}"
+    if len(digits) == 9 and digits.startswith("0"):
+        return f"{digits[:2]}-{digits[2:]}"
+    return str(value or "").strip()
+
+
+def _parse_direct_supply(logical: str):
+    """הפורמט "הזמנת אספקה ישירות ללקוח" — טובול מזמינה, והסחורה נשלחת ללקוח הקצה.
+
+    עובד על הטקסט אחרי fix_hebrew_rtl_text ולא אחרי fix_hebrew_text: הראשון הופך
+    סדר מילים ומשאיר מספרים כמו שהם, והשני הופך את השורה כולה ובכך הופך גם ח.פ,
+    טלפונים וסכומים. משם הגיעו 414925115 במקום 511529414 ו-0.27 ₪ במקום 12,272.
+    """
+    def find(pattern: str, group: int = 1) -> str:
+        match = re.search(pattern, logical, re.MULTILINE)
+        return match.group(group).strip() if match else ""
+
+    header = {
+        "customer_email": "",
+        "customer_id": find(r"מס ח\.פ\s+(\d{8,9})"),
+        "po_number": find(r"הזמנת אספקה[^\n]*?(\d{6,})"),
+        "po_date": _normalize_date(find(r"מועד אספקה\s+(\d{2}/\d{2}/\d{2,4})")),
+        "subtotal": _parse_amount(find(r'סה"כ אחרי הנחה\s+([\d,]+\.\d{2})')),
+        "vat": _parse_amount(find(r'מע"מ\s+\d+%\s+([\d,]+\.\d{2})')),
+        "total": _parse_amount(find(r'סה"כ לתשלום\s+([\d,]+\.\d{2})')),
+        "payment_terms_days": 120,
+        "payment_terms_label": "שוטף + 120",
+        "project": _unmirror(find(r"שם לקוח\s*:\s*(.+?)\s*$")),
+        "delivery_address": _unmirror(find(r"כתובת\s*:\s*(.+?)\s*$")),
+        "contact_name": "",
+        "contact_phone": "",
+        "customer_phone": _normalize_phone(find(r"טל:\s*(0\d{1,2}-?\d{7})")),
+    }
+
+    terms_days = find(r"תנאי תשלום:\s*שוטף\s*\+\s*(\d+)")
+    if terms_days:
+        header["payment_terms_days"] = int(terms_days)
+        header["payment_terms_label"] = f"שוטף + {terms_days}"
+
+    site_contact = re.search(r"איש קשר\s*:\s*(.+?)\s+(0\d{8,9})\s*$", logical, re.MULTILINE)
+    if site_contact:
+        header["contact_name"] = site_contact.group(1).strip()
+        header["contact_phone"] = _normalize_phone(site_contact.group(2))
+    else:
+        header["contact_name"] = find(r"מפיק ההזמנה:\s*(.+?)\s*$")
+
+    # ‎# | מקט ספק | קוד פריט | תיאור | כמות | מחיר | י.מידה | הנחה | מחיר | סך שורה
+    row = re.search(
+        r"^\s*\d+\s+(\d{6,})\s+\d{6,}\s+(.+?)\s+([\d,]+\.\d+)\s+([\d,]+\.\d+)\s+"
+        r"(\S+)\s+[\d,]+\.\d+\s+[\d,]+\.\d+\s+([\d,]+\.\d{2})\s*$",
+        logical, re.MULTILINE,
+    )
+    if not row:
+        return None
+
+    lines = logical.splitlines()
+    description = row.group(2).strip()
+    # שורת ההמשך נושאת את המידה והאריזה — "‎2*1 (גליל 2 מר)"
+    row_index = next((i for i, line in enumerate(lines) if row.group(1) in line and row.group(6) in line), -1)
+    if row_index >= 0 and row_index + 1 < len(lines):
+        tail = lines[row_index + 1].strip()
+        if tail and not re.match(r"^(הודעות|-{5,}|\d+\s*$)", tail):
+            size = re.match(r"^(\d+)\*(\d+)\b", tail)
+            if size:  # הטוקן נשאר בסדר ויזואלי; בהיסטוריה הפריט הוא 2*1
+                tail = f"{size.group(2)}*{size.group(1)}" + tail[size.end():]
+            description = f"{description} {tail.lstrip('- ').strip()}".strip()
+    description = _unmirror(re.sub(r"\s*-\s*\(", " (", description))
+
+    item = POItem(
+        sku=row.group(1),
+        description=description or "פריט לא זוהה",
+        quantity=_parse_amount(row.group(3)),
+        unit_price=_parse_amount(row.group(4)),
+        line_total=_parse_amount(row.group(6)),
+        unit=row.group(5).strip(),
+    )
+    return CUSTOMER_NAME, [item], header
+
+
 def parse(text: str):
     raw_text = str(text or "")
-    if not any(marker in raw_text for marker in ('שכר תנמזה', 'מרלו"ג מודיעין', "מרכז עינב", "הקפסא ןסחמל", "ןיעידומ :ןסחמל הקפסא")):
+    logical = fix_hebrew_rtl_text(raw_text)
+    if not any(marker in raw_text for marker in ('שכר תנמזה', "הקפסא ןסחמל", "ןיעידומ :ןסחמל הקפסא")) \
+            and not any(marker in logical for marker in _TUBUL_MARKERS):
         return None
+
+    if "הזמנת אספקה" in logical:
+        direct = _parse_direct_supply(logical)
+        if direct:
+            return direct
 
     header = {
         "customer_email": "",
