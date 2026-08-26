@@ -24,6 +24,7 @@ from services.parsers.shponder_pedlon import parse as parse_shponder_pedlon
 from services.parsers.sivanb import parse_sivanb
 from services.parsers.source import parse as parse_source
 from services.parsers.tubul import parse as parse_tubul
+from services.parsers.minrav import parse as parse_minrav
 from services.parsers.electra_ashtrom import parse as parse_electra_ashtrom
 from services.parsers.ecocity import parse as parse_ecocity
 from services.parsers.yargad import parse as parse_yargad
@@ -182,6 +183,13 @@ def parse_purchase_order(pdf_path: str | Path):
         for marker in ("סיון ביצוע", "פרשקובסקי", "ינושבסקי", "חשבונית יש להפיק עבור")
     ):
         parsed = _build_purchase_order(parse_sivanb(raw_text), raw_text, "sivanb")
+        if parsed:
+            return parsed
+
+    # מנרב נבדקת לפני הפרסרים הגנריים: המסמך שלה נושא "הזמנת רכש" שגם אחרים
+    # נושאים, והזיהוי הייחודי הוא שם החברה או הדומיין שלה.
+    if "מנרב" in fixed_text or "minrav.co.il" in raw_text.lower():
+        parsed = _build_purchase_order(parse_minrav(raw_text, pdf_path), raw_text, "minrav")
         if parsed:
             return parsed
 
