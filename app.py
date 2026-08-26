@@ -16758,6 +16758,11 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
             if preserve_po_payment_terms:
                 po.payment_terms_days = original_payment_terms_days
                 po.payment_terms_label = original_payment_terms_label
+            # כרטיס ב-GreenInvoice שלא הוגדרו בו תנאי תשלום מחזיר 0, וה-0 הזה גבר
+            # על הזמנה שנוקבת במפורש במספר ימים — מנרב יצאה "שוטף + 0" במקום 60.
+            elif not po.payment_terms_days and original_payment_terms_days:
+                po.payment_terms_days = original_payment_terms_days
+                po.payment_terms_label = original_payment_terms_label
             if parser_name == "china_civil":
                 po.customer_name = original_customer_name
                 po.customer_id = original_customer_id

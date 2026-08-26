@@ -31,7 +31,9 @@ from services.parsers.common import fix_hebrew_rtl_text
 # נשמר ב-extra תחת legal_billing_name, יחד עם ח.פ 520034505 שחובה לציין.
 CUSTOMER_NAME = "קבוצת מנרב"
 LEGAL_BILLING_NAME = 'קבוצת מנרב בע"מ - מנרב הנדסה ובנייה'
-INVOICE_EMAIL = "invoice@minrav.co.il"
+# מנרב היא לקוח, והמסמך הוא הזמנת רכש שלה אלינו. זו התיבה שאליה היא מבקשת
+# שנשלח את החשבונית *שלנו* — נכנס ל-customer_email, כלומר לכתובת הלקוח.
+CUSTOMER_AP_EMAIL = "invoice@minrav.co.il"
 
 # מספרי הזיהוי של בן יעקב, שמופיעים במסגרת "לכבוד" ואסור שייקלטו כלקוח.
 _OUR_IDS = {"037017779", "3032434"}
@@ -195,7 +197,7 @@ def parse(text: str, pdf_path=None):
         "delivery_address": _delivery_from_layout(pdf_path) if pdf_path else "",
         "contact_name": find(r"הזמנות לידי:\s*(.+?)\s*$"),
         "contact_phone": "",
-        "customer_email": find(r"ולשלוח למייל\s+(\S+@\S+)") or INVOICE_EMAIL,
+        "customer_email": find(r"ולשלוח למייל\s+(\S+@\S+)") or CUSTOMER_AP_EMAIL,
         "customer_phone": _normalize_phone(find(r"^טלפון:\s*,?\s*(0\d{1,2}-?\d{7})")),
     }
     if not header["delivery_address"]:
