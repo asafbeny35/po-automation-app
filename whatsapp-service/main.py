@@ -26,8 +26,8 @@ _CONTEXT = None
 _PAGE = None  # single persistent page — keeps WhatsApp Web in memory
 _CONTEXT_LOCK = asyncio.Lock()
 _BIDI_CHARS = {0x200F, 0x200E, 0x202B, 0x202A, 0x202C, 0x202D, 0x202E}
-_WA_READY = False  # True once WhatsApp Web is loaded
-
+_WA_READY = False  # True while WhatsApp Web is loaded AND authenticated
+_SEND_IN_PROGRESS = False  # monitor must not navigate while a send is running
 
 _STEALTH_JS = """
     Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
@@ -36,10 +36,11 @@ _STEALTH_JS = """
 """
 WHATSAPP_URL = "https://web.whatsapp.com"
 
+
 @app.on_event("startup")
 async def _startup():
-    """Pre-warm the browser and load WhatsApp Web on startup."""
-    asyncio.create_task(_warm_whatsapp())
+    """Pre-warm the browser and keep monitoring WhatsApp Web auth state."""
+    asyncio.create_task(_monitor_whatsapp())
 
 
 @app.on_event("shutdown")
@@ -66,31 +67,50 @@ async def _on_shutdown():
     logging.warning("Shutdown: Chromium closed.")
 
 
-async def _warm_whatsapp():
+_AUTHENTICATED_SELECTOR = (
+    "[data-testid='chatlist-header'], "
+    "[data-testid='drawer-left'], "
+    "header[data-testid='chatlist-header'], "
+    "div[aria-label='Chat list'], "
+    "#side, div[data-testid='chat-list']"
+)
+# רק עטיפת ה-QR של מסך ההתחברות — לא canvas גנרי: תצוגות PDF בצ'אטים
+# נרנדרות כ-canvas וגרמו ל-false negative (הסשן דווח כמנותק אחרי כל שליחה)
+_QR_SELECTOR = "div[data-ref]"
+
+
+async def _check_wa_authenticated(page) -> bool:
+    """Authenticated = chat UI present AND no QR canvas on screen."""
+    authenticated = await page.locator(_AUTHENTICATED_SELECTOR).count()
+    qr = await page.locator(_QR_SELECTOR).count()
+    return authenticated > 0 and qr == 0
+
+
+async def _monitor_whatsapp():
+    """Keep _WA_READY accurate for the whole process lifetime.
+
+    The previous warm-up gave up after ~3 minutes, so a QR scanned later never
+    flipped the flag back to true and /health lied forever.
+    """
     global _WA_READY
-    try:
-        import logging
-        logging.warning("Warming up WhatsApp Web...")
-        _, page = await _get_fresh_page()
-        await _ensure_on_whatsapp(page, force=True)
-        # Wait until authenticated — check for any persistent UI element that only appears after login
-        for _ in range(90):
-            await page.wait_for_timeout(2000)
-            authenticated = page.locator(
-                "[data-testid='chatlist-header'], "
-                "[data-testid='drawer-left'], "
-                "header[data-testid='chatlist-header'], "
-                "div[aria-label='Chat list'], "
-                "#side, div[data-testid='chat-list']"
-            )
-            if await authenticated.count() > 0:
-                _WA_READY = True
-                logging.warning("WhatsApp Web warmed up and authenticated.")
-                return
-        logging.warning("WhatsApp Web warm-up: not authenticated (QR scan needed).")
-    except Exception as exc:
-        import logging
-        logging.error(f"WhatsApp warm-up failed: {exc}")
+    import logging
+    logging.warning("Starting WhatsApp Web monitor...")
+    while True:
+        if _SEND_IN_PROGRESS:
+            await asyncio.sleep(15)
+            continue
+        try:
+            _, page = await _get_fresh_page()
+            if await _ensure_on_whatsapp(page):
+                await page.wait_for_timeout(8000)
+            was_ready = _WA_READY
+            _WA_READY = await _check_wa_authenticated(page)
+            if _WA_READY != was_ready:
+                logging.warning(f"WhatsApp Web auth state changed: ready={_WA_READY}")
+        except Exception as exc:
+            _WA_READY = False
+            logging.error(f"WhatsApp monitor cycle failed: {exc}")
+        await asyncio.sleep(20 if not _WA_READY else 60)
 
 PROFILE_DIR = Path(os.environ.get("WHATSAPP_PROFILE_DIR", "/app/whatsapp-profile"))
 PROFILE_DIR.mkdir(parents=True, exist_ok=True)
@@ -192,8 +212,8 @@ async def _get_fresh_page():
                     # Quick check: try to evaluate JS
                     await _PAGE.evaluate("1+1")
             except Exception:
-                # קודם רק ניתקנו את ההפניה, והטאב התקוע נשאר פתוח בדפדפן עם
-                # כל מה שהחזיק. כל טאב כזה הוא מאות MB שלא חוזרים.
+                # קודם רק ניתקנו את ההפניה, והטאב התקוע נשאר פתוח בדפדפן עם כל
+                # מה שהחזיק. כל טאב כזה הוא מאות MB שלא חוזרים.
                 await _close_page_quietly(_PAGE)
                 _PAGE = None
 
@@ -217,6 +237,27 @@ async def _get_fresh_page():
         return _CONTEXT, _PAGE
 
 
+async def _wait_for_delivery(page, timeout_ms: int = 45000) -> None:
+    """Fail loudly when outgoing messages stay stuck on the pending clock.
+
+    A zombie session (chat UI cached but phone link dead) accepts sends into
+    the chat DOM but never delivers them — without this check that path
+    returned "ok" upstream and documents silently never arrived.
+    """
+    waited = 0
+    while True:
+        pending = await page.locator("span[data-icon='msg-time']").count()
+        if pending == 0:
+            return
+        if waited >= timeout_ms:
+            raise RuntimeError(
+                f"{pending} message(s) stuck in pending state — WhatsApp Web shows the chat "
+                "but is not delivering (session likely dead). Visit /qr/page to re-link, then retry."
+            )
+        await page.wait_for_timeout(3000)
+        waited += 3000
+
+
 async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
     """file_items: list of {name, content_b64, size_bytes}"""
     phone = _normalize_phone(phone)
@@ -234,6 +275,8 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
     _qr_count = await page.locator("canvas, div[data-ref]").count()
     _chat_count = await page.locator("footer, #side, [data-testid='chatlist-header']").count()
     if _qr_count and not _chat_count:
+        global _WA_READY
+        _WA_READY = False
         raise RuntimeError(
             "WhatsApp Web is not authenticated. "
             "Visit /qr/page to scan the QR code, then retry."
@@ -350,6 +393,8 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
             await page.wait_for_timeout(_file_post_send_wait_ms(size_bytes))
 
     await page.wait_for_timeout(5000)
+    # Verify the messages actually left the device — a zombie session keeps them pending forever
+    await _wait_for_delivery(page)
     # Don't close the page — keep it alive so WhatsApp Web stays in memory
     return {"status": "ok", "phone": phone}
 
@@ -357,54 +402,6 @@ async def _send(phone: str, message: str, file_items: list[dict]) -> dict:
 @app.get("/health")
 async def health():
     return {"ok": True, "wa_ready": _WA_READY}
-
-
-async def _whatsapp_state(page) -> str:
-    """מה מוצג כרגע ב-WhatsApp Web: qr (יש קוד לסריקה) / authenticated / loading."""
-    try:
-        if await page.locator("footer, #side, [data-testid='chatlist-header']").count():
-            return "authenticated"
-        # קוד ה-QR נמצא ב-div[data-ref] או ב-canvas שבתוך מסך ההתחברות
-        if await page.locator("div[data-ref], canvas").count():
-            return "qr"
-    except Exception:
-        pass
-    return "loading"
-
-
-async def _reset_profile() -> dict:
-    """סוגר את הדפדפן, מוחק את פרופיל ההתחברות השמור ומרים אותו מחדש.
-
-    בלי זה אין דרך לצאת ממצב שבו הסשן התנתק אבל הפרופיל שנשמר בדיסק עדיין
-    "חצי מחובר" — WhatsApp Web לא מציג QR חדש, השליחה נכשלת, ואין מסלול חזרה.
-    """
-    import logging, shutil
-    global _PLAYWRIGHT, _CONTEXT, _PAGE, _WA_READY
-    async with _CONTEXT_LOCK:
-        for closer in (
-            lambda: _PAGE.close() if _PAGE and not _PAGE.is_closed() else None,
-            lambda: _CONTEXT.close() if _CONTEXT else None,
-            lambda: _PLAYWRIGHT.stop() if _PLAYWRIGHT else None,
-        ):
-            try:
-                result = closer()
-                if result is not None:
-                    await result
-            except Exception as exc:
-                logging.warning("reset: close step failed: %s", exc)
-        _PAGE = _CONTEXT = _PLAYWRIGHT = None
-        _WA_READY = False
-
-        removed = 0
-        for child in PROFILE_DIR.iterdir() if PROFILE_DIR.exists() else []:
-            try:
-                shutil.rmtree(child) if child.is_dir() else child.unlink()
-                removed += 1
-            except Exception as exc:
-                logging.warning("reset: could not remove %s: %s", child, exc)
-        PROFILE_DIR.mkdir(parents=True, exist_ok=True)
-        logging.warning("reset: cleared %s entries from the saved profile", removed)
-    return {"status": "ok", "cleared_entries": removed}
 
 
 async def _get_whatsapp_screenshot() -> bytes:
@@ -426,7 +423,7 @@ async def _get_whatsapp_screenshot() -> bytes:
     # Try to extract canvas pixel data via JS (works even when CSS rendering fails)
     try:
         canvas_data_url = await page.evaluate("""() => {
-            const canvas = document.querySelector('canvas');
+            const canvas = document.querySelector('div[data-ref] canvas') || document.querySelector('canvas');
             if (!canvas) return null;
             try { return canvas.toDataURL('image/png'); } catch(e) { return null; }
         }""")
@@ -455,51 +452,17 @@ async def qr_page():
 </head>
 <body>
   <h2 style="color:#25D366">סרוק את ה-QR עם WhatsApp</h2>
-  <div id="state">בודק מצב...</div>
   <img id="qr" src="/qr/image" alt="QR Code">
   <p>מתרענן אוטומטית בעוד <span id="timer">20</span> שניות</p>
-  <p id="stuck" style="display:none; max-width:420px; text-align:center; line-height:1.7;">
-    לא מופיע קוד לסריקה? הפרופיל השמור תקוע במצב חצי-מחובר.
-    <a id="resetLink" href="#" style="color:#25D366; font-weight:bold;">אפס את החיבור</a>
-    — הפעולה מוחקת את ההתחברות השמורה ומייצרת קוד חדש.
-  </p>
   <script>
-    const params = new URLSearchParams(location.search);
-    const secret = params.get('secret') || '';
-    document.getElementById('resetLink').href = '/session/reset?secret=' + encodeURIComponent(secret);
-    let t = 20, loadingRounds = 0;
-
-    // מצב אמיתי מהשרת — כדי לא להציג תמונה ריקה בלי הסבר
-    async function refreshState() {
-      try {
-        const r = await fetch('/qr/image?t=' + Date.now(), { cache: 'no-store' });
-        const state = r.headers.get('X-WA-State') || 'loading';
-        const box = document.getElementById('state');
-        const img = document.getElementById('qr');
-        img.src = URL.createObjectURL(await r.blob());
-        if (state === 'authenticated') {
-          box.textContent = '✅ מחובר — אין צורך לסרוק';
-          box.style.color = '#25D366';
-          document.getElementById('stuck').style.display = 'none';
-          loadingRounds = 0;
-        } else if (state === 'qr') {
-          box.textContent = 'ממתין לסריקה';
-          box.style.color = '#aaa';
-          document.getElementById('stuck').style.display = 'none';
-          loadingRounds = 0;
-        } else {
-          box.textContent = '⚠️ אין כרגע קוד לסריקה';
-          box.style.color = '#f59e0b';
-          if (++loadingRounds >= 2) document.getElementById('stuck').style.display = 'block';
-        }
-      } catch (e) {}
-    }
-
-    refreshState();
+    let t = 20;
     setInterval(() => {
       t--;
       document.getElementById('timer').textContent = t;
-      if (t <= 0) { t = 20; refreshState(); }
+      if (t <= 0) {
+        t = 20;
+        document.getElementById('qr').src = '/qr/image?t=' + Date.now();
+      }
     }, 1000);
   </script>
 </body>
@@ -517,65 +480,32 @@ async def qr_endpoint():
 
 @app.get("/qr/image")
 async def qr_image():
-    """Return QR screenshot as PNG image, with the real state in a header.
-
-    הצילום מוחזר תמיד, אבל הכותרת X-WA-State אומרת מה באמת רואים — כך שדף ה-QR
-    יכול לומר "מחובר" או "עדיין נטען" במקום להציג תמונה ריקה שנראית כמו תקלה.
-    """
+    """Return QR screenshot as PNG image."""
     from fastapi.responses import Response
     try:
         screenshot = await _get_whatsapp_screenshot()
-        state = "loading"
-        try:
-            if _PAGE and not _PAGE.is_closed():
-                state = await _whatsapp_state(_PAGE)
-        except Exception:
-            pass
-        return Response(content=screenshot, media_type="image/png",
-                        headers={"X-WA-State": state, "Cache-Control": "no-store"})
+        return Response(content=screenshot, media_type="image/png")
     except Exception as exc:
         import traceback
         return JSONResponse({"error": str(exc), "trace": traceback.format_exc()}, status_code=500)
 
 
-@app.get("/status")
-async def status_endpoint():
-    """מצב הגשר — נקרא ע"י המערכת הראשית; קודם החזיר 404."""
-    state = "unknown"
-    try:
-        if _PAGE and not _PAGE.is_closed():
-            state = await _whatsapp_state(_PAGE)
-    except Exception:
-        pass
-    return {"ok": True, "wa_ready": _WA_READY, "state": state,
-            "authenticated": state == "authenticated"}
-
-
-@app.get("/session/reset")
-@app.post("/session/reset")
-async def session_reset(secret: str = ""):
-    """מוחק את פרופיל ההתחברות ומכריח QR חדש. פתיחה בדפדפן מספיקה.
-
-    זו הדרך היחידה לצאת ממצב "התנתק אבל לא מציג QR" — קודם לא הייתה שום דרך.
-    """
-    if SECRET_TOKEN and secret != SECRET_TOKEN:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    result = await _reset_profile()
-    asyncio.create_task(_warm_whatsapp())
-    return {**result, "next": "פתח /qr/page וסרוק את הקוד החדש"}
-
-
 
 @app.post("/send")
 async def send_endpoint(body: dict):
+    global _SEND_IN_PROGRESS, _WA_READY
     if SECRET_TOKEN and body.get("secret") != SECRET_TOKEN:
         raise HTTPException(status_code=401, detail="Unauthorized")
+    _SEND_IN_PROGRESS = True
     try:
         result = await _send(
             phone=body["phone"],
             message=body.get("message", ""),
             file_items=body.get("files", []),
         )
+        _WA_READY = True
         return result
     except Exception as exc:
         return JSONResponse({"error": str(exc)}, status_code=500)
+    finally:
+        _SEND_IN_PROGRESS = False
