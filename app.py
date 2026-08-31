@@ -16621,7 +16621,7 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
     customer_data = None
     parser_name = str((po.extra or {}).get("parser_name") or "").strip().lower()
     preserve_po_payment_terms = (
-        parser_name in {"haikon", "china_civil"}
+        parser_name in {"haikon", "china_civil", "mister_fix"}
         and po.payment_terms_days is not None
     )
     original_payment_terms_days = po.payment_terms_days

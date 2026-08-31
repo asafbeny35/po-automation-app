@@ -17,6 +17,7 @@ from services.parsers.kedar import parse as parse_kedar
 from services.parsers.lati import parse as parse_lati
 from services.parsers.levinstein import parse_levinstein
 from services.parsers.masad_armour import parse as parse_masad_armour
+from services.parsers.mister_fix import parse as parse_mister_fix
 from services.parsers.moral import parse as parse_moral
 from services.parsers.ram_aderet import parse as parse_ram_aderet
 from services.parsers.sela import parse as parse_sela
@@ -102,6 +103,12 @@ def parse_purchase_order(pdf_path: str | Path):
         and ("חשבשבת" in raw_text or "ERP" in raw_text)
     ):
         parsed = _build_purchase_order(parse_haikon(raw_text), raw_text, "haikon")
+        if parsed:
+            return parsed
+
+    mister_fix_result = parse_mister_fix(raw_text)
+    if mister_fix_result:
+        parsed = _build_purchase_order(mister_fix_result, raw_text, "mister_fix")
         if parsed:
             return parsed
 
