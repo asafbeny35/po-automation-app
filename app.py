@@ -30255,40 +30255,65 @@ async def _web_mentions_scan_and_save() -> dict:
         return summary
 
 
-def _web_mentions_digest_message(state: dict) -> str | None:
+WEB_MENTIONS_DIGEST_LIMIT = 5
+
+
+def _web_mentions_digest_candidates(state: dict, *, include_sent: bool = False) -> list[dict]:
+    """שיחות שראויות לדיג'סט. פריט שכבר נשלח לוואטסאפ לא נשלח שוב.
+
+    קודם הסינון היה על status=="new" בלבד, ו-last_digest_date רק מנע שליחה
+    שנייה באותו יום. פריט שאסף לא סימן נשאר "new" לנצח, ולכן אותה שיחה נשלחה
+    שוב ושוב — אחת מהן נמצאה ב-07.07 והמשיכה להישלח שמונה שבועות.
+    """
     settings_row = state.get("settings") or {}
     min_score = int(settings_row.get("min_score") or 60)
-    candidates = sorted(
+    return sorted(
         [
             item
             for item in (state.get("items") or {}).values()
-            if item.get("status") == "new" and (item.get("score") or 0) >= min_score
+            if item.get("status") == "new"
+            and (item.get("score") or 0) >= min_score
+            and (include_sent or not str(item.get("digest_sent_at") or "").strip())
         ],
         key=lambda item: -(item.get("score") or 0),
     )
+
+
+def _web_mentions_digest_message(state: dict, *, include_sent: bool = False) -> tuple[str, list[str]] | None:
+    """מחזיר את ההודעה ואת מזהי הפריטים שנכללו בה בפועל."""
+    candidates = _web_mentions_digest_candidates(state, include_sent=include_sent)
     if not candidates:
         return None
+    listed = candidates[:WEB_MENTIONS_DIGEST_LIMIT]
     lines = [f"🔎 מאתר שיחות ברשת — {len(candidates)} שיחות רלוונטיות ממתינות לתגובה", ""]
-    for index, item in enumerate(candidates[:5], start=1):
+    for index, item in enumerate(listed, start=1):
         lines.append(f"{index}. ({item.get('score')}) {item.get('title')}")
         lines.append(f"   {item.get('url')}")
-    if len(candidates) > 5:
-        lines.append(f"...ועוד {len(candidates) - 5} נוספות")
+    if len(candidates) > len(listed):
+        # רק המוצגות מסומנות כנשלחו, כך שהדיג'סט הבא ממשיך מהבאות בתור
+        lines.append(f"...ועוד {len(candidates) - len(listed)} שיישלחו בסיכום הבא")
     lines.extend(["", "טיוטות תגובה מוכנות לאישור בעמוד: /web-mentions באפליקציה"])
-    return "\n".join(lines)
+    return "\n".join(lines), [str(item.get("id") or "") for item in listed if item.get("id")]
 
 
 async def _web_mentions_send_digest(*, force: bool = False) -> dict:
     state = _load_web_mentions_state()
-    message = _web_mentions_digest_message(state)
-    if not message:
-        return {"sent": False, "reason": "אין שיחות רלוונטיות חדשות"}
+    # שליחה ידנית היא בקשה מפורשת לסיכום עכשיו, ולכן היא רשאית לחזור על מה שכבר נשלח
+    built = _web_mentions_digest_message(state, include_sent=force)
+    if not built:
+        return {"sent": False, "reason": "אין שיחות חדשות שטרם נשלחו"}
+    message, sent_ids = built
     await send_files_via_whatsapp(phone=MARKETING_REMINDER_TARGET_PHONE, message=message, file_paths=[])
     async with WEB_MENTIONS_LOCK:
         state = _load_web_mentions_state()
+        stamp = _web_mentions_now().isoformat(timespec="seconds")
+        items = state.get("items") or {}
+        for item_id in sent_ids:
+            if item_id in items:
+                items[item_id]["digest_sent_at"] = stamp
         state["last_digest_date"] = _web_mentions_now().date().isoformat()
         _save_web_mentions_state(state)
-    return {"sent": True}
+    return {"sent": True, "items_sent": len(sent_ids)}
 
 
 async def _web_mentions_background_loop() -> None:
