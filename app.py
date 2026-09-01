@@ -9747,6 +9747,49 @@ def _hr_build_payslip_prep_history_row(
     }
 
 
+def _hr_installations_month_for_employee(
+    employee_id: str, employee_name: str, month_key: str, payload: dict | None = None
+) -> dict | None:
+    """ההתקנות של עובד בחודש — לפי מזהה, ובנפילה לאחור לפי שם.
+
+    השיוך נעשה לפי employee_id כי שם עובד משתנה (תאי יונתן גורן), אבל חודשים
+    ישנים נשמרו לפני שהיה מזהה ולכן נשארה גם ההשוואה לפי שם.
+
+    `payload` מאפשר לבנות את מטב ההתקנות פעם אחת ולשאול עליו הרבה עובדים,
+    במקום לבנות אותו מחדש בכל איטרציה של לולאה.
+    """
+    months = (payload if payload is not None else _build_hr_installations_payload()).get("months") or []
+    for month in months:
+        if str(month.get("month_key") or "").strip() != str(month_key or "").strip():
+            continue
+        month_employee_id = str(month.get("employee_id") or "").strip()
+        if month_employee_id:
+            return month if month_employee_id == str(employee_id or "").strip() else None
+        return month if str(month.get("employee_name") or "").strip() == str(employee_name or "").strip() else None
+    return None
+
+
+def _hr_installations_pay_for_employee(
+    employee_id: str, employee_name: str, month_key: str, payload: dict | None = None
+) -> dict:
+    """הסכום שמצטרף לשכר. חודש שלא סומן "הוסף לחישובי שכר" מדווח 0."""
+    month = _hr_installations_month_for_employee(employee_id, employee_name, month_key, payload)
+    rows = list((month or {}).get("rows") or [])
+    totals = dict((month or {}).get("totals") or {})
+    in_payroll = bool((month or {}).get("include_in_payroll"))
+    total = _hr_installation_number(totals.get("total"), 0.0) if rows else 0.0
+    return {
+        "in_payroll": in_payroll,
+        "rows_count": len(rows),
+        "total": round(total, 2),
+        "pay": round(total, 2) if in_payroll else 0.0,
+        "doors_amount": _hr_installation_number(totals.get("doors_amount"), 0.0),
+        "food": _hr_installation_number(totals.get("food"), 0.0),
+        "fuel": _hr_installation_number(totals.get("fuel"), 0.0),
+        "advance": _hr_installation_number(totals.get("advance"), 0.0),
+    }
+
+
 def _hr_build_payslip_prep_payload(month_key: str) -> dict:
     safe_month_key = str(month_key or "").strip()
     state_payload = _hr_state_payload(force_refresh=False)
@@ -9771,6 +9814,8 @@ def _hr_build_payslip_prep_payload(month_key: str) -> dict:
         document_rows,
         employees,
     )
+    # מטב ההתקנות נבנה פעם אחת לכל החודש, ולא מחדש לכל עובד
+    installations_payload = _build_hr_installations_payload()
 
     preview_rows: list[dict] = []
     total_gross = 0.0
@@ -9803,6 +9848,20 @@ def _hr_build_payslip_prep_payload(month_key: str) -> dict:
             gross_before_adjustments = round(total_hours * hourly_rate, 2)
             salary_rule_label = f"{hourly_rate:,.2f} ש״ח לשעה"
 
+        # התקנות שסומנו "הוסף לחישובי שכר" הן חלק מהברוטו. הן הופיעו בטאב השעות
+        # ובקובץ הפירוט, אבל לא נכנסו לחבילה שנשלחת לרו״ח — ולעלי זה כל ההפרש.
+        installations = _hr_installations_pay_for_employee(
+            employee_id, full_name, safe_month_key, installations_payload
+        )
+        if installations["pay"]:
+            gross_before_adjustments = round(gross_before_adjustments + installations["pay"], 2)
+            salary_rule_label = f"{salary_rule_label} + התקנות {installations['pay']:,.2f} ש״ח"
+        elif installations["rows_count"] and not installations["in_payroll"]:
+            warnings.append(
+                f"יש {installations['rows_count']} התקנות בחודש הזה שלא סומנו להיכלל בשכר, "
+                f"ולכן {installations['total']:,.2f} ש״ח לא נכללו בברוטו."
+            )
+
         hours_attachment = _hr_resolve_hours_attachment(hours_row) if hours_row else {"available": False}
         if hours_row and hours_attachment.get("generated"):
             warnings.append("קובץ השעות יעודכן לאקסל חדש בגלל עריכה ידנית במערכת.")
@@ -9828,6 +9887,11 @@ def _hr_build_payslip_prep_payload(month_key: str) -> dict:
                 "hours_file_generated": bool(hours_attachment.get("generated")),
                 "hours_file_available": bool(hours_attachment.get("available")),
                 "payroll_row_exists": bool(payroll_row),
+                "installations_total": installations["total"],
+                "installations_pay": installations["pay"],
+                "installations_pay_label": f"{installations['pay']:,.2f} ₪" if installations["pay"] else "—",
+                "installations_rows_count": installations["rows_count"],
+                "installations_in_payroll": installations["in_payroll"],
                 "warnings": warnings,
                 "stored_supporting_docs_count": sum(
                     1 for item in stored_supporting_summaries
@@ -27253,18 +27317,7 @@ def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[b
     total_hours = round(sum(_hr_installation_number(d.get("hours"), 0.0) for d in details or []), 2)
     hours_pay = round(total_hours * hourly_rate, 2)
 
-    # התקנות של אותו עובד באותו חודש — לפי מזהה, ובנפילה לאחור לפי שם
-    installations_month = None
-    for month in (_build_hr_installations_payload().get("months") or []):
-        if str(month.get("month_key") or "").strip() != month_key:
-            continue
-        month_emp_id = str(month.get("employee_id") or "").strip()
-        if month_emp_id:
-            if month_emp_id == employee_id:
-                installations_month = month
-        elif str(month.get("employee_name") or "").strip() == employee_name:
-            installations_month = month
-        break
+    installations_month = _hr_installations_month_for_employee(employee_id, employee_name, month_key)
 
     inst_rows = list((installations_month or {}).get("rows") or [])
     inst_totals = dict((installations_month or {}).get("totals") or {})

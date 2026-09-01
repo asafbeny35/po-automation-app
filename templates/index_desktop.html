@@ -10867,6 +10867,42 @@ a.admin-expense-status:hover {
 
 .hr-payslip-prep-modal-card {
   width: min(100%, 960px);
+  /* החלון גדל עם התוכן וגלש מעבר למסך, כך שגם הכותרת והאיקס לסגירה נדחפו
+     מחוץ לתצוגה. עכשיו הוא חסום לגובה החלון: הכותרת והכפתורים נעוצים,
+     והאמצע נגלל. */
+  max-height: calc(100dvh - 48px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.hr-payslip-prep-modal-card > .modal-head {
+  flex: 0 0 auto;
+  padding: 24px 24px 14px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+}
+
+.hr-payslip-prep-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 24px 4px;
+}
+
+.hr-payslip-prep-modal-card > .hr-payslip-prep-actions {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 14px 24px 20px;
+  border-top: 1px solid rgba(148, 163, 184, 0.18);
+  background: white;
+}
+
+@media (max-width: 720px) {
+  .hr-payslip-prep-modal-card > .modal-head { padding: 18px 16px 12px; }
+  .hr-payslip-prep-body { padding: 0 16px 4px; }
+  .hr-payslip-prep-modal-card > .hr-payslip-prep-actions { padding: 12px 16px 16px; }
 }
 
 .hr-payslip-prep-modal-copy {
@@ -20393,6 +20429,7 @@ input:focus {
       </div>
       <button type="button" class="modal-close-btn" id="hrPayslipPrepClose" aria-label="סגור חלון">×</button>
     </div>
+    <div class="hr-payslip-prep-body">
     <div class="hr-payslip-prep-toolbar">
       <div class="hr-payslip-prep-field">
         <label for="hrPayslipPrepMonth">חודש</label>
@@ -20428,6 +20465,7 @@ input:focus {
         <div class="hr-payslip-prep-linked-meta">רשומת סיכום על כל מייל שנשלח לרו״ח או כטסט, כולל חודש, יעד, סה״כ ברוטו וכמות הצרופות.</div>
       </div>
       <div class="hr-empty">עדיין לא נשמרה היסטוריית שליחה.</div>
+    </div>
     </div>
     <div class="confirm-modal-actions hr-payslip-prep-actions">
       <button type="button" id="hrPayslipPrepCancel" class="ghost-btn">ביטול</button>
