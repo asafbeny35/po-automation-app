@@ -339,49 +339,35 @@
       </div>
 
       <div class="auth-grid">
-        <section class="auth-card {% if not setup_required and not methods.passkey %}disabled{% endif %}">
+        {% if methods.passkey %}
+        <section class="auth-card">
           <h3>Passkey עם Touch ID</h3>
-          <p>{% if setup_required %}הדרך הכי נוחה על המק שלך. תלחץ, תאשר עם Touch ID, והמערכת תרשום Passkey מקומי מאובטח.{% else %}התחברות מהירה עם Touch ID דרך Passkey. אין צורך להקליד שום קוד.{% endif %}</p>
+          <p>התחברות מהירה עם Touch ID דרך Passkey. אין צורך להקליד שום קוד.</p>
           <div class="button-row">
-            <button id="passkeyActionBtn" class="button" type="button">{% if methods.passkey %}התחבר עם Passkey{% else %}הגדר Passkey{% endif %}</button>
+            <button id="passkeyActionBtn" class="button" type="button">התחבר עם Passkey</button>
           </div>
           <div id="passkeyStatus" class="auth-status"></div>
         </section>
+        {% endif %}
 
-        <section class="auth-card {% if not setup_required and not methods.totp %}disabled{% endif %}">
+        {% if methods.totp %}
+        <section class="auth-card">
           <h3>Google Authenticator</h3>
-          <p>{% if setup_required or not methods.totp %}סרוק את ה־QR לאפליקציית Authenticator ואז הכנס קוד בן 6 ספרות כדי להפעיל את השיטה.{% else %}הכנס את הקוד בן 6 הספרות מהאפליקציה כדי להיכנס.{% endif %}</p>
-          {% if setup_required or not methods.totp %}
-          <div class="qr-wrap">
-            <img src="{{ totp_qr_data_uri }}" alt="QR לאפליקציית Authenticator">
-            <div>
-              <div class="field">
-                <label>מפתח ידני</label>
-                <input type="text" value="{{ totp_secret }}" readonly>
-              </div>
-              <p style="margin-top:10px;font-size:13px;">אם נוח לך, אפשר גם להזין ידנית את המפתח הזה באפליקציה.</p>
-            </div>
-          </div>
-          {% endif %}
+          <p>הכנס את הקוד בן 6 הספרות מהאפליקציה כדי להיכנס.</p>
           <div class="field">
-            <label for="totpCode">{% if setup_required or not methods.totp %}קוד לאימות והפעלה{% else %}קוד התחברות{% endif %}</label>
+            <label for="totpCode">קוד התחברות</label>
             <input id="totpCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
           </div>
           <div class="button-row">
-            <button id="totpActionBtn" class="button" type="button">{% if methods.totp and not setup_required %}התחבר עם Authenticator{% else %}אמת והפעל{% endif %}</button>
+            <button id="totpActionBtn" class="button" type="button">התחבר עם Authenticator</button>
           </div>
           <div id="totpStatus" class="auth-status"></div>
         </section>
+        {% endif %}
 
-        <section class="auth-card {% if not setup_required and not methods.email %}disabled{% endif %}">
+        <section class="auth-card">
           <h3>קוד במייל</h3>
-          <p>{% if setup_required or not methods.email %}בחר כתובת מייל שאליה תרצה לקבל קודי כניסה. השליחה מתבצעת דרך Mail במק, בלי עלות חודשית.{% else %}נשלח קוד חד־פעמי לכתובת המייל שהוגדרה למערכת ואז תוכל להיכנס.{% endif %}</p>
-          {% if setup_required or not methods.email %}
-          <div class="field">
-            <label for="emailAddress">כתובת מייל</label>
-            <input id="emailAddress" type="email" value="{{ email_address }}" placeholder="name@example.com">
-          </div>
-          {% endif %}
+          <p>נשלח קוד חד־פעמי לכתובת המייל הקבועה של המערכת ואז תוכל להיכנס.</p>
           <div class="button-row">
             <button id="emailSendBtn" class="ghost-button" type="button">שלח קוד</button>
           </div>
@@ -390,15 +376,14 @@
             <input id="emailCode" type="text" inputmode="numeric" autocomplete="one-time-code" placeholder="000000">
           </div>
           <div class="button-row">
-            <button id="emailVerifyBtn" class="button" type="button">{% if methods.email and not setup_required %}התחבר עם מייל{% else %}אמת והפעל{% endif %}</button>
+            <button id="emailVerifyBtn" class="button" type="button">התחבר עם מייל</button>
           </div>
           <div id="emailStatus" class="auth-status"></div>
         </section>
       </div>
 
       <div class="notes">
-        אם תרצה, בהמשך אפשר להחזיק כמה שיטות במקביל. כרגע מספיק שתפעיל לפחות אחת, אבל מבחינת resilience עדיף להחזיק גם Passkey וגם Authenticator.
-      </div>
+        הוספת Passkey או Authenticator נעשית מתוך האפליקציה, בטאב "הגדרות חשבון", אחרי כניסה עם קוד למייל. שיטה תופיע כאן רק אחרי שהוגדרה שם.</div>
     </section>
   </div>
 
@@ -519,7 +504,7 @@
       }
     }
 
-    document.getElementById("passkeyActionBtn")?.addEventListener("click", () => runPasskeyFlow(methods.passkey && !setupRequired ? "login" : "setup"));
+    document.getElementById("passkeyActionBtn")?.addEventListener("click", () => runPasskeyFlow("login"));
 
     document.getElementById("totpActionBtn")?.addEventListener("click", async () => {
       const code = document.getElementById("totpCode")?.value?.trim();
@@ -528,7 +513,6 @@
         await postJSON("/auth/totp/verify", {
           code,
           remember_me: getRememberMe(),
-          setup: setupRequired || !methods.totp,
           user_id: selectedUserId,
         });
         setStatus("totpStatus", "הקוד אומת. מעביר לאפליקציה...", "success");
@@ -542,9 +526,7 @@
       setStatus("emailStatus", "שולח קוד...");
       try {
         await postJSON("/auth/email/send-code", {
-          email: document.getElementById("emailAddress")?.value?.trim(),
           remember_me: getRememberMe(),
-          setup: setupRequired || !methods.email,
           user_id: selectedUserId,
         });
         setStatus("emailStatus", "הקוד נשלח למייל. אפשר להזין אותו עכשיו.", "success");

@@ -190,6 +190,9 @@ from services.auth import (
     build_totp_setup_payload,
     clear_auth_cookie,
     complete_passkey_authentication,
+    resolve_login_email,
+    rotate_totp_secret,
+    DEFAULT_PRIMARY_USER_ID,
     complete_passkey_registration,
     generate_passkey_authentication_options,
     generate_passkey_registration_options,
@@ -15563,7 +15566,9 @@ def _auth_template_context(request: Request):
     selected_user_id = str(selected_user.get("id") or state.get("default_user_id") or "asaf").strip() or "asaf"
     methods = get_enabled_methods(state, selected_user_id)
     setup_required = not has_any_enabled_method(state, selected_user_id)
-    totp_setup = build_totp_setup_payload(state, selected_user_id) if (setup_required or not methods["totp"]) else None
+    # דף הכניסה לא מציג עוד סוד TOTP ולא QR. קודם הם רונדרו לכל מי שטען את
+    # הכתובת, כך שאפשר היה לסרוק אותם, לייצר קוד תקין ולהפעיל TOTP מבחוץ.
+    # ההגדרה עברה כולה לטאב "הגדרות חשבון", מאחורי כניסה עם קוד למייל.
     return {
         "request": request,
         "methods": methods,
@@ -15580,8 +15585,6 @@ def _auth_template_context(request: Request):
             }
             for user in users
         ],
-        "totp_qr_data_uri": (totp_setup or {}).get("qr_data_uri", ""),
-        "totp_secret": (totp_setup or {}).get("secret", ""),
     }
 
 
@@ -17469,6 +17472,10 @@ async def auth_totp_verify(request: Request):
     code = str(body.get("code") or "").strip()
     remember_me = bool(body.get("remember_me"))
     setup_mode = bool(body.get("setup"))
+    if setup_mode and not is_request_authenticated(request):
+        # הפעלת שיטה חדשה היא פעולה על חשבון קיים, לא דרך כניסה. בלי השורה הזו
+        # אפשר היה להפעיל TOTP מדף הכניסה ולקבל עוגייה.
+        return JSONResponse({"error": "הפעלת Authenticator מתבצעת רק מתוך הגדרות חשבון."}, status_code=401)
     user_id = str(body.get("user_id") or "").strip()
     state = load_auth_state()
     matched_user = resolve_totp_user(state, code, user_id)
@@ -17487,15 +17494,16 @@ async def auth_email_send_code(request: Request):
     if limited := _enforce_rate_limit(request, "auth_email_send_code", limit=5, window_seconds=600):
         return limited
     body = await request.json()
-    setup_mode = bool(body.get("setup"))
     remember_me = bool(body.get("remember_me"))
     user_id = str(body.get("user_id") or "").strip()
     state = load_auth_state()
     user = get_auth_user(state, user_id)
     resolved_user_id = str(user.get("id") or user_id or state.get("default_user_id") or "asaf").strip()
-    email_address = str((body.get("email") if setup_mode else user.get("email_address")) or "").strip()
+    # הכתובת נלקחת מהקוד בלבד. קודם היה אפשר לשלוח setup:true עם כתובת כרצונך,
+    # לקבל את הקוד לתיבה של התוקף, ותוך כדי גם לדרוס את הכתובת הרשומה.
+    email_address = resolve_login_email(resolved_user_id)
     if not email_address:
-        return JSONResponse({"error": "יש להזין כתובת מייל תקינה."}, status_code=400)
+        return JSONResponse({"error": "לא מוגדרת כתובת מייל לכניסה."}, status_code=500)
     code = f"{secrets.randbelow(1_000_000):06d}"
     try:
         send_email_code_via_mail_app(email_address, code)
@@ -17505,7 +17513,6 @@ async def auth_email_send_code(request: Request):
     request.session["email_auth_code"] = code
     request.session["email_auth_exp"] = int(time.time()) + 600
     request.session["email_auth_address"] = email_address
-    request.session["email_auth_setup"] = setup_mode
     request.session["email_auth_remember"] = remember_me
     request.session["email_auth_user_id"] = resolved_user_id
     return JSONResponse({"status": "ok", "message": f"נשלח קוד ל-{email_address}"})
@@ -17524,16 +17531,10 @@ async def auth_email_verify(request: Request):
     state = load_auth_state()
     user = get_auth_user(state, request.session.get("email_auth_user_id"))
     resolved_user_id = str(user.get("id") or state.get("default_user_id") or "asaf").strip()
-    email_address = str(request.session.get("email_auth_address") or "").strip()
-    if bool(request.session.get("email_auth_setup")):
-        user["email_address"] = email_address
-        user["email_enabled"] = True
-        save_auth_state(state)
     remember_me = bool(request.session.get("email_auth_remember"))
     request.session.pop("email_auth_code", None)
     request.session.pop("email_auth_exp", None)
     request.session.pop("email_auth_address", None)
-    request.session.pop("email_auth_setup", None)
     request.session.pop("email_auth_remember", None)
     request.session.pop("email_auth_user_id", None)
     response = JSONResponse({"status": "ok", "redirect_to": "/", "methods": get_enabled_methods(state, resolved_user_id)})
@@ -17544,6 +17545,8 @@ async def auth_email_verify(request: Request):
 async def auth_passkey_register_options(request: Request):
     if limited := _enforce_rate_limit(request, "auth_passkey_register_options", limit=12, window_seconds=300):
         return limited
+    if not is_request_authenticated(request):
+        return JSONResponse({"error": "רישום Passkey מתבצע רק מתוך הגדרות חשבון."}, status_code=401)
     body = await request.json()
     user_id = str(body.get("user_id") or "").strip()
     state = load_auth_state()
@@ -17555,6 +17558,8 @@ async def auth_passkey_register_options(request: Request):
 async def auth_passkey_register_verify(request: Request):
     if limited := _enforce_rate_limit(request, "auth_passkey_register_verify", limit=12, window_seconds=300):
         return limited
+    if not is_request_authenticated(request):
+        return JSONResponse({"error": "רישום Passkey מתבצע רק מתוך הגדרות חשבון."}, status_code=401)
     body = await request.json()
     remember_me = bool(body.get("remember_me"))
     credential = body.get("credential") or {}
@@ -17608,6 +17613,78 @@ async def auth_logout(request: Request):
     response = JSONResponse({"status": "ok"})
     clear_auth_cookie(response)
     return response
+
+
+# ── הגדרות חשבון ────────────────────────────────────────────────────────────
+# הנתיבים כאן מתחילים ב-/account-security ולא ב-/auth בכוונה: auth_gate מתירה
+# את כל /auth ללא הזדהות כדי שאפשר יהיה בכלל להתחבר, ולכן הגדרת שיטות חייבת
+# לשבת מחוץ לקידומת הזו כדי שהשומר יחול עליה מעצמו.
+
+def _account_security_user_id(request: Request) -> str:
+    state = load_auth_state()
+    return str(authenticated_user_id(request) or state.get("default_user_id") or DEFAULT_PRIMARY_USER_ID).strip()
+
+
+def _account_security_payload(user_id: str) -> dict:
+    state = load_auth_state()
+    user = get_auth_user(state, user_id)
+    methods = get_enabled_methods(state, user_id)
+    return {
+        "user_id": user_id,
+        "display_name": str(user.get("display_name") or user_id),
+        "login_email": resolve_login_email(user_id),
+        "methods": methods,
+        "passkeys": [
+            {"id": str(item.get("id") or ""), "created_at": item.get("created_at")}
+            for item in (user.get("passkeys") or [])
+        ],
+    }
+
+
+@app.get("/account-security/state")
+async def account_security_state(request: Request):
+    return JSONResponse({"status": "ok", **_account_security_payload(_account_security_user_id(request))})
+
+
+@app.post("/account-security/totp/start")
+async def account_security_totp_start(request: Request):
+    """מחזיר QR וסוד להפעלת Authenticator. סוד חדש נוצר בכל פתיחה כל עוד
+    השיטה כבויה, כדי שסוד שנחשף בעבר לא יישאר בר-שימוש."""
+    user_id = _account_security_user_id(request)
+    state = load_auth_state()
+    if get_enabled_methods(state, user_id)["totp"]:
+        return JSONResponse({"error": "Authenticator כבר מופעל. יש לכבות אותו לפני הגדרה מחדש."}, status_code=400)
+    rotate_totp_secret(state, user_id)
+    payload = build_totp_setup_payload(state, user_id)
+    return JSONResponse({"status": "ok", "secret": payload["secret"], "qr_data_uri": payload["qr_data_uri"]})
+
+
+@app.post("/account-security/totp/disable")
+async def account_security_totp_disable(request: Request):
+    user_id = _account_security_user_id(request)
+    state = load_auth_state()
+    user = get_auth_user(state, user_id)
+    user["totp_enabled"] = False
+    user["totp_secret"] = ""
+    save_auth_state(state)
+    return JSONResponse({"status": "ok", **_account_security_payload(user_id)})
+
+
+@app.post("/account-security/passkey/remove")
+async def account_security_passkey_remove(request: Request):
+    body = await request.json()
+    credential_id = str(body.get("id") or "").strip()
+    if not credential_id:
+        return JSONResponse({"error": "חסר מזהה Passkey."}, status_code=400)
+    user_id = _account_security_user_id(request)
+    state = load_auth_state()
+    user = get_auth_user(state, user_id)
+    remaining = [item for item in (user.get("passkeys") or []) if str(item.get("id") or "") != credential_id]
+    user["passkeys"] = remaining
+    if not remaining:
+        user["passkey_enabled"] = False
+    save_auth_state(state)
+    return JSONResponse({"status": "ok", **_account_security_payload(user_id)})
 
 
 @app.post("/open-output-folder")

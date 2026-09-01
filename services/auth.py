@@ -40,15 +40,6 @@ DEFAULT_PRIMARY_USER_ID = "asaf"
 DEFAULT_SECONDARY_USER_ID = "mom"
 DEFAULT_PRIMARY_EMAIL_ADDRESS = "asafbeny@gmail.com"
 DEFAULT_SECONDARY_EMAIL_ADDRESS = "malibeny1@gmail.com"
-DEFAULT_PRIMARY_TOTP_SECRET = "Y5KORRGYX7SOFWEHGGD5D2RZJ66W5AOZ"
-DEFAULT_PRIMARY_PASSKEYS = [
-    {
-        "id": "WYuLHRZRPSy0yjF1r_zXFQ",
-        "public_key": "pQECAyYgASFYIHJBXqNKQ3SU4EYS0TD6p5LMuKLD9tEQAaDq2Mwby13qIlggnP-L5x1oEjesn-Cxlt6OcxTq3VAnfnMs66GoJ2b71mk",
-        "sign_count": 0,
-        "created_at": 1776459011,
-    }
-]
 _AUTH_STATE_CACHE: dict[str, Any] | None = None
 _AUTH_STATE_CACHE_MTIME_NS: int | None = None
 _AUTH_STATE_DOMAIN = "app_auth_state"
@@ -129,11 +120,13 @@ def _default_state() -> dict[str, Any]:
         "updated_at": int(time.time()),
     }
     primary = state["users"][DEFAULT_PRIMARY_USER_ID]
-    primary["totp_secret"] = DEFAULT_PRIMARY_TOTP_SECRET
-    primary["passkeys"] = copy.deepcopy(DEFAULT_PRIMARY_PASSKEYS)
+    # מצב חדש נולד עם קוד למייל בלבד. קודם נזרעו כאן סוד TOTP ו-Passkey שכתובים
+    # בקוד המקור, והשיטות סומנו כמופעלות — כך שאיבוד המצב היה מקים את המערכת
+    # עם אישור כניסה שכל מי שרואה את הריפו מחזיק. Authenticator ו-Passkey
+    # מוגדרים מעכשיו רק מתוך "הגדרות חשבון", אחרי כניסה עם קוד למייל.
     primary["email_enabled"] = True
-    primary["totp_enabled"] = True
-    primary["passkey_enabled"] = True
+    primary["totp_enabled"] = False
+    primary["passkey_enabled"] = False
     return state
 
 
@@ -346,6 +339,17 @@ def save_auth_state(state: dict[str, Any]) -> None:
     _AUTH_STATE_CACHE = copy.deepcopy(state)
 
 
+def resolve_login_email(user_id: str | None = None) -> str:
+    """כתובת המייל לכניסה — מהקוד בלבד, ולא ממה שנשלח בבקשה או נשמר במצב.
+
+    קודם אפשר היה לשלוח setup:true עם כתובת שרירותית: הקוד היה מגיע לתיבה של
+    השולח, וההצלחה גם דרסה את הכתובת הרשומה. זו הייתה השתלטות מלאה על החשבון
+    מדף הכניסה הציבורי.
+    """
+    key = str(user_id or DEFAULT_PRIMARY_USER_ID).strip() or DEFAULT_PRIMARY_USER_ID
+    return _DEFAULT_USER_EMAILS.get(key, "")
+
+
 def get_enabled_methods(state: dict[str, Any] | None = None, user_id: str | None = None) -> dict[str, bool]:
     user = get_auth_user(state, user_id)
     return {
@@ -489,6 +493,14 @@ def build_totp_setup_payload(state: dict[str, Any], user_id: str | None = None, 
     email_label = str(user.get("email_address") or user.get("display_name") or "local-user").strip() or "local-user"
     uri = pyotp.TOTP(secret).provisioning_uri(name=email_label, issuer_name=app_name)
     return {"secret": secret, "uri": uri, "qr_data_uri": build_qr_data_uri(uri)}
+
+
+def rotate_totp_secret(state: dict[str, Any], user_id: str | None = None) -> None:
+    """סוד חדש לכל הגדרה מחדש. סוד ישן שנחשף לא נשאר בר-שימוש."""
+    user = get_auth_user(state, user_id)
+    user["totp_secret"] = pyotp.random_base32()
+    user["totp_enabled"] = False
+    save_auth_state(state)
 
 
 def _normalize_totp_code(code: str | None) -> str:

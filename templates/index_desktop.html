@@ -14182,6 +14182,7 @@ input:focus {
         <button type="button" class="top-tab" data-tab="finance">כספים</button>
         <button type="button" class="top-tab" data-tab="office">משרד</button>
         <button type="button" class="top-tab" data-tab="activity-log">פעילות</button>
+        <button type="button" class="top-tab" data-tab="account-security">הגדרות חשבון</button>
       </div>
     </section>
     <section class="tabs-group-card split-stack-card">
@@ -18866,6 +18867,73 @@ input:focus {
             </div>
           </div>
         </article>
+      </section>
+    </section>
+  </section>
+
+  <section class="tab-panel" data-tab-panel="account-security">
+    <section class="admin-panel">
+      <div class="panel-kicker-strip">
+        <div class="section-kicker">מערכת</div>
+      </div>
+      <h2 style="margin: 0;">הגדרות חשבון</h2>
+      <p class="section-copy">
+        כניסה לאפליקציה נעשית תמיד עם קוד למייל, לכתובת קבועה שלא ניתנת לשינוי.
+        כאן אפשר להוסיף שיטות כניסה נוספות — Touch ID או Authenticator — והן יופיעו
+        במסך הכניסה רק אחרי שיוגדרו כאן.
+      </p>
+
+      <section class="admin-section">
+        <div class="admin-inline-headline">
+          <div class="section-kicker">כתובת קבועה</div>
+          <h2>קוד למייל</h2>
+        </div>
+        <p class="section-copy">שיטת הכניסה הבסיסית. הכתובת מוגדרת בקוד ואי אפשר לערוך אותה מהממשק.</p>
+        <div id="accountSecurityEmail" class="hr-empty">טוען…</div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-inline-headline">
+          <div class="section-kicker">מהיר</div>
+          <h2>Touch ID עם Passkey</h2>
+        </div>
+        <p class="section-copy">רישום Passkey על המכשיר הזה. אפשר לרשום כמה מכשירים.</p>
+        <div id="accountSecurityPasskeys" class="hr-empty">טוען…</div>
+        <div class="admin-actions" style="margin-top:12px;">
+          <button type="button" id="accountSecurityPasskeyAdd" class="primary-btn">רשום Passkey במכשיר הזה</button>
+        </div>
+        <div id="accountSecurityPasskeyStatus" class="section-copy" style="margin-top:8px;"></div>
+      </section>
+
+      <section class="admin-section">
+        <div class="admin-inline-headline">
+          <div class="section-kicker">אפליקציה</div>
+          <h2>Google Authenticator</h2>
+        </div>
+        <p class="section-copy">סריקת QR באפליקציה, ואז קוד בן 6 ספרות כדי להפעיל.</p>
+        <div id="accountSecurityTotpState" class="hr-empty">טוען…</div>
+        <div id="accountSecurityTotpSetup" style="display:none;margin-top:12px;">
+          <div style="display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;">
+            <img id="accountSecurityTotpQr" alt="QR לאפליקציית Authenticator"
+                 style="width:190px;height:190px;border-radius:12px;border:1px solid rgba(148,163,184,0.3);">
+            <div style="flex:1;min-width:240px;display:grid;gap:10px;">
+              <label class="section-copy" for="accountSecurityTotpSecret">מפתח ידני</label>
+              <input id="accountSecurityTotpSecret" type="text" readonly
+                     style="padding:8px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.4);font-family:monospace;">
+              <label class="section-copy" for="accountSecurityTotpCode">קוד מהאפליקציה</label>
+              <input id="accountSecurityTotpCode" type="text" inputmode="numeric" placeholder="000000"
+                     style="padding:8px 10px;border-radius:8px;border:1px solid rgba(148,163,184,0.4);">
+              <div class="admin-actions">
+                <button type="button" id="accountSecurityTotpEnable" class="primary-btn">אמת והפעל</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="admin-actions" style="margin-top:12px;">
+          <button type="button" id="accountSecurityTotpStart" class="ghost-btn">הגדר Authenticator</button>
+          <button type="button" id="accountSecurityTotpDisable" class="ghost-btn" style="display:none;">כבה Authenticator</button>
+        </div>
+        <div id="accountSecurityTotpStatus" class="section-copy" style="margin-top:8px;"></div>
       </section>
     </section>
   </section>
@@ -49946,6 +50014,150 @@ document.addEventListener("DOMContentLoaded", () => {
     const hrInstOpenMonths = new Set();
     const hrInstEditing = new Set();   // שורות שנמצאות כרגע במצב עריכה (אייקון העיפרון)
     const hrInstPending = {};          // rowId -> {field: value} — שינויים שטרם נשמרו
+    // ── הגדרות חשבון ────────────────────────────────────────────────────────
+    // הוספת שיטת כניסה נעשית רק מכאן, אחרי כניסה עם קוד למייל. קודם זה היה
+    // אפשרי ישירות מדף הכניסה הציבורי, שגם הדפיס שם את סוד ה-TOTP.
+    const accountSecurity = {
+      b64ToBuf(v) {
+        const pad = "=".repeat((4 - (v.length % 4)) % 4);
+        const raw = atob((v + pad).replace(/-/g, "+").replace(/_/g, "/"));
+        const bytes = new Uint8Array(raw.length);
+        for (let i = 0; i < raw.length; i += 1) bytes[i] = raw.charCodeAt(i);
+        return bytes.buffer;
+      },
+      bufToB64(buf) {
+        let bin = "";
+        new Uint8Array(buf).forEach(b => { bin += String.fromCharCode(b); });
+        return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+      },
+      say(id, text, ok) {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = text || ""; el.style.color = ok === false ? "#b91c1c" : (ok ? "#15803d" : ""); }
+      },
+      render(data) {
+        const methods = data.methods || {};
+        const email = document.getElementById("accountSecurityEmail");
+        if (email) email.textContent = `${data.login_email || "—"} · פעיל תמיד, לא ניתן לעריכה`;
+
+        const pk = document.getElementById("accountSecurityPasskeys");
+        const keys = data.passkeys || [];
+        if (pk) {
+          pk.innerHTML = keys.length
+            ? keys.map(k => `<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;padding:8px 0;">
+                 <span>Passkey ${escapeHtml(String(k.id || "").slice(0, 10))}…</span>
+                 <button type="button" class="ghost-btn" data-account-passkey-remove="${escapeHtml(String(k.id || ""))}">הסר</button>
+               </div>`).join("")
+            : "עדיין לא נרשם Passkey.";
+        }
+
+        const totpState = document.getElementById("accountSecurityTotpState");
+        if (totpState) totpState.textContent = methods.totp ? "מופעל — מופיע במסך הכניסה." : "כבוי — לא מופיע במסך הכניסה.";
+        const startBtn = document.getElementById("accountSecurityTotpStart");
+        const offBtn = document.getElementById("accountSecurityTotpDisable");
+        if (startBtn) startBtn.style.display = methods.totp ? "none" : "";
+        if (offBtn) offBtn.style.display = methods.totp ? "" : "none";
+        if (methods.totp) {
+          const setup = document.getElementById("accountSecurityTotpSetup");
+          if (setup) setup.style.display = "none";
+        }
+      },
+      async load() {
+        try {
+          const res = await fetch("/account-security/state");
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "לא הצלחתי לטעון את הגדרות החשבון.");
+          this.render(data);
+        } catch (err) { this.say("accountSecurityTotpStatus", err.message, false); }
+      },
+      async addPasskey() {
+        this.say("accountSecurityPasskeyStatus", "ממתין לאישור במכשיר…");
+        try {
+          const optRes = await fetch("/auth/passkey/register/options", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}),
+          });
+          const optData = await optRes.json();
+          if (!optRes.ok) throw new Error(optData.error || "לא הצלחתי להתחיל רישום.");
+          const options = structuredClone(optData.options);
+          options.challenge = this.b64ToBuf(options.challenge);
+          options.user.id = this.b64ToBuf(options.user.id);
+          if (Array.isArray(options.excludeCredentials)) {
+            options.excludeCredentials = options.excludeCredentials.map(i => ({ ...i, id: this.b64ToBuf(i.id) }));
+          }
+          const cred = await navigator.credentials.create({ publicKey: options });
+          const res = await fetch("/auth/passkey/register/verify", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential: {
+              id: cred.id, rawId: this.bufToB64(cred.rawId), type: cred.type,
+              response: {
+                clientDataJSON: this.bufToB64(cred.response.clientDataJSON),
+                attestationObject: this.bufToB64(cred.response.attestationObject),
+              },
+            }}),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "רישום ה-Passkey נכשל.");
+          this.say("accountSecurityPasskeyStatus", "ה-Passkey נרשם. הוא יופיע מעכשיו במסך הכניסה.", true);
+          this.load();
+        } catch (err) { this.say("accountSecurityPasskeyStatus", err.message || "רישום ה-Passkey נכשל.", false); }
+      },
+      async startTotp() {
+        this.say("accountSecurityTotpStatus", "");
+        try {
+          const res = await fetch("/account-security/totp/start", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "לא הצלחתי להתחיל הגדרה.");
+          document.getElementById("accountSecurityTotpQr").src = data.qr_data_uri;
+          document.getElementById("accountSecurityTotpSecret").value = data.secret;
+          document.getElementById("accountSecurityTotpSetup").style.display = "";
+        } catch (err) { this.say("accountSecurityTotpStatus", err.message, false); }
+      },
+      async enableTotp() {
+        const code = (document.getElementById("accountSecurityTotpCode")?.value || "").trim();
+        if (!code) return this.say("accountSecurityTotpStatus", "יש להזין את הקוד מהאפליקציה.", false);
+        try {
+          const res = await fetch("/auth/totp/verify", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ code, setup: true }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "הקוד לא תקין.");
+          this.say("accountSecurityTotpStatus", "Authenticator הופעל. הוא יופיע מעכשיו במסך הכניסה.", true);
+          this.load();
+        } catch (err) { this.say("accountSecurityTotpStatus", err.message, false); }
+      },
+      async disableTotp() {
+        if (!window.confirm("לכבות את ה-Authenticator? הוא יוסר ממסך הכניסה.")) return;
+        try {
+          const res = await fetch("/account-security/totp/disable", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "לא הצלחתי לכבות.");
+          this.say("accountSecurityTotpStatus", "Authenticator כובה.", true);
+          this.render(data);
+        } catch (err) { this.say("accountSecurityTotpStatus", err.message, false); }
+      },
+      async removePasskey(id) {
+        if (!window.confirm("להסיר את ה-Passkey הזה?")) return;
+        try {
+          const res = await fetch("/account-security/passkey/remove", {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || "לא הצלחתי להסיר.");
+          this.render(data);
+        } catch (err) { this.say("accountSecurityPasskeyStatus", err.message, false); }
+      },
+    };
+
+    document.getElementById("accountSecurityPasskeyAdd")?.addEventListener("click", () => accountSecurity.addPasskey());
+    document.getElementById("accountSecurityTotpStart")?.addEventListener("click", () => accountSecurity.startTotp());
+    document.getElementById("accountSecurityTotpEnable")?.addEventListener("click", () => accountSecurity.enableTotp());
+    document.getElementById("accountSecurityTotpDisable")?.addEventListener("click", () => accountSecurity.disableTotp());
+    document.querySelector('[data-tab-panel="account-security"]')?.addEventListener("click", (event) => {
+      const id = event.target?.dataset?.accountPasskeyRemove;
+      if (id) accountSecurity.removePasskey(id);
+    });
+    document.querySelector('[data-tab="account-security"]')?.addEventListener("click", () => accountSecurity.load());
+
     const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
 
     // רשת ביטחון: שינוי שטרם נשמר חי רק בזיכרון, ורענון דף מחק אותו בשקט.
