@@ -318,6 +318,20 @@ def load_auth_state() -> dict[str, Any]:
     return copy.deepcopy(state)
 
 
+def reload_auth_state() -> dict[str, Any]:
+    """קריאה טרייה מהמאגר, בלי המטמון שבזיכרון התהליך.
+
+    load_auth_state מחזיר את המטמון בלי לפנות שוב ל-Supabase, ולכל מכונה בענן
+    יש מטמון משלה. מכונה שהספיקה לשמור את המצב לפני שהסוד הוחלף הייתה מאמתת
+    מול הסוד הישן — ה-QR נסרק במכונה אחת והקוד נבדק באחרת. בהגדרת שיטה חדשה
+    זה קריטי, ולכן שם קוראים דרך כאן.
+    """
+    global _AUTH_STATE_CACHE, _AUTH_STATE_CACHE_MTIME_NS
+    _AUTH_STATE_CACHE = None
+    _AUTH_STATE_CACHE_MTIME_NS = None
+    return load_auth_state()
+
+
 def save_auth_state(state: dict[str, Any]) -> None:
     global _AUTH_STATE_CACHE, _AUTH_STATE_CACHE_MTIME_NS
     state = _migrate_legacy_state(dict(state or {}))
@@ -495,10 +509,17 @@ def build_totp_setup_payload(state: dict[str, Any], user_id: str | None = None, 
     return {"secret": secret, "uri": uri, "qr_data_uri": build_qr_data_uri(uri)}
 
 
-def rotate_totp_secret(state: dict[str, Any], user_id: str | None = None) -> None:
-    """סוד חדש לכל הגדרה מחדש. סוד ישן שנחשף לא נשאר בר-שימוש."""
+def ensure_setup_totp_secret(state: dict[str, Any], user_id: str | None = None) -> None:
+    """סוד להגדרה: מוחלף פעם אחת, ואז יציב עד שהשיטה מופעלת.
+
+    סוד ישן שנוצר לפני שהיה שער — כולל זה שהודפס בדף הכניסה הציבורי — מוחלף
+    בפתיחה הראשונה. אחריה אותו סוד נשמר, אחרת פתיחה חוזרת של המסך הייתה
+    מייצרת QR חדש ופוסלת את זה שכבר נסרק.
+    """
     user = get_auth_user(state, user_id)
-    user["totp_secret"] = pyotp.random_base32()
+    if not str(user.get("totp_secret") or "").strip() or not user.get("totp_secret_rotated_at"):
+        user["totp_secret"] = pyotp.random_base32()
+        user["totp_secret_rotated_at"] = int(time.time())
     user["totp_enabled"] = False
     save_auth_state(state)
 
@@ -534,6 +555,24 @@ def resolve_totp_user(state: dict[str, Any], code: str, user_id: str | None = No
         if pyotp.TOTP(secret).verify(normalized_code, valid_window=2):
             return candidate
     return None
+
+
+def verify_totp_setup_code(state: dict[str, Any], code: str, user_id: str | None = None) -> dict[str, Any] | None:
+    """אימות קוד בזמן ההגדרה, לפני שהשיטה הופעלה.
+
+    resolve_totp_user מדלג על משתמש ש-totp_enabled שלו כבוי, וזה נכון לכניסה.
+    אבל בהגדרה השיטה עוד כבויה מעצם ההגדרה, ולכן הקוד הראשון תמיד נדחה ואי
+    אפשר היה להפעיל בכלל. כאן בודקים מול הסוד השמור בלי לשאול אם היא מופעלת.
+    הנתיב הזה פתוח רק לסשן מחובר מתוך "הגדרות חשבון".
+    """
+    normalized_code = _normalize_totp_code(code)
+    if not normalized_code:
+        return None
+    user = get_auth_user(state, user_id)
+    secret = str(user.get("totp_secret") or "").strip()
+    if not secret:
+        return None
+    return user if pyotp.TOTP(secret).verify(normalized_code, valid_window=2) else None
 
 
 def verify_totp_code(state: dict[str, Any], code: str, user_id: str | None = None) -> bool:

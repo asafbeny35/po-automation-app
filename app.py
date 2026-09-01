@@ -191,7 +191,7 @@ from services.auth import (
     clear_auth_cookie,
     complete_passkey_authentication,
     resolve_login_email,
-    rotate_totp_secret,
+    ensure_setup_totp_secret,
     DEFAULT_PRIMARY_USER_ID,
     complete_passkey_registration,
     generate_passkey_authentication_options,
@@ -203,7 +203,9 @@ from services.auth import (
     issue_auth_token,
     list_auth_users,
     load_auth_state,
+    reload_auth_state,
     resolve_totp_user,
+    verify_totp_setup_code,
     save_auth_state,
     send_email_code_via_mail_app,
 )
@@ -17478,7 +17480,13 @@ async def auth_totp_verify(request: Request):
         return JSONResponse({"error": "הפעלת Authenticator מתבצעת רק מתוך הגדרות חשבון."}, status_code=401)
     user_id = str(body.get("user_id") or "").strip()
     state = load_auth_state()
-    matched_user = resolve_totp_user(state, code, user_id)
+    if setup_mode:
+        # בהגדרה השיטה עדיין כבויה, ולכן בודקים ישירות מול הסוד שנוצר עכשיו.
+        # קריאה טרייה: ה-QR נוצר אולי במכונה אחרת בענן, עם מטמון משלה.
+        state = reload_auth_state()
+        matched_user = verify_totp_setup_code(state, code, authenticated_user_id(request) or user_id)
+    else:
+        matched_user = resolve_totp_user(state, code, user_id)
     if not matched_user:
         return JSONResponse({"error": "קוד האימות לא תקין."}, status_code=400)
     resolved_user_id = str(matched_user.get("id") or user_id or state.get("default_user_id") or "asaf").strip()
@@ -17651,10 +17659,10 @@ async def account_security_totp_start(request: Request):
     """מחזיר QR וסוד להפעלת Authenticator. סוד חדש נוצר בכל פתיחה כל עוד
     השיטה כבויה, כדי שסוד שנחשף בעבר לא יישאר בר-שימוש."""
     user_id = _account_security_user_id(request)
-    state = load_auth_state()
+    state = reload_auth_state()
     if get_enabled_methods(state, user_id)["totp"]:
         return JSONResponse({"error": "Authenticator כבר מופעל. יש לכבות אותו לפני הגדרה מחדש."}, status_code=400)
-    rotate_totp_secret(state, user_id)
+    ensure_setup_totp_secret(state, user_id)
     payload = build_totp_setup_payload(state, user_id)
     return JSONResponse({"status": "ok", "secret": payload["secret"], "qr_data_uri": payload["qr_data_uri"]})
 
