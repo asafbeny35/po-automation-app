@@ -10343,14 +10343,19 @@ def _hr_parse_hours_document(file_path: Path, employees: list[dict]) -> dict | N
         hourly_employees = [dict(row) for row in (employees or []) if str(row.get("employment_type") or "").strip() == "hourly"]
         if len(hourly_employees) == 1:
             employee = hourly_employees[0]
+    # החודש נקבע קודם כול משורות הימים עצמן — הן הנתון, וכל השאר ניחוש מטקסט.
+    # סריקת הטקסט לקחה את התאריך הראשון במסמך, ובדוח של יונתן הופיעה לפני שורת
+    # "תקופה" גם השורה "התחלת העסקה : 01/07/2026". כך דוח של אוגוסט נכנס ליולי,
+    # ובאוגוסט הוא נראה כאילו לא נקלט כלל.
     month_key = (
-        _hr_parse_month_key_from_text(match_context, [
+        _hr_month_key_from_hours_details(details)
+        or _hr_parse_month_key_from_text(match_context, [
+            r"תקופה\s*:?\s*\d{1,2}/(\d{2})/(\d{4})",
             r"(\d{2})/(\d{4})",
             r"(\d{2})-(\d{4})",
             r"(\d{4})-(\d{2})",
         ])
         or _hr_parse_month_key_from_hebrew_text(match_context)
-        or _hr_month_key_from_hours_details(details)
     )
     if re.match(r"^\d{4}-\d{2}$", month_key):
         pass
@@ -16758,11 +16763,6 @@ async def _enrich_po_for_process(po: PurchaseOrderData, cfg: dict) -> PurchaseOr
             if preserve_po_payment_terms:
                 po.payment_terms_days = original_payment_terms_days
                 po.payment_terms_label = original_payment_terms_label
-            # כרטיס ב-GreenInvoice שלא הוגדרו בו תנאי תשלום מחזיר 0, וה-0 הזה גבר
-            # על הזמנה שנוקבת במפורש במספר ימים — מנרב יצאה "שוטף + 0" במקום 60.
-            elif not po.payment_terms_days and original_payment_terms_days:
-                po.payment_terms_days = original_payment_terms_days
-                po.payment_terms_label = original_payment_terms_label
             if parser_name == "china_civil":
                 po.customer_name = original_customer_name
                 po.customer_id = original_customer_id
@@ -21348,7 +21348,13 @@ async def marketing_state():
         payload = _build_marketing_state_payload(force_refresh=False)
         pipeline_rows = list(payload.get("rows") or [])
         if not pipeline_rows:
-            rows = await _build_marketing_pipeline_rows()
+            # בנייה ראשונית מהמקורות היא בונוס, לא תנאי — אם היא נכשלת עדיין נחזיר
+            # את המצב הריק התקין במקום להפיל את כל הטאב ל-500.
+            try:
+                rows = await _build_marketing_pipeline_rows()
+            except Exception as build_exc:
+                log_handled_error("marketing_state pipeline bootstrap failed", build_exc)
+                rows = []
             if rows:
                 save_marketing_rows("pipeline", rows)
                 payload = _build_marketing_state_payload(force_refresh=True)
@@ -26488,12 +26494,12 @@ async def hr_state(request: Request):
 async def hr_employee_save(request: Request):
     body = await request.json()
     row = body.get("row") or {}
-    _hes_name = str((row or {}).get("full_name") or "").strip()
-    _hes_new = not str((row or {}).get("employee_id") or "").strip()
-    await _log_activity(request, action="יצירה" if _hes_new else "עריכה", tab="עובדים ושכר", description=f"{'הוספת עובד' if _hes_new else 'עדכון עובד'}{(' — ' + _hes_name) if _hes_name else ''}", entity_id=str((row or {}).get("employee_id") or _hes_name or "") or None)
     if not isinstance(row, dict):
         return JSONResponse({"error": "מבנה העובד לא תקין."}, status_code=400)
-    if not str(row.get("full_name") or "").strip():
+    _hes_name = str(row.get("full_name") or "").strip()
+    _hes_new = not str(row.get("employee_id") or "").strip()
+    await _log_activity(request, action="יצירה" if _hes_new else "עריכה", tab="עובדים ושכר", description=f"{'הוספת עובד' if _hes_new else 'עדכון עובד'}{(' — ' + _hes_name) if _hes_name else ''}", entity_id=str(row.get("employee_id") or _hes_name or "") or None)
+    if not _hes_name:
         return JSONResponse({"error": "חסר שם עובד."}, status_code=400)
     try:
         if not str(row.get("employee_id") or "").strip():
