@@ -23233,6 +23233,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (safeTabName === "activity-log") {
       loadActivityLog();
     }
+    if (safeTabName === "account-security") {
+      // דרך setActiveTab ולא לפי לחיצה: הטאב משוחזר מ-localStorage בעליית הדף,
+      // ואז אין אירוע לחיצה בכלל — בדיוק מה שהשאיר את המסך על "טוען…".
+      window.__accountSecurityLoad?.();
+    }
     if (safeTabName === "employees-hr") {
       window.__hrEnsureFreshState?.();
     }
@@ -50063,11 +50068,23 @@ document.addEventListener("DOMContentLoaded", () => {
       },
       async load() {
         try {
-          const res = await fetch("/account-security/state");
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "לא הצלחתי לטעון את הגדרות החשבון.");
+          const res = await fetch("/account-security/state", { headers: { "Accept": "application/json" } });
+          const text = await res.text();
+          let data = {};
+          try { data = JSON.parse(text); } catch (_) {
+            throw new Error(`השרת החזיר תשובה לא צפויה (${res.status}).`);
+          }
+          if (!res.ok) throw new Error(data.error || `טעינת ההגדרות נכשלה (${res.status}).`);
           this.render(data);
-        } catch (err) { this.say("accountSecurityTotpStatus", err.message, false); }
+        } catch (err) {
+          // בלי זה שלושת האזורים נשארו על "טוען…" לנצח ולא היה שום רמז למה
+          const message = err.message || "לא הצלחתי לטעון את הגדרות החשבון.";
+          ["accountSecurityEmail", "accountSecurityPasskeys", "accountSecurityTotpState"].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = message;
+          });
+          this.say("accountSecurityTotpStatus", message, false);
+        }
       },
       async addPasskey() {
         this.say("accountSecurityPasskeyStatus", "ממתין לאישור במכשיר…");
@@ -50156,7 +50173,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const id = event.target?.dataset?.accountPasskeyRemove;
       if (id) accountSecurity.removePasskey(id);
     });
-    document.querySelector('[data-tab="account-security"]')?.addEventListener("click", () => accountSecurity.load());
+    window.__accountSecurityLoad = () => accountSecurity.load();
+    if (document.querySelector('.tab-panel.active[data-tab-panel="account-security"]')) accountSecurity.load();
 
     const hrInstMonthsHost = document.getElementById("hrInstallationsMonths");
 
