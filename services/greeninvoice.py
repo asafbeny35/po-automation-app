@@ -593,6 +593,40 @@ class GreenInvoiceClient:
         token = await self._get_token()
         return await self._find_customers_by_name(token, customer_name)
 
+    # גליל קוואיטפייפ אחד הוא 2 מ"ר של היריעה. חלק מהלקוחות מזמינים במ"ר
+    # (טובול, 52 ש"ח למ"ר) וחלק בגלילים, ותעודת המשלוח מתארת מה יוצא פיזית —
+    # ולכן היא חייבת להיות בגלילים. בלי ההמרה הזו הזמנה של 60 מ"ר יצאה כתעודה
+    # על 60 יריעות במקום 30, פי שניים מהסחורה בפועל.
+    QUIETPIPE_SQM_PER_ROLL = 2.0
+
+    @staticmethod
+    def _is_quietpipe_sheet(item) -> bool:
+        text = f"{getattr(item, 'description', '') or ''} {getattr(item, 'sku', '') or ''}"
+        return any(marker in text for marker in ("אקוסטיפייפ", "קוואיטפייפ", "קויאטפייפ")) or "QTP" in text.upper()
+
+    @staticmethod
+    def _is_square_meter_unit(unit) -> bool:
+        cleaned = str(unit or "").replace('"', "").replace("״", "").replace("'", "").replace("׳", "").strip()
+        return cleaned in {"מר", "מ ר", "מטר מרובע", "מטרים מרובעים"} or "מרובע" in cleaned
+
+    @classmethod
+    def _delivery_rolls_for(cls, item):
+        """מחזיר (גלילים, מ"ר) כשאפשר וצריך להמיר, אחרת None."""
+        if not cls._is_quietpipe_sheet(item) or not cls._is_square_meter_unit(getattr(item, "unit", "")):
+            return None
+        try:
+            sqm = float(getattr(item, "quantity", 0) or 0)
+        except (TypeError, ValueError):
+            return None
+        if sqm <= 0:
+            return None
+        rolls = sqm / cls.QUIETPIPE_SQM_PER_ROLL
+        # כמות שאינה מתחלקת לגלילים שלמים לא מומרת — עדיף להשאיר מ"ר מאשר
+        # להמציא חצי גליל בתעודת משלוח.
+        if abs(rolls - round(rolls)) > 1e-6:
+            return None
+        return int(round(rolls)), sqm
+
     def _row_base(self, item, price_value):
         row = {
             "description": item.description,
@@ -610,7 +644,14 @@ class GreenInvoiceClient:
     def _rows_for_delivery(self, po: PurchaseOrderData):
         rows = []
         for item in (po.items or []):
-            rows.append(self._row_base(item, 0))
+            row = self._row_base(item, 0)
+            converted = self._delivery_rolls_for(item)
+            if converted:
+                rolls, sqm = converted
+                row["quantity"] = float(rolls)
+                sqm_text = f"{sqm:g}"
+                row["description"] = f"{row.get('description') or ''} · {rolls} גלילים ({sqm_text} מ\"ר)".strip(" ·")
+            rows.append(row)
         if not rows:
             rows.append(
                 {
