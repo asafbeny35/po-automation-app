@@ -6,6 +6,7 @@ import logging
 import mimetypes
 import os
 from pathlib import Path
+from typing import Any
 
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials as UserCredentials
@@ -68,6 +69,7 @@ def has_oauth_client_config() -> bool:
 
 
 def _save_user_credentials(creds: UserCredentials) -> None:
+    reset_drive_service_cache()
     if _supabase_drive_token_enabled():
         supabase_store.replace_domain_rows(
             _GOOGLE_DRIVE_OAUTH_TOKEN_DOMAIN,
@@ -165,12 +167,44 @@ def exchange_oauth_code(authorization_response_url: str, state: str | None = Non
     return google_drive_connection_status()
 
 
+# בניית לקוח Drive כוללת שליפת מסמך ה-discovery של ה-API, וזה סיבוב רשת מלא.
+# היא נקראה מחדש בכל פנייה, כך ששמירת חשבונית אחת בנתה את הלקוח כארבע פעמים.
+_SERVICE_CACHE: dict[str, Any] = {"key": None, "service": None}
+# מזהי תיקיות יציבים: אותה תיקייה תחת אותו אב מחזירה תמיד את אותו מזהה.
+_CHILD_FOLDER_CACHE: dict[tuple[str, str], str] = {}
+
+
+def _service_identity(user_creds) -> str:
+    """מפתח שמשתנה רק בהתחברות מחדש, ולא ברענון טוקן רגיל."""
+    if not user_creds:
+        return "service-account"
+    return f"user:{getattr(user_creds, 'client_id', '') or ''}:{getattr(user_creds, 'refresh_token', '') or ''}"
+
+
 def _service():
+    if _SERVICE_CACHE.get("service") is not None and _SERVICE_CACHE.get("key"):
+        # ההרשאות נקראות מהמאגר, ולכן לא קוראים אותן שוב כשהלקוח כבר בנוי.
+        # התחברות מחדש מאפסת את המטמון דרך _save_user_credentials.
+        return _SERVICE_CACHE["service"]
     user_creds = load_user_credentials()
+    key = _service_identity(user_creds)
+    if _SERVICE_CACHE["key"] == key and _SERVICE_CACHE["service"] is not None:
+        return _SERVICE_CACHE["service"]
     if user_creds:
-        return build("drive", "v3", credentials=user_creds)
-    creds = build_service_account_credentials(DRIVE_SCOPES)
-    return build("drive", "v3", credentials=creds)
+        service = build("drive", "v3", credentials=user_creds)
+    else:
+        creds = build_service_account_credentials(DRIVE_SCOPES)
+        service = build("drive", "v3", credentials=creds)
+    _SERVICE_CACHE["key"] = key
+    _SERVICE_CACHE["service"] = service
+    return service
+
+
+def reset_drive_service_cache() -> None:
+    """לניתוק/חיבור מחדש של החשבון, וגם לבדיקות."""
+    _SERVICE_CACHE["key"] = None
+    _SERVICE_CACHE["service"] = None
+    _CHILD_FOLDER_CACHE.clear()
 
 
 def service_account_email() -> str:
@@ -229,7 +263,10 @@ def managed_storage_root_folder_id() -> str:
     root_id = str(settings.google_drive_orders_root_folder_id or "").strip()
     if not root_id:
         raise GoogleDriveSharedDriveRequiredError("חסר GOOGLE_DRIVE_ORDERS_ROOT_FOLDER_ID עבור אחסון Drive מנוהל.")
-    validate_shared_drive_folder(root_id, "GOOGLE_DRIVE_ORDERS_ROOT_FOLDER_ID")
+    # האימות פונה ל-Drive, והוא הורץ מחדש בכל שלב בשרשרת התיקיות
+    if _SERVICE_CACHE.get("validated_root") != root_id:
+        validate_shared_drive_folder(root_id, "GOOGLE_DRIVE_ORDERS_ROOT_FOLDER_ID")
+        _SERVICE_CACHE["validated_root"] = root_id
     return root_id
 
 
@@ -307,9 +344,14 @@ def _find_file_in_folder(service, parent_id: str, title: str) -> dict | None:
 
 
 def ensure_child_folder(parent_id: str, title: str) -> str:
+    cache_key = (str(parent_id or ""), str(title or ""))
+    cached = _CHILD_FOLDER_CACHE.get(cache_key)
+    if cached:
+        return cached
     service = _service()
     existing = _find_child_folder(service, parent_id, title)
     if existing:
+        _CHILD_FOLDER_CACHE[cache_key] = existing
         return existing
     payload = {
         "name": title,
@@ -321,7 +363,9 @@ def ensure_child_folder(parent_id: str, title: str) -> str:
         fields="id,name",
         supportsAllDrives=True,
     ).execute()
-    return str(created["id"])
+    folder_id = str(created["id"])
+    _CHILD_FOLDER_CACHE[cache_key] = folder_id
+    return folder_id
 
 
 def list_child_folders(parent_id: str) -> list[dict]:
