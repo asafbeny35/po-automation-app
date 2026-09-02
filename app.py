@@ -7952,6 +7952,169 @@ def _finance_parse_tranzila_invoice(raw_text: str, fixed_text: str, original_nam
     )
 
 
+# ── כמה חשבוניות על עמוד סרוק אחד ────────────────────────────────────────────
+# סורק שמניחים עליו שתי קבלות זו לצד זו מייצר עמוד אחד עם שני מסמכים. הפיצול
+# הקיים עובד ברמת עמוד ולכן לא יכול להפריד ביניהם, וכל מקרה כזה טופל עד היום
+# ברשימת SHA1 מקודדת ידנית ב-_finance_known_bundle_specs. כאן זה נעשה לבד.
+
+_FINANCE_MULTI_INVOICE_MAX = 6
+
+
+def _finance_page_invoice_signal_count(raw_text: str, fixed_text: str) -> int:
+    """הערכה זולה, מתוך ה-OCR, לכמה מסמכים נפרדים יש בעמוד.
+
+    רק כשהיא מצביעה על יותר מאחד שולחים את העמוד לניתוח ראייה — כדי לא לשלם
+    קריאה נוספת על כל קבלה בודדת.
+    """
+    # נספר על עותק אחד בלבד. raw ו-fixed הם אותו עמוד, וחיבור שלהם היה מכפיל
+    # כל כותרת ושולח כל קבלה בודדת לניתוח ראייה מיותר.
+    text = fixed_text if len(fixed_text or "") >= len(raw_text or "") else raw_text
+    text = text or ""
+    business_ids = {
+        match for match in re.findall(r"\b\d{9}\b", text)
+        # מספרי מילוי נפוצים בקבלות ("לקוח כללי"), לא עסק נוסף
+        if match not in {"999999999", "000000000", "123456789"}
+    }
+    # "חשבונית מס/קבלה" היא כותרת אחת, לא שתיים
+    headers = len(re.findall(r"חשבונית\s*מס(?:\s*/\s*קבלה)?|קבלה\s*מס|תינובשח", text))
+    return max(len(business_ids), min(headers, _FINANCE_MULTI_INVOICE_MAX))
+
+
+def _finance_region_to_rect(region, page_rect) -> list[float] | None:
+    """תיבה מנורמלת 0..1 שמגיעה מהמודל, לנקודות PDF."""
+    if not isinstance(region, (list, tuple)) or len(region) != 4:
+        return None
+    try:
+        x0, y0, x1, y1 = (float(value) for value in region)
+    except (TypeError, ValueError):
+        return None
+    if x1 <= x0 or y1 <= y0:
+        return None
+    # שוליים קטנים, כדי שקצה הקבלה לא ייחתך
+    pad = 0.01
+    x0, y0 = max(0.0, x0 - pad), max(0.0, y0 - pad)
+    x1, y1 = min(1.0, x1 + pad), min(1.0, y1 + pad)
+    return [
+        page_rect.x0 + x0 * page_rect.width,
+        page_rect.y0 + y0 * page_rect.height,
+        page_rect.x0 + x1 * page_rect.width,
+        page_rect.y0 + y1 * page_rect.height,
+    ]
+
+
+def _finance_vision_invoice_to_draft(parsed: dict, file_path: Path, original_name: str) -> dict | None:
+    """שדות שהמודל החזיר -> טיוטת חשבונית. משותף למסלול הבודד ולמסלול המרובה."""
+    def clean(value):
+        return str(value or "").strip()
+
+    def amount(value):
+        raw = clean(value).replace(",", "").replace("₪", "")
+        try:
+            return f"{float(raw):.2f}" if raw else ""
+        except (TypeError, ValueError):
+            return ""
+
+    supplier_name = clean(parsed.get("supplier_name"))
+    subtotal, vat, total = amount(parsed.get("subtotal")), amount(parsed.get("vat")), amount(parsed.get("total"))
+    if not supplier_name and not total and not subtotal:
+        return None
+    if not total and subtotal:
+        total = subtotal
+    if not subtotal and total:
+        subtotal = total
+    invoice_date = clean(parsed.get("invoice_date")) or date.today().strftime("%d/%m/%Y")
+    return _normalize_finance_invoice_row_app({
+        "row_id": f"finance-upload-{uuid.uuid4().hex}",
+        "invoice_date": invoice_date,
+        "supplier_name": supplier_name,
+        "reference_number": clean(parsed.get("reference_number")),
+        "allocation_number": "",
+        "service_or_product": clean(parsed.get("service_or_product")),
+        "currency_code": (clean(parsed.get("currency")) or "ILS").upper(),
+        "subtotal": subtotal,
+        "vat": vat,
+        "total": total,
+        "source_file_name": Path(original_name).name,
+        "source_file_path": str(file_path),
+        "report_due_date": _finance_due_date_display(invoice_date),
+        "updated_at": datetime.now().isoformat(timespec="seconds"),
+    })
+
+
+_FINANCE_MULTI_INVOICE_PROMPT = (
+    "This is a scan of an Israeli page that may hold MORE THAN ONE separate invoice or receipt, "
+    "placed side by side or one under the other. Hebrew reads right-to-left.\n"
+    "Identify every distinct document on the page. Two documents from the SAME supplier are still "
+    "two documents if they carry different receipt numbers or dates — do not merge them, and never "
+    "mix a field from one document into another.\n"
+    "Return ONLY a JSON object:\n"
+    '{"invoices": [{\n'
+    '  "region": [x0, y0, x1, y1],   // bounding box of THIS document only, each value 0..1 of page width/height\n'
+    '  "supplier_name": "printed business name at the top of THIS document (not handwritten)",\n'
+    '  "invoice_date": "DD/MM/YYYY (2-digit year means 20xx)",\n'
+    '  "reference_number": "invoice/receipt number of THIS document",\n'
+    '  "subtotal": "amount before VAT, empty if absent",\n'
+    '  "vat": "VAT amount, empty if absent",\n'
+    '  "total": "total to pay — may be handwritten",\n'
+    '  "currency": "ILS / USD / EUR / GBP",\n'
+    '  "service_or_product": "short description"\n'
+    "}]}\n"
+    "If the page holds a single document, return one entry with region [0,0,1,1]. Return JSON only."
+)
+
+
+def _finance_parse_multi_invoice_page(file_path: Path, original_name: str) -> list[dict]:
+    """מחזיר טיוטה לכל חשבונית שזוהתה בעמוד, כל אחת עם החיתוך שלה."""
+    api_key = str(settings.anthropic_api_key or "").strip()
+    if not api_key or file_path.suffix.lower() != ".pdf":
+        return []
+    try:
+        import fitz
+        import base64
+
+        pdf = fitz.open(str(file_path))
+        try:
+            if pdf.page_count != 1:
+                return []
+            page = pdf.load_page(0)
+            page_rect = page.rect
+            pixmap = page.get_pixmap(matrix=fitz.Matrix(2.4, 2.4), alpha=False)
+            b64 = base64.standard_b64encode(pixmap.tobytes("png")).decode("utf-8")
+        finally:
+            pdf.close()
+
+        response = _anthropic_messages_post(
+            {
+                "model": "claude-sonnet-4-6",
+                "max_tokens": 2048,
+                "messages": [{"role": "user", "content": [
+                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                    {"type": "text", "text": _FINANCE_MULTI_INVOICE_PROMPT},
+                ]}],
+            },
+            timeout=60.0,
+        )
+        content = response.json().get("content") or []
+        raw_json = next((block.get("text", "") for block in content if block.get("type") == "text"), "")
+        match = re.search(r"\{[\s\S]*\}", raw_json)
+        if not match:
+            return []
+        invoices = (json.loads(match.group(0)) or {}).get("invoices") or []
+    except Exception as exc:
+        log_handled_error("multi invoice vision parse failed", exc)
+        return []
+
+    results: list[dict] = []
+    for entry in invoices[:_FINANCE_MULTI_INVOICE_MAX]:
+        if not isinstance(entry, dict):
+            continue
+        draft = _finance_vision_invoice_to_draft(entry, file_path, original_name)
+        if not draft:
+            continue
+        results.append({"draft": draft, "rect": _finance_region_to_rect(entry.get("region"), page_rect)})
+    return results
+
+
 def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
     api_key = str(settings.anthropic_api_key or "").strip()
     if not api_key:
@@ -8551,6 +8714,36 @@ def _finance_parse_known_bundle_drafts(file_path: Path, original_name: str) -> l
     return drafts
 
 
+def _finance_drafts_from_page_regions(file_path: Path, original_name: str, page_invoices: list[dict]) -> list[dict]:
+    """חותך כל חשבונית לקובץ משלה, כדי שמה שנשמר בדרייב הוא החשבונית עצמה
+    ולא הדף כולו עם קבלה זרה לצידה."""
+    split_root = _finance_invoice_split_root(original_name)
+    split_root.mkdir(parents=True, exist_ok=True)
+    for stale_file in split_root.glob("*.pdf"):
+        try:
+            stale_file.unlink()
+        except OSError:
+            continue
+
+    drafts: list[dict] = []
+    for index, entry in enumerate(page_invoices, start=1):
+        draft = dict(entry.get("draft") or {})
+        rect = entry.get("rect")
+        supplier_slug = _safe_folder_name(str(draft.get("supplier_name") or "").strip()) or "invoice"
+        date_slug = str(draft.get("invoice_date") or "").strip().replace("/", "-") or datetime.now().strftime("%Y-%m-%d")
+        target = split_root / f"{index:03d}-{supplier_slug}-{date_slug}.pdf"
+        if rect:
+            try:
+                _finance_export_split_pdf_regions(file_path, [{"page": 1, "rect": rect}], target)
+                draft["source_file_name"] = target.name
+                draft["source_file_path"] = str(target)
+            except Exception as exc:
+                # בלי חיתוך עדיין עדיף להחזיר את השורה, מצביעה על העמוד המלא
+                log_handled_error(f"multi invoice region export failed for {target.name}", exc)
+        drafts.append(_normalize_finance_invoice_row_app(draft))
+    return drafts
+
+
 def _finance_parse_uploaded_invoice_drafts(file_path: Path, original_name: str) -> list[dict]:
     known_bundle_drafts = _finance_parse_known_bundle_drafts(file_path, original_name)
     if known_bundle_drafts:
@@ -8575,6 +8768,14 @@ def _finance_parse_uploaded_invoice_drafts(file_path: Path, original_name: str) 
         return [_finance_parse_uploaded_invoice_draft(file_path, original_name)]
     bundle_groups = _finance_split_invoice_bundle(file_path)
     if len(bundle_groups) <= 1:
+        # פיצול לפי עמודים לא עוזר כששתי קבלות מונחות על אותו עמוד סרוק. רק אם
+        # ה-OCR מרמז על יותר ממסמך אחד שולחים את העמוד לזיהוי אזורים, כדי לא
+        # לשלם קריאת ראייה נוספת על כל קבלה בודדת.
+        raw_text, fixed_text = _finance_extract_uploaded_invoice_texts(file_path)
+        if _finance_page_invoice_signal_count(raw_text, fixed_text) > 1:
+            page_invoices = _finance_parse_multi_invoice_page(file_path, original_name)
+            if len(page_invoices) > 1:
+                return _finance_drafts_from_page_regions(file_path, original_name, page_invoices)
         return [_finance_parse_uploaded_invoice_draft(file_path, original_name)]
 
     split_root = _finance_invoice_split_root(original_name)
