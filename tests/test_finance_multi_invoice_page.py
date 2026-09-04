@@ -145,3 +145,38 @@ def test_amounts_survive_commas_and_shekel_signs(tmp_path):
         {"supplier_name": "ספק", "total": "₪1,234.50", "subtotal": "1,046.19", "vat": "188.31"},
         tmp_path / "x.pdf", "x.pdf")
     assert (draft["total"], draft["subtotal"], draft["vat"]) == ("1234.50", "1046.19", "188.31")
+
+
+# ── שומר הסף האריתמטי ────────────────────────────────────────────────────────
+# בהרצה בפרודקשן על הסריקה האמיתית, "זכוכית 2000" קיבלה לפני-מע"מ 49.20 ומע"מ
+# 8.90 — הסכומים של הקבלה השכנה — מול סה"כ 260 משלה.
+
+def test_parts_that_do_not_add_up_to_the_total_are_dropped(tmp_path):
+    draft = app._finance_vision_invoice_to_draft(
+        {"supplier_name": "זכוכית 2000", "total": "260", "subtotal": "49.20", "vat": "8.90"},
+        tmp_path / "x.pdf", "x.pdf")
+    assert draft["total"] == "260.00"
+    assert draft["subtotal"] == "260.00"   # הושלם מהסה"כ, לא מהשכנה
+    assert draft["vat"] == ""
+
+
+def test_parts_that_do_add_up_are_kept(tmp_path):
+    """‏49.20 + 8.90 = 58.10 מול סה"כ 58.00 — עיגול של קבלה, לא זליגה."""
+    draft = app._finance_vision_invoice_to_draft(
+        {"supplier_name": "פיצה גראז", "total": "58.00", "subtotal": "49.20", "vat": "8.90"},
+        tmp_path / "x.pdf", "x.pdf")
+    assert (draft["subtotal"], draft["vat"], draft["total"]) == ("49.20", "8.90", "58.00")
+
+
+@pytest.mark.parametrize("subtotal, vat, total, kept", [
+    ("100.00", "18.00", "118.00", True),
+    ("100.00", "18.00", "118.90", True),    # בתוך הסבילות
+    ("100.00", "18.00", "500.00", False),   # זליגה ברורה
+    ("49.20",  "8.90",  "260.00", False),
+    ("10.00",  "1.80",  "11.80",  True),
+])
+def test_tolerance_boundaries(tmp_path, subtotal, vat, total, kept):
+    draft = app._finance_vision_invoice_to_draft(
+        {"supplier_name": "ספק", "subtotal": subtotal, "vat": vat, "total": total},
+        tmp_path / "x.pdf", "x.pdf")
+    assert (draft["vat"] == vat) is kept

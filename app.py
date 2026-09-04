@@ -8018,6 +8018,15 @@ def _finance_vision_invoice_to_draft(parsed: dict, file_path: Path, original_nam
     subtotal, vat, total = amount(parsed.get("subtotal")), amount(parsed.get("vat")), amount(parsed.get("total"))
     if not supplier_name and not total and not subtotal:
         return None
+    # שומר סף אריתמטי: לפני מע"מ ועוד מע"מ חייבים להסתכם בסה"כ של אותו מסמך.
+    # כשקבלה כתובה ביד לא מפרטת מע"מ, המודל נטה להשלים את המספרים מהקבלה
+    # השכנה על אותו עמוד — כך "זכוכית 2000" קיבלה 49.20 ו-8.90 שסכומם 58.10
+    # מול סה"כ 260. אם החלקים לא מתיישבים עם הסה"כ הם נזרקים, והמע"מ יגזר
+    # מהסה"כ עצמו בהמשך הזרימה.
+    if subtotal and vat and total:
+        parts, whole = float(subtotal) + float(vat), float(total)
+        if abs(parts - whole) > max(1.0, whole * 0.02):
+            subtotal, vat = "", ""
     if not total and subtotal:
         total = subtotal
     if not subtotal and total:
@@ -8047,6 +8056,9 @@ _FINANCE_MULTI_INVOICE_PROMPT = (
     "Identify every distinct document on the page. Two documents from the SAME supplier are still "
     "two documents if they carry different receipt numbers or dates — do not merge them, and never "
     "mix a field from one document into another.\n"
+    "Read every amount from the document it belongs to. If a document does not print a subtotal or a "
+    "VAT line — handwritten receipts usually do not — leave those fields empty. Never borrow a number "
+    "from a neighbouring document to fill a gap: an empty field is correct, a copied one is not.\n"
     "Return ONLY a JSON object:\n"
     '{"invoices": [{\n'
     '  "region": [x0, y0, x1, y1],   // bounding box of THIS document only, each value 0..1 of page width/height\n'
