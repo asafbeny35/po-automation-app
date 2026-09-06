@@ -15849,7 +15849,9 @@ def _allow_dev_mobile_auth(request: Request) -> bool:
 
 
 def get_mode_config(mode: str):
-    if mode == "prod":
+    # מנורמל כמו ב-services/config.py. בלי זה "PROD" (הערך שנשמר ב-source_mode
+    # של שורות התשלומים) נופל בשקט לסנדבוקס, וקוד פרודקשן קורא ספר ריק.
+    if str(mode or "").strip().lower() in {"production", "prod", "live", "real", "אמיתי", "פרודקשן"}:
         return {
             "mode": "production",
             "api_key": settings.greeninvoice_prod_api_key,
