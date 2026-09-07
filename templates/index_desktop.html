@@ -39358,7 +39358,8 @@ document.addEventListener("DOMContentLoaded", () => {
       { match: /^\/pazomat-/, title: "מעדכן פזומט...", message: "מכין עכשיו את נתוני הפזומט ושומר אותם." },
       { match: /^\/sibus-/, title: "מעדכן סיבוס...", message: "מכין עכשיו את נתוני סיבוס ושומר אותם." },
       { match: /^\/greeninvoice-assistant$/, title: "שואל את חשבונית ירוקה...", message: "מכין עכשיו את התשובה מתוך חשבונית ירוקה." },
-      { match: /^\/greeninvoice-upcoming-payments$/, title: "טוען תשלומים קרובים...", message: "מכין עכשיו את נתוני התשלומים הקרובים." }
+      { match: /^\/greeninvoice-upcoming-payments$/, title: "טוען תשלומים קרובים...", message: "מכין עכשיו את נתוני התשלומים הקרובים." },
+      { match: /^\/hr-payroll-send-whatsapp$/, title: "שולח בוואטסאפ...", message: "מכין את המסמך ושולח דרך וואטסאפ — הגשר ממתין לאישור מסירה בפועל, זה יכול לקחת עד דקה." }
     ];
     const match = pathMap.find(item => item.match.test(pathname));
     if (match) return match;
