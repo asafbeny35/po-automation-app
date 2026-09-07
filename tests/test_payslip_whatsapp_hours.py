@@ -45,11 +45,16 @@ def _target_row():
     return {"employee_id": "emp_x", "month_key": "2026-07", "employee_name": "עובד בדיקה"}
 
 
-def test_the_merged_document_is_payslip_then_attendance(tmp_path, monkeypatch):
+def _with_hours(monkeypatch, tmp_path):
     monkeypatch.setattr(app, "_hr_find_hours_row", lambda *a: {"row_id": "h1"})
     monkeypatch.setattr(app, "_hr_resolve_hours_attachment", lambda row: {"available": True, "path": str(tmp_path / "hours.xlsx")})
     monkeypatch.setattr(app, "_hr_parse_hours_report_rows", lambda p: [_detail("01/07/2026", 8)])
     monkeypatch.setattr(app, "load_hr_rows", lambda kind: [])
+
+
+def test_the_merged_document_is_payslip_then_attendance(tmp_path, monkeypatch):
+    _with_hours(monkeypatch, tmp_path)
+    monkeypatch.setattr(app, "_build_hr_installations_payload", lambda: {"months": []})
 
     merged = app._hr_payslip_with_hours_pdf(_payslip(tmp_path), _target_row())
     assert merged is not None
@@ -58,6 +63,40 @@ def test_the_merged_document_is_payslip_then_attendance(tmp_path, monkeypatch):
     assert doc.page_count == 2       # עמוד תלוש + עמוד נוכחות
     assert "01/07/2026" in doc[1].get_text()
     doc.close()
+    merged.unlink()
+
+
+def test_an_employee_with_installations_gets_a_third_page(tmp_path, monkeypatch):
+    """עלי: תלוש + נוכחות + התקנות החודש — שלושה עמודים במסמך אחד."""
+    _with_hours(monkeypatch, tmp_path)
+    monkeypatch.setattr(app, "_build_hr_installations_payload", lambda: {
+        "door_rate": 14.0,
+        "months": [{
+            "month_key": "2026-07", "employee_id": "emp_x", "employee_name": "עובד בדיקה",
+            "label": "התקנות יולי 2026", "include_in_payroll": True,
+            "rows": [{"install_date": "01/07/2026", "installed_quantity": 46,
+                      "doors_amount": 644.0, "food": 150.0, "fuel": 450.0,
+                      "advance": 880.0, "total": 364.0}],
+            "totals": {"installed_quantity": 46, "doors_amount": 644.0, "food": 150.0,
+                       "fuel": 450.0, "advance": 880.0, "total": 364.0},
+        }],
+    })
+
+    merged = app._hr_payslip_with_hours_pdf(_payslip(tmp_path), _target_row())
+    doc = fitz.open(merged)
+    assert doc.page_count == 3
+    assert "01/07/2026" in doc[2].get_text()
+    doc.close()
+    merged.unlink()
+
+
+def test_a_broken_installations_build_does_not_block_the_send(tmp_path, monkeypatch):
+    def _boom():
+        raise RuntimeError("installations payload unavailable")
+    _with_hours(monkeypatch, tmp_path)
+    monkeypatch.setattr(app, "_build_hr_installations_payload", _boom)
+    merged = app._hr_payslip_with_hours_pdf(_payslip(tmp_path), _target_row())
+    assert merged is not None and fitz.open(merged).page_count == 2
     merged.unlink()
 
 

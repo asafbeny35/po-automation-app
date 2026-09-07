@@ -20551,9 +20551,9 @@ input:focus {
     </div>
     <label class="reminder-edit-toggle" for="hrPayrollWhatsappIncludeHours" style="margin-top:12px;">
       <input type="checkbox" id="hrPayrollWhatsappIncludeHours" checked>
-      צרף גם את דוח הנוכחות (מסמך אחד רצוף עם התלוש)
+      צרף גם דוח נוכחות והתקנות (מסמך אחד רצוף עם התלוש)
     </label>
-    <div id="hrPayrollWhatsappNote" class="hr-payroll-whatsapp-note">השליחה תצרף מסמך אחד רצוף — התלוש ואחריו דוח הנוכחות — בלי טקסט מקדים ובלי הודעה נוספת.</div>
+    <div id="hrPayrollWhatsappNote" class="hr-payroll-whatsapp-note">השליחה תצרף מסמך אחד רצוף — התלוש, דוח הנוכחות, ואם יש לעובד התקנות בחודש גם הן — בלי טקסט מקדים ובלי הודעה נוספת.</div>
     <div class="confirm-modal-actions">
       <button type="button" id="hrPayrollWhatsappCancel" class="ghost-btn">ביטול</button>
       <button type="button" id="hrPayrollWhatsappSend" class="assistant-submit">שלח</button>
@@ -51005,7 +51005,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function updateHrPayrollWhatsappNote() {
       if (!hrPayrollWhatsappNote) return;
       hrPayrollWhatsappNote.textContent = hrPayrollWhatsappIncludeHours?.checked
-        ? "השליחה תצרף מסמך אחד רצוף — התלוש ואחריו דוח הנוכחות — בלי טקסט מקדים ובלי הודעה נוספת."
+        ? "השליחה תצרף מסמך אחד רצוף — התלוש, דוח הנוכחות, ואם יש לעובד התקנות בחודש גם הן — בלי טקסט מקדים ובלי הודעה נוספת."
         : "השליחה תצרף רק את קובץ התלוש, בלי טקסט מקדים ובלי הודעה נוספת.";
     }
 

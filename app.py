@@ -27331,6 +27331,21 @@ def _hr_payslip_with_hours_pdf(payslip_path: Path, target_row: dict) -> Path | N
         merged.insert_pdf(payslip_doc)
     with fitz.open(stream=hours_pdf_bytes, filetype="pdf") as hours_doc:
         merged.insert_pdf(hours_doc)
+    # עובד עם התקנות בחודש (עלי) מקבל גם את דף ההתקנות — אותו PDF כמו בייצוא מהמסך
+    try:
+        installations_payload = _build_hr_installations_payload()
+        installations_month = _hr_installations_month_for_employee(
+            employee_id, employee_name, month_key, installations_payload
+        )
+        if installations_month and (installations_month.get("rows") or []):
+            installations_bytes, _ = _hr_installations_month_pdf_bytes(
+                installations_month,
+                installations_payload.get("door_rate") or HR_INSTALLATIONS_DOOR_RATE,
+            )
+            with fitz.open(stream=installations_bytes, filetype="pdf") as installations_doc:
+                merged.insert_pdf(installations_doc)
+    except Exception as installations_exc:
+        log_handled_error("payslip whatsapp installations page failed", installations_exc)
     target_dir = OUTPUT_DIR / "_hr_whatsapp_cache"
     target_dir.mkdir(parents=True, exist_ok=True)
     target_path = target_dir / f"תלוש שכר ונוכחות - {employee_name} - {month_key}.pdf"
