@@ -27361,8 +27361,18 @@ async def hr_payroll_send_whatsapp(request: Request):
             str(target_row.get("month_key") or "").strip(),
             payslip_file_name,
         )
+        payslip_drive_file_id = str(target_row.get("payslip_drive_file_id") or "").strip()
+        if (not local_path or not Path(local_path).exists()) and payslip_drive_file_id:
+            # בפרודקשן קבצי התלושים לא יושבים על הדיסק (הם הועלו מהמק) — מורידים
+            # את עותק הדרייב, כמו שהרזולבר של דוח השעות כבר עושה לקובץ השעות.
+            local_path = _hr_storage_dir() / str(target_row.get("employee_id") or "").strip() / (str(target_row.get("month_key") or "").strip() or "general") / Path(payslip_file_name).name
+            local_path.parent.mkdir(parents=True, exist_ok=True)
+            try:
+                download_drive_file(payslip_drive_file_id, local_path)
+            except Exception as drive_exc:
+                log_handled_error("hr_payroll_send_whatsapp payslip drive download failed", drive_exc)
         if not local_path or not Path(local_path).exists():
-            return JSONResponse({"error": "קובץ התלוש לא נמצא מקומית ולכן אי אפשר לשלוח אותו בוואטסאפ כרגע."}, status_code=404)
+            return JSONResponse({"error": "קובץ התלוש לא נמצא מקומית וגם לא בדרייב, ולכן אי אפשר לשלוח אותו בוואטסאפ כרגע."}, status_code=404)
         include_hours = bool((body or {}).get("include_hours", True))
         send_path = Path(local_path)
         sent_file_name = payslip_file_name
