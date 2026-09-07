@@ -1387,6 +1387,7 @@ CUSTOMER_FIELDS = [
     "customer_domain",
     "synced_at",
     "bank_details_updated_sent",
+    "tax_certificate_sent",
 ]
 
 
@@ -3886,6 +3887,7 @@ def _normalize_customer_row(row: dict) -> dict:
     normalized["customer_domain"] = _normalize_customer_domain(normalized.get("customer_domain", ""))
     normalized["synced_at"] = str(normalized.get("synced_at") or datetime.now().isoformat(timespec="seconds"))
     normalized["bank_details_updated_sent"] = _normalize_customer_bool(normalized.get("bank_details_updated_sent", ""))
+    normalized["tax_certificate_sent"] = _normalize_customer_bool(normalized.get("tax_certificate_sent", ""))
     return normalized
 
 

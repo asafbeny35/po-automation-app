@@ -14959,6 +14959,14 @@ def _default_delivery_contact_email(company: str) -> str:
 
 
 def _mark_customer_bank_details_updated(company: str) -> bool:
+    return _mark_customer_sent_flag(company, "bank_details_updated_sent")
+
+
+def _mark_customer_tax_certificate_sent(company: str) -> bool:
+    return _mark_customer_sent_flag(company, "tax_certificate_sent")
+
+
+def _mark_customer_sent_flag(company: str, flag_field: str) -> bool:
     raw_target = str(company or "").strip()
     target_name = _canonical_income_customer_name(raw_target) or raw_target
     target_normalized = _normalize_company_name(raw_target)
@@ -14980,9 +14988,9 @@ def _mark_customer_bank_details_updated(company: str) -> bool:
                 (target_normalized and row_name_normalized and row_name_normalized == target_normalized)
                 or (target_name and row_name == target_name)
             ):
-                if str(current.get("bank_details_updated_sent") or "").strip().upper() != "TRUE":
+                if str(current.get(flag_field) or "").strip().upper() != "TRUE":
                     changed = True
-                current["bank_details_updated_sent"] = "TRUE"
+                current[flag_field] = "TRUE"
                 current["synced_at"] = now_iso
             updated_rows.append(current)
         return updated_rows, changed
@@ -20471,6 +20479,8 @@ async def delivery_confirmations_send(request: Request):
             message = str(form.get("message") or "").strip()
             recipients = str(form.get("recipients") or "").strip()
             send_new_bank_details = str(form.get("send_new_bank_details") or "").strip().lower() in {"1", "true", "yes", "on"}
+            # ברירת מחדל מסומן: מפתח שחסר בטופס (לקוח ישן) שולח את האישור
+            attach_tax_certificate = str(form.get("attach_tax_certificate") or "true").strip().lower() in {"1", "true", "yes", "on"}
             html_body = str(form.get("html_body") or "").strip()
             uploaded_files = [
                 item
@@ -20489,6 +20499,7 @@ async def delivery_confirmations_send(request: Request):
             message = str(body.get("message") or "").strip()
             recipients = str(body.get("recipients") or "").strip()
             send_new_bank_details = bool(body.get("send_new_bank_details"))
+            attach_tax_certificate = bool(body.get("attach_tax_certificate", True))
             html_body = str(body.get("html_body") or "").strip()
         if not po_number and not fulfillment_id:
             return JSONResponse({"error": "חסר מזהה מימוש או מספר הזמנה."}, status_code=400)
@@ -20609,6 +20620,18 @@ async def delivery_confirmations_send(request: Request):
             uploaded_attachment_paths.append(bank_attachment_path)
             attachments.append(str(bank_attachment_path.resolve()))
 
+        if attach_tax_certificate and not (internal_print_only and not test_send):
+            raw_cert_path = _materialize_admin_business_doc_attachment(
+                "business-tax-books",
+                OUTPUT_DIR / "_delivery_confirmation_uploaded",
+            )
+            # הלקוח רואה את שם הקובץ במייל — שם עברי נקי במקום מפתח-נכס עם חותמת זמן
+            named_cert_path = raw_cert_path.parent / raw_cert_path.stem / "אישור ניכוי מס וניהול ספרים.pdf"
+            named_cert_path.parent.mkdir(parents=True, exist_ok=True)
+            raw_cert_path.replace(named_cert_path)
+            uploaded_attachment_paths.append(named_cert_path)
+            attachments.append(str(named_cert_path.resolve()))
+
         html_message = (
             _delivery_confirmation_mail_html_from_editor_html(html_body, message)
             if html_body
@@ -20647,6 +20670,12 @@ async def delivery_confirmations_send(request: Request):
             except Exception as exc:
                 log_handled_error("delivery confirmation bank details customer flag failed", exc)
                 warning_messages.append("המייל נשלח, אבל לא הצלחתי לעדכן את תגית פרטי החשבון אצל הלקוח.")
+        if attach_tax_certificate and not internal_print_only:
+            try:
+                _mark_customer_tax_certificate_sent(str(row.get("company") or "").strip())
+            except Exception as exc:
+                log_handled_error("delivery confirmation tax certificate customer flag failed", exc)
+                warning_messages.append("המייל נשלח, אבל לא הצלחתי לרשום שאישור ניכוי המס נשלח ללקוח.")
         response_payload = {"status": "ok"}
         try:
             response_payload.update(_build_delivery_confirmation_payload())
@@ -20654,6 +20683,7 @@ async def delivery_confirmations_send(request: Request):
             log_handled_error("delivery confirmation send payload refresh failed", exc)
             warning_messages.append("המייל נשלח, אבל לא הצלחתי כרגע לרענן את טבלת אישורי המסירה.")
         response_payload["send_new_bank_details"] = send_new_bank_details
+        response_payload["attach_tax_certificate"] = attach_tax_certificate
         response_payload["customer_name"] = str(row.get("company") or "").strip()
         if warning_messages:
             response_payload["warning"] = " ".join(warning_messages)
@@ -20665,6 +20695,9 @@ async def delivery_confirmations_send(request: Request):
         for uploaded_path in uploaded_attachment_paths:
             try:
                 uploaded_path.unlink(missing_ok=True)
+                # תיקיית העטיפה של קובץ בשם עברי (נוצרת רק בשביל שם קובץ נקי במייל)
+                if uploaded_path.parent != OUTPUT_DIR / "_delivery_confirmation_uploaded":
+                    uploaded_path.parent.rmdir()
             except Exception:
                 pass
 
@@ -25296,9 +25329,15 @@ def _build_delivery_confirmation_payload() -> dict:
             for r in all_customer_rows
             if str(r.get("bank_details_updated_sent") or "").strip().upper() == "TRUE"
         }
+        tax_cert_sent_by_company = {
+            _normalize_company_name(str(r.get("customer_name") or "").strip()): True
+            for r in all_customer_rows
+            if str(r.get("tax_certificate_sent") or "").strip().upper() == "TRUE"
+        }
         for row in filtered_confirmations:
             company_key = _normalize_company_name(str(row.get("company") or "").strip())
             row["bank_details_updated_sent"] = "TRUE" if bank_sent_by_company.get(company_key) else ""
+            row["tax_certificate_sent"] = "TRUE" if tax_cert_sent_by_company.get(company_key) else ""
     except Exception as exc:
         log_handled_error("delivery confirmation bank_details_updated_sent enrichment failed", exc)
     sent_rows = [row for row in filtered_confirmations if str(row.get("sent", "")).strip().upper() == "TRUE"]

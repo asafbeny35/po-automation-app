@@ -20269,6 +20269,13 @@ input:focus {
         <strong><u>שימו לב, חשבון הבנק התעדכן</u></strong><br>
         מצורף אישור ניהול החשבון החדש. תודה
       </div>
+      <label class="reminder-edit-toggle" for="deliveryMailAttachTaxCertificate">
+        <input type="checkbox" id="deliveryMailAttachTaxCertificate" checked>
+        צרף אישור ניכוי מס וניהול ספרים
+      </label>
+      <div id="deliveryMailTaxCertAlreadySentNote" class="finance-export-note" hidden>
+        אישור ניכוי המס כבר נשלח ללקוח הזה בעבר — אפשר לבטל את הסימון
+      </div>
       <textarea id="deliveryMailMessage" class="reminder-textarea" readonly></textarea>
       <div class="reminder-phone-wrap">
         <label for="deliveryMailRecipients">כתובת דוא״ל לשליחה</label>
@@ -21028,6 +21035,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const deliveryMailBankUpdatePreview = document.getElementById("deliveryMailBankUpdatePreview");
   const deliveryMailBankNewContainer = document.getElementById("deliveryMailBankNewContainer");
   const deliveryMailBankAlreadySentNote = document.getElementById("deliveryMailBankAlreadySentNote");
+  const deliveryMailAttachTaxCertificate = document.getElementById("deliveryMailAttachTaxCertificate");
+  const deliveryMailTaxCertAlreadySentNote = document.getElementById("deliveryMailTaxCertAlreadySentNote");
   const deliveryMailMessage = document.getElementById("deliveryMailMessage");
   const deliveryMailRecipients = document.getElementById("deliveryMailRecipients");
   const deliveryMailAttachments = document.getElementById("deliveryMailAttachments");
@@ -37748,6 +37757,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return !!deliveryMailSendNewBankDetails?.checked;
   }
 
+  function deliveryMailIncludesTaxCertificate() {
+    return !!deliveryMailAttachTaxCertificate?.checked;
+  }
+
   function buildDeliveryMailBody(row, includeNewBankDetails = false) {
     const invoiceNumber = String(row?.tax_invoice_number || "—").trim();
     const poNumber = String(row?.po_number || "—").trim();
@@ -37805,6 +37818,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (includeNewBankDetails) {
         attachmentLines.push(`<span>${attachmentLines.length}. דיסקונט סניף 44 - אישור ניהול חשבון</span>`);
       }
+      if (deliveryMailIncludesTaxCertificate()) {
+        attachmentLines.push(`<span>${attachmentLines.length}. אישור ניכוי מס וניהול ספרים</span>`);
+      }
       if (isPlasan) {
         attachmentLines.push(`<span>${attachmentLines.length}. מסמך איכות COC</span>`);
       }
@@ -37830,6 +37846,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (deliveryMailBankUpdatePreview) deliveryMailBankUpdatePreview.hidden = true;
     if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = false;
     if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = true;
+    if (deliveryMailAttachTaxCertificate) deliveryMailAttachTaxCertificate.checked = true;
+    if (deliveryMailTaxCertAlreadySentNote) deliveryMailTaxCertAlreadySentNote.hidden = true;
     if (deliveryMailRecipients) deliveryMailRecipients.value = "";
     if (deliveryMailAttachments) deliveryMailAttachments.innerHTML = "";
     if (deliveryMailExtraAttachments) deliveryMailExtraAttachments.value = "";
@@ -37920,6 +37938,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const bankAlreadySent = String(row?.bank_details_updated_sent || "").toUpperCase() === "TRUE";
     if (deliveryMailBankNewContainer) deliveryMailBankNewContainer.hidden = bankAlreadySent;
     if (deliveryMailBankAlreadySentNote) deliveryMailBankAlreadySentNote.hidden = !bankAlreadySent;
+    if (deliveryMailAttachTaxCertificate) deliveryMailAttachTaxCertificate.checked = true;
+    const taxCertAlreadySent = String(row?.tax_certificate_sent || "").toUpperCase() === "TRUE";
+    if (deliveryMailTaxCertAlreadySentNote) deliveryMailTaxCertAlreadySentNote.hidden = !taxCertAlreadySent;
     renderDeliveryMailComposeState();
     setDeliveryMailEditableState(false);
     if (deliveryMailExtraAttachments) deliveryMailExtraAttachments.value = "";
@@ -44770,6 +44791,9 @@ document.addEventListener("DOMContentLoaded", () => {
   deliveryMailSendNewBankDetails?.addEventListener("change", () => {
     renderDeliveryMailComposeState();
   });
+  deliveryMailAttachTaxCertificate?.addEventListener("change", () => {
+    renderDeliveryMailComposeState();
+  });
   receiptReminderCancel?.addEventListener("click", closeReceiptReminderModal);
   receiptEmailRequestCancel?.addEventListener("click", closeReceiptEmailRequestModal);
   receiptEmailReminderCancel?.addEventListener("click", closeReceiptEmailReminderModal);
@@ -44966,6 +44990,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("recipients", recipients);
       formData.append("test_send", testSend ? "true" : "false");
       formData.append("send_new_bank_details", sendNewBankDetails ? "true" : "false");
+      formData.append("attach_tax_certificate", deliveryMailIncludesTaxCertificate() ? "true" : "false");
       Array.from(deliveryMailExtraAttachments?.files || []).forEach(file => {
         formData.append("attachments", file);
       });
@@ -45022,6 +45047,16 @@ document.addEventListener("DOMContentLoaded", () => {
             persistCustomersLocalState();
             if (customersList?.innerHTML) renderCustomerRows();
             if (inactiveCustomersVisible && inactiveCustomersList?.innerHTML) renderInactiveCustomerRows();
+          }
+          if (payload?.attach_tax_certificate) {
+            const applyTaxCertTag = row => (
+              customerCanonicalNameForUi(row?.customer_name || "") === companyName
+                ? { ...row, tax_certificate_sent: "TRUE" }
+                : row
+            );
+            customerRows = (customerRows || []).map(applyTaxCertTag);
+            inactiveCustomerRows = (inactiveCustomerRows || []).map(applyTaxCertTag);
+            persistCustomersLocalState();
           }
         }
       } catch (uiError) {
