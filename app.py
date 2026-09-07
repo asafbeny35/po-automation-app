@@ -27280,6 +27280,65 @@ async def hr_payroll_save(request: Request):
         return JSONResponse({"error": f"לא הצלחתי לשמור את שורת השכר: {exc}"}, status_code=500)
 
 
+def _hr_hours_attendance_pdf_bytes(employee_name: str, month_key: str, details: list[dict]) -> bytes:
+    """דוח הנוכחות כעמודי PDF — מצטרף אחרי התלוש לשליחת וואטסאפ כמסמך אחד רצוף."""
+    st = _hr_pdf_styles()
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=28, leftMargin=28, topMargin=28, bottomMargin=24)
+    story = [
+        Paragraph(pdf_rtl(f"דוח נוכחות — {_hr_month_display(month_key)}"), st["title"]),
+        Paragraph(pdf_rtl(f"עובד: {employee_name} · הופק בתאריך {date.today().strftime('%d/%m/%Y')}"), st["sub"]),
+        Spacer(1, 14),
+    ]
+    headers = ["תאריך", "יום", "שעות עבודה", "סה\"כ שעות"]
+    body: list[list[str]] = []
+    for detail in details:
+        time_range = str(detail.get("time_range") or "").strip()
+        if not time_range:
+            entry = str(detail.get("entry_time") or "").strip()
+            exit_time = str(detail.get("exit_time") or "").strip()
+            time_range = f"{entry}-{exit_time}".strip("-")
+        body.append([
+            str(detail.get("date") or ""),
+            str(detail.get("day_name") or ""),
+            time_range or "—",
+            f"{_hr_safe_float(detail.get('hours')):.2f}",
+        ])
+    total_hours = round(sum(_hr_safe_float(detail.get("hours")) for detail in details), 2)
+    body.append([f"סה\"כ · {_hr_work_days_from_details(details)} ימי עבודה", "", "", f"{total_hours:.2f}"])
+    story.append(_hr_pdf_table(headers, body, [140, 90, 180, 100], st["cell"], bold_last=True))
+    doc.build(story)
+    return buffer.getvalue()
+
+
+def _hr_payslip_with_hours_pdf(payslip_path: Path, target_row: dict) -> Path | None:
+    """מסמך אחד רצוף: התלוש ואחריו דוח הנוכחות. None אם אין דוח שעות לחודש."""
+    import fitz
+
+    employee_id = str(target_row.get("employee_id") or "").strip()
+    month_key = str(target_row.get("month_key") or "").strip()
+    employee_name = str(target_row.get("employee_name") or "").strip()
+    hours_row = _hr_find_hours_row(employee_id, month_key, load_hr_rows("hours"))
+    resolved = _hr_resolve_hours_attachment(hours_row) if hours_row else {"available": False}
+    if not resolved.get("available") or not resolved.get("path"):
+        return None
+    details = _hr_parse_hours_report_rows(Path(str(resolved["path"])))
+    if not details:
+        return None
+    hours_pdf_bytes = _hr_hours_attendance_pdf_bytes(employee_name, month_key, details)
+    merged = fitz.open()
+    with fitz.open(payslip_path) as payslip_doc:
+        merged.insert_pdf(payslip_doc)
+    with fitz.open(stream=hours_pdf_bytes, filetype="pdf") as hours_doc:
+        merged.insert_pdf(hours_doc)
+    target_dir = OUTPUT_DIR / "_hr_whatsapp_cache"
+    target_dir.mkdir(parents=True, exist_ok=True)
+    target_path = target_dir / f"תלוש שכר ונוכחות - {employee_name} - {month_key}.pdf"
+    merged.save(target_path)
+    merged.close()
+    return target_path
+
+
 @app.post("/hr-payroll-send-whatsapp")
 async def hr_payroll_send_whatsapp(request: Request):
     body = await request.json()
@@ -27304,7 +27363,22 @@ async def hr_payroll_send_whatsapp(request: Request):
         )
         if not local_path or not Path(local_path).exists():
             return JSONResponse({"error": "קובץ התלוש לא נמצא מקומית ולכן אי אפשר לשלוח אותו בוואטסאפ כרגע."}, status_code=404)
-        await send_files_via_whatsapp(phone=phone, message="", file_paths=[str(local_path)])
+        include_hours = bool((body or {}).get("include_hours", True))
+        send_path = Path(local_path)
+        sent_file_name = payslip_file_name
+        hours_warning = ""
+        if include_hours:
+            try:
+                merged_path = _hr_payslip_with_hours_pdf(Path(local_path), target_row)
+                if merged_path:
+                    send_path = merged_path
+                    sent_file_name = merged_path.name
+                else:
+                    hours_warning = "לא נמצא דוח נוכחות לחודש הזה — נשלח התלוש בלבד."
+            except Exception as hours_exc:
+                log_handled_error("hr_payroll_send_whatsapp hours merge failed", hours_exc)
+                hours_warning = "לא הצלחתי לצרף את דוח הנוכחות — נשלח התלוש בלבד."
+        await send_files_via_whatsapp(phone=phone, message="", file_paths=[str(send_path)])
         employee_id = str(target_row.get("employee_id") or "").strip()
         if employee_id:
             employee_rows = load_hr_rows("employees")
@@ -27323,7 +27397,10 @@ async def hr_payroll_send_whatsapp(request: Request):
                 "row_id": row_id,
                 "employee_name": str(target_row.get("employee_name") or "").strip(),
                 "month_key": str(target_row.get("month_key") or "").strip(),
-                "file_name": payslip_file_name,
+                "file_name": sent_file_name,
+                "include_hours": include_hours,
+                "hours_attached": include_hours and not hours_warning,
+                **({"warning": hours_warning} if hours_warning else {}),
             }
         )
     except Exception as exc:

@@ -20549,7 +20549,11 @@ input:focus {
         <input id="hrPayrollWhatsappPhone" type="text" inputmode="tel" placeholder="050-0000000">
       </div>
     </div>
-    <div class="hr-payroll-whatsapp-note">השליחה תצרף רק את קובץ התלוש, בלי טקסט מקדים ובלי הודעה נוספת.</div>
+    <label class="reminder-edit-toggle" for="hrPayrollWhatsappIncludeHours" style="margin-top:12px;">
+      <input type="checkbox" id="hrPayrollWhatsappIncludeHours" checked>
+      צרף גם את דוח הנוכחות (מסמך אחד רצוף עם התלוש)
+    </label>
+    <div id="hrPayrollWhatsappNote" class="hr-payroll-whatsapp-note">השליחה תצרף מסמך אחד רצוף — התלוש ואחריו דוח הנוכחות — בלי טקסט מקדים ובלי הודעה נוספת.</div>
     <div class="confirm-modal-actions">
       <button type="button" id="hrPayrollWhatsappCancel" class="ghost-btn">ביטול</button>
       <button type="button" id="hrPayrollWhatsappSend" class="assistant-submit">שלח</button>
@@ -49318,6 +49322,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const hrPayrollWhatsappClose = document.getElementById("hrPayrollWhatsappClose");
     const hrPayrollWhatsappCancel = document.getElementById("hrPayrollWhatsappCancel");
     const hrPayrollWhatsappSend = document.getElementById("hrPayrollWhatsappSend");
+    const hrPayrollWhatsappIncludeHours = document.getElementById("hrPayrollWhatsappIncludeHours");
+    const hrPayrollWhatsappNote = document.getElementById("hrPayrollWhatsappNote");
     const hrPayrollWhatsappEmployee = document.getElementById("hrPayrollWhatsappEmployee");
     const hrPayrollWhatsappMonth = document.getElementById("hrPayrollWhatsappMonth");
     const hrPayrollWhatsappPhone = document.getElementById("hrPayrollWhatsappPhone");
@@ -50759,7 +50765,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // לדף "עובדי עבר" ברגע שהוא מסומן כעובד שסיים.
     const HR_BANK_ACCOUNTS = [
       { employee_id: "emp_cf3efc2c79", employee_name: "תאי יונתן גורן", bank: "בנק מזרחי טפחות - 20", branch: "492 - נווה שאנן", account: "187838" },
-      { employee_id: "emp_e2071c5ff3", employee_name: "עלי כמאל סבע", bank: "בנק לאומי - 10", branch: "961", account: "8611425" },
+      // display_name דורס את שם העובד מהרשומה — בכרטיס הבנק בלבד
+      { employee_id: "emp_e2071c5ff3", employee_name: "עלי כמאל סבע", display_name: "עלי סבע", bank: "בנק לאומי - 10", branch: "961", account: "8611425" },
       { employee_id: "emp_solomon_shibshi", employee_name: "שיבשי סלומון", bank: "בנק הפועלים - 12", branch: "700 - חיפה ראשי", account: "100028" },
       { employee_id: "emp_tawuchao_damlau", employee_name: "דמלאו טווצ׳או", bank: "בנק דיסקונט - 11", branch: "443 - קרית ביאליק", account: "154841007" },
     ];
@@ -50775,7 +50782,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       host.innerHTML = visible.map(acc => {
         const employee = employeesById.get(acc.employee_id) || {};
-        const name = String(employee.full_name || "").trim() || acc.employee_name;
+        const name = String(acc.display_name || "").trim() || String(employee.full_name || "").trim() || acc.employee_name;
         const isHourly = String(employee.employment_type || "") === "hourly";
         return `
           <article class="hr-bank-card${isHourly ? " hourly" : ""}">
@@ -50994,6 +51001,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    function updateHrPayrollWhatsappNote() {
+      if (!hrPayrollWhatsappNote) return;
+      hrPayrollWhatsappNote.textContent = hrPayrollWhatsappIncludeHours?.checked
+        ? "השליחה תצרף מסמך אחד רצוף — התלוש ואחריו דוח הנוכחות — בלי טקסט מקדים ובלי הודעה נוספת."
+        : "השליחה תצרף רק את קובץ התלוש, בלי טקסט מקדים ובלי הודעה נוספת.";
+    }
+
     function openHrPayrollWhatsappModal(row) {
       const employee = getEmployeeById(row?.employee_id || "");
       pendingHrPayrollWhatsapp = {
@@ -51006,6 +51020,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (hrPayrollWhatsappEmployee) hrPayrollWhatsappEmployee.value = pendingHrPayrollWhatsapp.employee_name || "—";
       if (hrPayrollWhatsappMonth) hrPayrollWhatsappMonth.value = monthDisplay(pendingHrPayrollWhatsapp.month_key || "");
       if (hrPayrollWhatsappPhone) hrPayrollWhatsappPhone.value = pendingHrPayrollWhatsapp.phone || "";
+      if (hrPayrollWhatsappIncludeHours) hrPayrollWhatsappIncludeHours.checked = true;
+      updateHrPayrollWhatsappNote();
       if (hrPayrollWhatsappModal) {
         hrPayrollWhatsappModal.classList.add("visible");
         hrPayrollWhatsappModal.setAttribute("aria-hidden", "false");
@@ -51045,12 +51061,19 @@ document.addEventListener("DOMContentLoaded", () => {
           body: JSON.stringify({
             row_id: pendingHrPayrollWhatsapp.row_id,
             phone,
+            include_hours: Boolean(hrPayrollWhatsappIncludeHours?.checked),
           }),
         });
         const payload = await response.json();
         if (!response.ok) throw new Error(payload.error || "שליחת התלוש נכשלה.");
         closeHrPayrollWhatsappModal();
-        notify(`התלוש נשלח בוואטסאפ אל ${payload.phone || phone}.`);
+        if (payload.warning) {
+          notify(`התלוש נשלח בוואטסאפ אל ${payload.phone || phone}. ${payload.warning}`);
+        } else {
+          notify(payload.hours_attached
+            ? `התלוש ודוח הנוכחות נשלחו בוואטסאפ אל ${payload.phone || phone} כמסמך אחד.`
+            : `התלוש נשלח בוואטסאפ אל ${payload.phone || phone}.`);
+        }
       } catch (error) {
         notify(error.message || "שליחת התלוש נכשלה.");
       } finally {
@@ -51783,6 +51806,7 @@ document.addEventListener("DOMContentLoaded", () => {
     hrPayrollWhatsappClose?.addEventListener("click", closeHrPayrollWhatsappModal);
     hrPayrollWhatsappCancel?.addEventListener("click", closeHrPayrollWhatsappModal);
     hrPayrollWhatsappSend?.addEventListener("click", sendHrPayrollWhatsapp);
+    hrPayrollWhatsappIncludeHours?.addEventListener("change", updateHrPayrollWhatsappNote);
     hrPayrollWhatsappModal?.addEventListener("click", event => {
       if (event.target === hrPayrollWhatsappModal) closeHrPayrollWhatsappModal();
     });
