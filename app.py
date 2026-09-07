@@ -10008,6 +10008,60 @@ def _hr_installations_pay_for_employee(
     }
 
 
+_HR_MEAL_SUPPLIER_MARKER = "פלאקסי"
+_HR_MEAL_EMPLOYEES = (
+    ("emp_malka_ben_yacov", "מלכה בן יעקב"),
+    ("emp_david_ben_yacov", "דוד בן יעקב"),
+)
+
+
+def _hr_meal_value_invoice(month_key: str) -> dict:
+    """חשבונית הסיבוס האחרונה מפלאקסי ישראל — מקור שווי הארוחות בתלושים.
+
+    חשבונית פלאקסי יוצאת ביום האחרון של החודש שהיא מכסה, לכן קודם מחפשים
+    חשבונית שתאריכה בתוך חודש התלושים; רק אם אין כזו נופלים לאחרונה הקיימת.
+    """
+    safe_month_key = str(month_key or "").strip()
+    dated_rows: list[tuple[date, dict]] = []
+    try:
+        rows = _dedupe_finance_invoice_rows(load_marketing_rows("finance_invoices"))
+    except Exception:
+        rows = []
+    for row in rows:
+        if _HR_MEAL_SUPPLIER_MARKER not in str(row.get("supplier_name") or ""):
+            continue
+        parsed = _hr_parse_iso_date(str(row.get("invoice_date") or ""))
+        amount = _hr_safe_float(row.get("total"))
+        if not parsed or amount <= 0:
+            continue
+        dated_rows.append((parsed, row))
+    if not dated_rows:
+        return {"found": False}
+    dated_rows.sort(key=lambda item: item[0])
+    in_month = [item for item in dated_rows if item[0].strftime("%Y-%m") == safe_month_key]
+    picked_date, picked = (in_month or dated_rows)[-1]
+    return {
+        "found": True,
+        "amount": round(_hr_safe_float(picked.get("total")), 2),
+        "invoice_date": picked_date.strftime("%d/%m/%Y"),
+        "reference_number": str(picked.get("reference_number") or "").strip(),
+        "supplier_name": str(picked.get("supplier_name") or "").strip(),
+        "in_selected_month": bool(in_month),
+    }
+
+
+def _hr_meal_value_split(total_amount: float) -> list[dict]:
+    """חלוקה שווה בין מלכה ודוד בלבד; אגורה עודפת נשארת אצל הראשונה כדי שהסכום ייסגר.
+    החישוב באגורות שלמות כדי שהתצוגה בדפדפן והמייל יסכימו גם על סכום עם אגורה אי-זוגית."""
+    total_agorot = int(round(_hr_safe_float(total_amount) * 100))
+    half_agorot = total_agorot // 2
+    shares = [round((total_agorot - half_agorot) / 100, 2), round(half_agorot / 100, 2)]
+    return [
+        {"employee_id": emp_id, "employee_name": name, "amount": shares[idx], "amount_label": f"{shares[idx]:,.2f} ₪"}
+        for idx, (emp_id, name) in enumerate(_HR_MEAL_EMPLOYEES)
+    ]
+
+
 def _hr_build_payslip_prep_payload(month_key: str) -> dict:
     safe_month_key = str(month_key or "").strip()
     state_payload = _hr_state_payload(force_refresh=False)
@@ -10098,6 +10152,7 @@ def _hr_build_payslip_prep_payload(month_key: str) -> dict:
                 "regular_hours": regular_hours,
                 "overtime_hours": overtime_hours,
                 "total_hours": total_hours,
+                "work_days": str(hours_row.get("work_days") or "").strip() if hours_row else "",
                 "hourly_rate": hourly_rate,
                 "hourly_rate_label": f"{hourly_rate:,.2f} ₪" if hourly_rate > 0 else "—",
                 "hours_file_name": str(hours_row.get("hours_file_name") or "").strip(),
@@ -10128,10 +10183,16 @@ def _hr_build_payslip_prep_payload(month_key: str) -> dict:
         "stored_supporting_rows": stored_supporting_rows,
         "stored_supporting_summaries": stored_supporting_summaries,
         "stored_supporting_warnings": stored_supporting_warnings,
+        "meal_value": _hr_meal_value_invoice(safe_month_key),
+        "meal_value_employees": [name for _, name in _HR_MEAL_EMPLOYEES],
     }
 
 
-def _hr_build_payslip_prep_email_bodies(preview_payload: dict, supporting_summaries: list[dict]) -> tuple[str, str]:
+def _hr_build_payslip_prep_email_bodies(
+    preview_payload: dict,
+    supporting_summaries: list[dict],
+    meal_value: dict | None = None,
+) -> tuple[str, str]:
     month_label = str(preview_payload.get("month_label") or "").strip() or "ללא חודש"
     rows = list(preview_payload.get("rows") or [])
     gross_total_label = str(preview_payload.get("gross_total_label") or "0.00 ₪").strip()
@@ -10147,12 +10208,15 @@ def _hr_build_payslip_prep_email_bodies(preview_payload: dict, supporting_summar
     html_rows: list[str] = []
     for row in rows:
         warnings = list(row.get("warnings") or [])
+        work_days = str(row.get("work_days") or "").strip()
         plain_lines.extend(
             [
                 f"- {row.get('employee_name')}: {row.get('gross_before_adjustments_label')} | {row.get('salary_rule_label')}",
                 f"  שעות רגילות: {row.get('regular_hours', 0):.2f} | שעות נוספות: {row.get('overtime_hours', 0):.2f} | סה\"כ שעות: {row.get('total_hours', 0):.2f}",
             ]
         )
+        if work_days:
+            plain_lines.append(f"  מספר ימים לחישוב נסיעות: {work_days}")
         if warnings:
             plain_lines.append(f"  הערות: {' | '.join(warnings)}")
         html_warning = ""
@@ -10165,10 +10229,32 @@ def _hr_build_payslip_prep_email_bodies(preview_payload: dict, supporting_summar
               <div style="margin-top:6px;color:#334155;">{html.escape(str(row.get("salary_rule_label") or ""))}</div>
               <div style="margin-top:4px;color:#111827;font-weight:700;">ברוטו לפני נסיעות וניכוי: {html.escape(str(row.get("gross_before_adjustments_label") or ""))}</div>
               <div style="margin-top:4px;color:#475569;">שעות רגילות: {float(row.get("regular_hours") or 0):.2f} | שעות נוספות: {float(row.get("overtime_hours") or 0):.2f} | סה״כ שעות: {float(row.get("total_hours") or 0):.2f}</div>
+              {f'<div style="margin-top:4px;color:#111827;font-weight:700;">מספר ימים לחישוב נסיעות: {html.escape(str(row.get("work_days") or ""))}</div>' if str(row.get("work_days") or "").strip() else ""}
               {html_warning}
             </div>
             """
         )
+
+    meal_html = ""
+    if meal_value and meal_value.get("shares"):
+        source_label = str(meal_value.get("source_label") or "").strip()
+        total_label = str(meal_value.get("total_label") or "").strip()
+        plain_lines.extend(["", f"שווי ארוחות (סיבוס): {total_label}" + (f" — {source_label}" if source_label else "")])
+        for share in meal_value["shares"]:
+            plain_lines.append(f"- {share.get('employee_name')}: {share.get('amount_label')}")
+        meal_shares_html = "<br>".join(
+            f"{html.escape(str(share.get('employee_name') or ''))}: <strong>{html.escape(str(share.get('amount_label') or ''))}</strong>"
+            for share in meal_value["shares"]
+        )
+        meal_source_html = f'<div style="margin-top:6px;color:#64748b;font-size:13px;">{html.escape(source_label)}</div>' if source_label else ""
+        meal_html = f"""
+        <div style="border:1px solid #fed7aa;border-radius:16px;padding:14px 16px;margin-top:14px;background:#fffaf5;">
+          <div style="font-size:17px;font-weight:700;color:#7c2d12;">שווי ארוחות (סיבוס)</div>
+          <div style="margin-top:6px;color:#111827;font-weight:700;">סה״כ לחלוקה: {html.escape(total_label)}</div>
+          <div style="margin-top:6px;color:#334155;">{meal_shares_html}</div>
+          {meal_source_html}
+        </div>
+        """
 
     if supporting_summaries:
         plain_lines.extend(["", "מסמכים תומכים שצורפו:"])
@@ -10199,6 +10285,7 @@ def _hr_build_payslip_prep_email_bodies(preview_payload: dict, supporting_summar
     <div style="margin-top:10px;">מצורף ריכוז החומרים להפקת תלושים עבור {html.escape(month_label)}.</div>
     <div style="margin-top:6px;font-weight:700;">סה״כ ברוטו לפני נסיעות וניכוי: {html.escape(gross_total_label)}</div>
     <div style="margin-top:18px;">{"".join(html_rows)}</div>
+    {meal_html}
     {support_html}
     <div style="margin-top:22px;">תודה,<br>בן יעקב פתרונות טקסטיל</div>
   </body>
@@ -10605,6 +10692,20 @@ def _hr_month_key_from_hours_details(details: list[dict]) -> str:
     return max(counts.items(), key=lambda item: item[1])[0]
 
 
+def _hr_work_days_from_details(details: list[dict]) -> int:
+    """ימי עבודה בפועל מתוך פירוט הקובץ — תאריכים מובחנים שנרשמו בהם שעות.
+
+    יום עם שתי משמרות מופיע בקובץ פעמיים אבל נספר פעם אחת, ולכן הספירה על
+    תאריכים ולא על שורות. יום ללא שעות (חופש/מחלה) לא נחשב יום נסיעות.
+    """
+    return len({
+        str((detail or {}).get("date") or "").strip()
+        for detail in details or []
+        if str((detail or {}).get("date") or "").strip()
+        and _hr_safe_float((detail or {}).get("hours")) > 0
+    })
+
+
 def _hr_parse_hours_document(file_path: Path, employees: list[dict]) -> dict | None:
     if str(file_path.suffix or "").lower() not in {".xlsx", ".xlsm", ".xltx", ".xltm"}:
         return None
@@ -10656,6 +10757,7 @@ def _hr_parse_hours_document(file_path: Path, employees: list[dict]) -> dict | N
         "month_key": month_key,
         "regular_hours": f"{total_hours:.2f}",
         "overtime_hours": "0.00",
+        "work_days": str(_hr_work_days_from_details(details)),
         "details": details,
         "text": match_context,
     }
@@ -27795,11 +27897,29 @@ async def hr_payslip_prep_send(
     request: Request,
     month_key: str = Form(...),
     send_mode: str = Form("live"),
+    meal_value_enabled: str = Form(""),
+    meal_value_amount: str = Form(""),
     files: list[UploadFile] = File(default=[]),
 ):
     safe_month_key = str(month_key or "").strip()
     if not re.match(r"^\d{4}-\d{2}$", safe_month_key):
         return JSONResponse({"error": "חסר חודש תקין לשליחה."}, status_code=400)
+    meal_value_payload: dict | None = None
+    if str(meal_value_enabled or "").strip().lower() in {"true", "1", "on", "yes"}:
+        meal_amount = round(_hr_safe_float(meal_value_amount), 2)
+        if meal_amount <= 0:
+            return JSONResponse({"error": "סומן שווי ארוחות אבל הסכום חסר או אפס — עדכן את הסכום או בטל את הסימון."}, status_code=400)
+        meal_invoice = _hr_meal_value_invoice(safe_month_key)
+        if meal_invoice.get("found") and abs(_hr_safe_float(meal_invoice.get("amount")) - meal_amount) <= 0.01:
+            source_label = f"לפי חשבונית {meal_invoice.get('supplier_name')} {meal_invoice.get('reference_number')} מ-{meal_invoice.get('invoice_date')}"
+        else:
+            source_label = "סכום שהוזן ידנית"
+        meal_value_payload = {
+            "total": meal_amount,
+            "total_label": f"{meal_amount:,.2f} ₪",
+            "source_label": source_label,
+            "shares": _hr_meal_value_split(meal_amount),
+        }
     normalized_send_mode = str(send_mode or "live").strip().lower()
     if normalized_send_mode == "live":
         await _log_activity(request, action="שליחה", tab="עובדים ושכר", description=f"שליחת תלושי שכר לחודש {safe_month_key}", entity_id=safe_month_key)
@@ -27850,7 +27970,7 @@ async def hr_payslip_prep_send(
                 attachment_paths.append(str(target_path))
             supporting_summaries.append(_hr_parse_supporting_doc_summary(target_path, employees))
 
-        plain_body, html_body = _hr_build_payslip_prep_email_bodies(preview_payload, supporting_summaries)
+        plain_body, html_body = _hr_build_payslip_prep_email_bodies(preview_payload, supporting_summaries, meal_value=meal_value_payload)
         subject = f"חומרי שכר להפקה - {preview_payload.get('month_label') or safe_month_key}"
         if normalized_send_mode == "test":
             subject = f"{subject} - טסט"
@@ -27862,6 +27982,8 @@ async def hr_payslip_prep_send(
             attachments=attachment_paths,
         )
         history_notes = []
+        if meal_value_payload:
+            history_notes.append(f"שווי ארוחות: {meal_value_payload['total_label']} חולק בין מלכה ודוד")
         if stored_supporting_warnings:
             history_notes.append(" | ".join(stored_supporting_warnings))
         history_row = _hr_build_payslip_prep_history_row(
@@ -28309,6 +28431,7 @@ async def hr_ingest_files(
                         "month_key": month_key,
                         "regular_hours": str(parsed.get("regular_hours") or row.get("regular_hours") or "").strip(),
                         "overtime_hours": str(parsed.get("overtime_hours") or row.get("overtime_hours") or "0.00").strip(),
+                        "work_days": str(parsed.get("work_days") or row.get("work_days") or "").strip(),
                         "hourly_rate": str(row.get("hourly_rate") or employee.get("hourly_rate") or "").strip(),
                         "status": str(row.get("status") or "reported").strip(),
                         "hours_file_name": safe_name,
@@ -28473,6 +28596,14 @@ async def hr_upload_file(
                 "hours_drive_file_id": str(upload_result.get("drive_file_id") or "").strip(),
                 "hours_drive_url": str(upload_result.get("drive_url") or "").strip(),
             })
+            # ה"ווטש" של ימי העבודה: העלאת קובץ פירוט ממלאת את עמודת הימים מיד,
+            # בלי לגעת בשעות שאולי נערכו ידנית.
+            try:
+                parsed_days = _hr_work_days_from_details(_hr_parse_hours_report_rows(local_path))
+            except Exception:
+                parsed_days = 0
+            if parsed_days > 0:
+                row["work_days"] = str(parsed_days)
             upsert_hr_row("hours", row, "row_id")
         else:
             row = {

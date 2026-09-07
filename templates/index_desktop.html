@@ -3758,6 +3758,17 @@ body.panel-only .shell {
   color: var(--ink);
 }
 
+.hr-table th.hr-col-work-days,
+.hr-table td.hr-col-work-days {
+  width: 64px;
+}
+
+/* חצי מהרוחב שהעמודה תפסה קודם — האינפוט מותח את התא כברירת מחדל */
+.hr-table th.hr-col-regular-hours,
+.hr-table td.hr-col-regular-hours {
+  width: 92px;
+}
+
 .hr-table .hr-icon-btn {
   border: 0;
   background: transparent;
@@ -10939,6 +10950,50 @@ a.admin-expense-status:hover {
   color: var(--ink);
 }
 
+.hr-payslip-prep-meal {
+  margin-top: 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(251, 146, 60, 0.28);
+  background: rgba(255, 250, 245, 0.9);
+  padding: 12px 14px;
+}
+
+.hr-payslip-prep-meal-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  color: #7c2d12;
+  cursor: pointer;
+}
+
+.hr-payslip-prep-meal-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--brand, #ff7d12);
+  cursor: pointer;
+}
+
+.hr-payslip-prep-meal-details {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: end;
+}
+
+.hr-payslip-prep-meal-details .hr-payslip-prep-field {
+  min-width: 180px;
+}
+
+.hr-payslip-prep-meal-hint {
+  flex: 1 1 260px;
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.7;
+  padding-bottom: 6px;
+}
+
 .hr-payslip-prep-status {
   margin-top: 14px;
   border-radius: 16px;
@@ -16782,7 +16837,8 @@ input:focus {
               <tr>
                 <th>חודש</th>
                 <th>עובד</th>
-                <th>שעות רגילות</th>
+                <th class="hr-col-work-days">ימים</th>
+                <th class="hr-col-regular-hours">שעות רגילות</th>
                 <th>שעות נוספות</th>
                 <th>שכר לשעה</th>
                 <th>הפרש שעות</th>
@@ -16794,7 +16850,7 @@ input:focus {
               </tr>
             </thead>
             <tbody id="hrHoursTableBody">
-              <tr><td colspan="11" class="hr-empty">הטבלה עדיין לא נטענה.</td></tr>
+              <tr><td colspan="12" class="hr-empty">הטבלה עדיין לא נטענה.</td></tr>
             </tbody>
           </table>
         </div>
@@ -20510,6 +20566,19 @@ input:focus {
         <input id="hrPayslipPrepMonth" type="month">
       </div>
       <button type="button" id="hrPayslipPrepRefresh" class="ghost-btn">טען נתונים</button>
+    </div>
+    <div class="hr-payslip-prep-meal">
+      <label class="hr-payslip-prep-meal-toggle" for="hrPayslipPrepMealEnabled">
+        <input type="checkbox" id="hrPayslipPrepMealEnabled">
+        <span>הוסף שווי ארוחות</span>
+      </label>
+      <div class="hr-payslip-prep-meal-details" id="hrPayslipPrepMealDetails" hidden>
+        <div class="hr-payslip-prep-field">
+          <label for="hrPayslipPrepMealAmount">סכום כולל (₪)</label>
+          <input id="hrPayslipPrepMealAmount" type="number" min="0" step="0.01" inputmode="decimal">
+        </div>
+        <div class="hr-payslip-prep-meal-hint" id="hrPayslipPrepMealHint">הסכום יתמלא אוטומטית מהחשבונית האחרונה של פלאקסי ישראל (סיבוס), ואפשר לערוך אותו ידנית.</div>
+      </div>
     </div>
     <div id="hrPayslipPrepStatus" class="hr-payslip-prep-status">המערכת תשלוף את כל נתוני החודש, תבדוק קבצי שעות ותציג כאן סיכום מוכן לשליחה.</div>
     <div id="hrPayslipPrepPreview" class="hr-payslip-prep-preview">
@@ -49232,6 +49301,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const hrPayslipPrepHistory = document.getElementById("hrPayslipPrepHistory");
     const hrPayslipPrepSendTest = document.getElementById("hrPayslipPrepSendTest");
     const hrPayslipPrepSendLive = document.getElementById("hrPayslipPrepSendLive");
+    const hrPayslipPrepMealEnabled = document.getElementById("hrPayslipPrepMealEnabled");
+    const hrPayslipPrepMealDetails = document.getElementById("hrPayslipPrepMealDetails");
+    const hrPayslipPrepMealAmount = document.getElementById("hrPayslipPrepMealAmount");
+    const hrPayslipPrepMealHint = document.getElementById("hrPayslipPrepMealHint");
 
     let hrState = {
       employees: [],
@@ -49256,6 +49329,7 @@ document.addEventListener("DOMContentLoaded", () => {
       preview: null,
       loading: false,
       sending: false,
+      mealTouched: false,
     };
     let hrEditState = {
       hours: new Set(),
@@ -49708,7 +49782,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const rows = (hrState.hours_rows || []).filter(row => !selectedEmployeeId || String(row.employee_id || "") === selectedEmployeeId);
       syncHoursDetailStateWithVisibleRows(rows);
       if (!rows.length) {
-        hoursBody.innerHTML = `<tr><td colspan="11" class="hr-empty">עדיין אין שורות שעות.</td></tr>`;
+        hoursBody.innerHTML = `<tr><td colspan="12" class="hr-empty">עדיין אין שורות שעות.</td></tr>`;
         return;
       }
       hoursBody.innerHTML = rows.map(row => {
@@ -49744,7 +49818,13 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </td>
           <td>${escapeHtml(row.employee_name || "—")}</td>
-          <td><input type="number" min="0" step="0.01" data-field="regular_hours" value="${escapeHtml(row.regular_hours || "")}" ${rowLockedAttr}></td>
+          <td class="hr-col-work-days">
+            <div class="hr-link-stack">
+              <span class="hr-inline-value hr-view-only">${escapeHtml(String(row.work_days || "").trim() || "—")}</span>
+              <input class="hr-edit-only" type="number" min="0" step="1" data-field="work_days" value="${escapeHtml(row.work_days || "")}" ${rowLockedAttr}>
+            </div>
+          </td>
+          <td class="hr-col-regular-hours"><input type="number" min="0" step="0.01" data-field="regular_hours" value="${escapeHtml(row.regular_hours || "")}" ${rowLockedAttr}></td>
           <td>${overtimeCellHtml}</td>
           <td>${hourlyRateCellHtml}</td>
           <td><span class="hr-inline-value">${escapeHtml(hoursGapDisplay || "—")}</span></td>
@@ -51095,6 +51175,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="hr-payslip-prep-card-item-value">${escapeHtml(Number(row.total_hours || 0).toFixed(2))}</div>
               </div>
               <div class="hr-payslip-prep-card-item">
+                <div class="hr-payslip-prep-card-item-label">ימים לחישוב נסיעות</div>
+                <div class="hr-payslip-prep-card-item-value">${escapeHtml(String(row.work_days || "").trim() || "—")}</div>
+              </div>
+              <div class="hr-payslip-prep-card-item">
                 <div class="hr-payslip-prep-card-item-label">קובץ שעות</div>
                 <div class="hr-payslip-prep-card-item-value">${escapeHtml(row.hours_file_display_name || "לא נמצא קובץ שעות לחודש הזה")}${row.hours_file_generated ? " · יווצר קובץ מעודכן" : ""}</div>
               </div>
@@ -51122,6 +51206,42 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
 
+    function formatHrMealShekels(value) {
+      return `${Number(value || 0).toLocaleString("he-IL", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ₪`;
+    }
+
+    function updateHrPayslipPrepMealHint() {
+      if (!hrPayslipPrepMealHint) return;
+      const amount = Number(hrPayslipPrepMealAmount?.value || 0);
+      const mealInvoice = hrPayslipPrepState.preview?.meal_value || null;
+      const parts = [];
+      if (amount > 0) {
+        // אותה חלוקה כמו בשרת (באגורות): החצי הנמוך לדוד, היתרה כולל אגורה עודפת למלכה
+        const totalAgorot = Math.round(amount * 100);
+        const halfAgorot = Math.floor(totalAgorot / 2);
+        parts.push(`מלכה בן יעקב: ${formatHrMealShekels((totalAgorot - halfAgorot) / 100)} · דוד בן יעקב: ${formatHrMealShekels(halfAgorot / 100)}`);
+      } else {
+        parts.push("הזן סכום כדי לראות את החלוקה בין מלכה ודוד.");
+      }
+      if (mealInvoice?.found) {
+        const edited = hrPayslipPrepState.mealTouched && Math.abs(Number(mealInvoice.amount || 0) - amount) > 0.01;
+        parts.push(edited
+          ? `הסכום נערך ידנית (חשבונית פלאקסי מ-${mealInvoice.invoice_date}: ${formatHrMealShekels(mealInvoice.amount)}).`
+          : `מקור: חשבונית ${mealInvoice.supplier_name} ${mealInvoice.reference_number} מ-${mealInvoice.invoice_date}.`);
+      } else if (hrPayslipPrepState.preview) {
+        parts.push("לא נמצאה חשבונית פלאקסי ישראל — הזן את הסכום ידנית.");
+      }
+      hrPayslipPrepMealHint.textContent = parts.join(" ");
+    }
+
+    function syncHrPayslipPrepMeal() {
+      const mealInvoice = hrPayslipPrepState.preview?.meal_value || null;
+      if (hrPayslipPrepMealAmount && mealInvoice?.found && !hrPayslipPrepState.mealTouched) {
+        hrPayslipPrepMealAmount.value = String(mealInvoice.amount);
+      }
+      updateHrPayslipPrepMealHint();
+    }
+
     async function loadHrPayslipPrepPreview() {
       const monthKey = String(hrPayslipPrepMonth?.value || hrPayslipPrepState.monthKey || "").trim();
       if (!monthKey) {
@@ -51140,6 +51260,7 @@ document.addEventListener("DOMContentLoaded", () => {
         hrPayslipPrepState.preview = payload;
         renderHrPayslipPrepPreview();
         renderHrPayslipPrepFiles();
+        syncHrPayslipPrepMeal();
         setHrPayslipPrepStatus(`הנתונים של ${payload.month_label || monthDisplay(monthKey)} מוכנים. אפשר להוסיף מסמכים תומכים ולשלוח.`, { loading: false });
       } catch (error) {
         hrPayslipPrepState.preview = null;
@@ -51177,6 +51298,13 @@ document.addEventListener("DOMContentLoaded", () => {
         setHrPayslipPrepStatus("יש לבחור חודש לפני השליחה.", { loading: false });
         return;
       }
+      const mealEnabled = Boolean(hrPayslipPrepMealEnabled?.checked);
+      const mealAmount = Number(hrPayslipPrepMealAmount?.value || 0);
+      if (mealEnabled && !(mealAmount > 0)) {
+        setHrPayslipPrepStatus("סומן שווי ארוחות אבל הסכום חסר — הזן סכום או בטל את הסימון.", { loading: false });
+        hrPayslipPrepMealAmount?.focus();
+        return;
+      }
       hrPayslipPrepState.sending = true;
       const targetButton = mode === "test" ? hrPayslipPrepSendTest : hrPayslipPrepSendLive;
       const secondaryButton = mode === "test" ? hrPayslipPrepSendLive : hrPayslipPrepSendTest;
@@ -51188,6 +51316,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const formData = new FormData();
         formData.append("month_key", monthKey);
         formData.append("send_mode", mode === "test" ? "test" : "live");
+        formData.append("meal_value_enabled", mealEnabled ? "true" : "false");
+        if (mealEnabled) formData.append("meal_value_amount", String(mealAmount));
         (hrPayslipPrepState.files || []).forEach(file => formData.append("files", file));
         const response = await fetch("/hr-payslip-prep-send", {
           method: "POST",
@@ -51622,6 +51752,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (event.target === hrPayrollWhatsappModal) closeHrPayrollWhatsappModal();
     });
     hrPayslipPrepButton?.addEventListener("click", openHrPayslipPrepModal);
+    hrPayslipPrepMealEnabled?.addEventListener("change", () => {
+      if (hrPayslipPrepMealDetails) hrPayslipPrepMealDetails.hidden = !hrPayslipPrepMealEnabled.checked;
+      if (hrPayslipPrepMealEnabled.checked) syncHrPayslipPrepMeal();
+    });
+    hrPayslipPrepMealAmount?.addEventListener("input", () => {
+      hrPayslipPrepState.mealTouched = true;
+      updateHrPayslipPrepMealHint();
+    });
     hrPayslipPrepClose?.addEventListener("click", closeHrPayslipPrepModal);
     hrPayslipPrepCancel?.addEventListener("click", closeHrPayslipPrepModal);
     hrPayslipPrepRefresh?.addEventListener("click", loadHrPayslipPrepPreview);

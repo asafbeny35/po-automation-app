@@ -174,6 +174,7 @@ HOURS_HEADERS = [
     "מזהה עובד",
     "שם עובד",
     "חודש",
+    "ימי עבודה",
     "שעות רגילות",
     "שעות נוספות",
     "שכר לשעה",
@@ -189,6 +190,7 @@ HOURS_FIELDS = [
     "employee_id",
     "employee_name",
     "month_key",
+    "work_days",
     "regular_hours",
     "overtime_hours",
     "hourly_rate",
@@ -528,6 +530,11 @@ def _normalize_hours_row(row: dict) -> dict:
     normalized["employee_id"] = str(normalized.get("employee_id") or "").strip()
     normalized["employee_name"] = re.sub(r"\s+", " ", str(normalized.get("employee_name") or "").strip())
     normalized["month_key"] = _normalize_month_key(normalized.get("month_key"))
+    work_days_raw = str(normalized.get("work_days") or "").strip()
+    try:
+        normalized["work_days"] = str(int(float(work_days_raw))) if work_days_raw else ""
+    except Exception:
+        normalized["work_days"] = ""
     normalized["regular_hours"] = _normalize_amount(normalized.get("regular_hours"))
     normalized["overtime_hours"] = _normalize_amount(normalized.get("overtime_hours"))
     normalized["hourly_rate"] = _normalize_amount(normalized.get("hourly_rate"))
