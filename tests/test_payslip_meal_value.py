@@ -92,23 +92,51 @@ def test_only_malka_and_david_are_in_the_split():
 
 # ── המייל לרו"ח ──────────────────────────────────────────────────────────────
 
-def _payload():
-    return {"month_key": "2026-08", "month_label": "אוגוסט 2026", "rows": [], "gross_total_label": "0.00 ₪"}
-
-
-def test_the_meal_section_appears_in_both_bodies():
-    meal = {
-        "total": 1385.0,
-        "total_label": "1,385.00 ₪",
-        "source_label": "לפי חשבונית פלאקסי SI266113793 מ-31/08/2026",
-        "shares": app._hr_meal_value_split(1385.0),
+def _employee_email_row(employee_id, name):
+    return {
+        "employee_id": employee_id, "employee_name": name,
+        "salary_rule_label": "שכר גלובלי", "gross_before_adjustments_label": "10,000.00 ₪",
+        "regular_hours": 0.0, "overtime_hours": 0.0, "total_hours": 0.0,
+        "work_days": "", "warnings": [],
     }
-    plain, html_body = app._hr_build_payslip_prep_email_bodies(_payload(), [], meal_value=meal)
+
+
+def _payload(rows=None):
+    return {"month_key": "2026-08", "month_label": "אוגוסט 2026", "rows": rows or [], "gross_total_label": "0.00 ₪"}
+
+
+def _meal(total=1385.0):
+    return {
+        "total": total,
+        "total_label": f"{total:,.2f} ₪",
+        "source_label": "לפי חשבונית פלאקסי SI266113793 מ-31/08/2026",
+        "shares": app._hr_meal_value_split(total),
+    }
+
+
+def test_the_meal_share_sits_inside_each_employee_component():
+    rows = [
+        _employee_email_row("emp_david_ben_yacov", "בן יעקב דוד"),
+        _employee_email_row("emp_malka_ben_yacov", "בן יעקב מלכה"),
+        _employee_email_row("emp_solomon_shibshi", "שיבשי סלומון"),
+    ]
+    plain, html_body = app._hr_build_payslip_prep_email_bodies(_payload(rows), [], meal_value=_meal())
+    # בתוך רכיב העובד — לא כקוביה נפרדת בסוף
+    assert "  שווי ארוחות (סיבוס): 692.50 ₪" in plain
+    assert 'שווי ארוחות (סיבוס): 692.50 ₪' in html_body
+    assert "סה״כ לחלוקה" not in html_body
+    assert "SI266113793" in plain and "SI266113793" in html_body
+    # סלומון לא מקבל שורת שווי ארוחות
+    solomon_block = plain.split("שיבשי סלומון", 1)[1]
+    assert "שווי ארוחות" not in solomon_block.split("- ")[0]
+
+
+def test_a_share_without_a_matching_employee_still_reaches_the_mail():
+    """עובד הושבת או שונה שמו — הנתח לא נבלע בשקט."""
+    plain, html_body = app._hr_build_payslip_prep_email_bodies(_payload([]), [], meal_value=_meal())
     for body in (plain, html_body):
-        assert "שווי ארוחות" in body
         assert "מלכה בן יעקב" in body and "דוד בן יעקב" in body
         assert "692.50" in body
-    assert "SI266113793" in plain and "SI266113793" in html_body
 
 
 def test_without_the_flag_no_meal_section_is_added():

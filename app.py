@@ -10205,10 +10205,23 @@ def _hr_build_payslip_prep_email_bodies(
         "",
         "פירוט עובדים:",
     ]
+    # שווי הארוחות יושב בתוך הרכיב של כל עובד, לא כקוביה נפרדת בסוף המייל
+    meal_source_label = str((meal_value or {}).get("source_label") or "").strip()
+    meal_share_by_employee: dict[str, dict] = {}
+    for share in (meal_value or {}).get("shares") or []:
+        for key in (str(share.get("employee_id") or "").strip(), str(share.get("employee_name") or "").strip()):
+            if key:
+                meal_share_by_employee[key] = share
+
     html_rows: list[str] = []
+    placed_meal_keys: set[str] = set()
     for row in rows:
         warnings = list(row.get("warnings") or [])
         work_days = str(row.get("work_days") or "").strip()
+        meal_share = (
+            meal_share_by_employee.get(str(row.get("employee_id") or "").strip())
+            or meal_share_by_employee.get(str(row.get("employee_name") or "").strip())
+        )
         plain_lines.extend(
             [
                 f"- {row.get('employee_name')}: {row.get('gross_before_adjustments_label')} | {row.get('salary_rule_label')}",
@@ -10217,6 +10230,13 @@ def _hr_build_payslip_prep_email_bodies(
         )
         if work_days:
             plain_lines.append(f"  מספר ימים לחישוב נסיעות: {work_days}")
+        meal_line_html = ""
+        if meal_share:
+            placed_meal_keys.add(str(meal_share.get("employee_id") or meal_share.get("employee_name") or ""))
+            meal_suffix = f" ({meal_source_label})" if meal_source_label else ""
+            plain_lines.append(f"  שווי ארוחות (סיבוס): {meal_share.get('amount_label')}{meal_suffix}")
+            meal_source_html = f'<span style="color:#64748b;font-weight:400;font-size:13px;"> · {html.escape(meal_source_label)}</span>' if meal_source_label else ""
+            meal_line_html = f'<div style="margin-top:4px;color:#111827;font-weight:700;">שווי ארוחות (סיבוס): {html.escape(str(meal_share.get("amount_label") or ""))}{meal_source_html}</div>'
         if warnings:
             plain_lines.append(f"  הערות: {' | '.join(warnings)}")
         html_warning = ""
@@ -10230,28 +10250,33 @@ def _hr_build_payslip_prep_email_bodies(
               <div style="margin-top:4px;color:#111827;font-weight:700;">ברוטו לפני נסיעות וניכוי: {html.escape(str(row.get("gross_before_adjustments_label") or ""))}</div>
               <div style="margin-top:4px;color:#475569;">שעות רגילות: {float(row.get("regular_hours") or 0):.2f} | שעות נוספות: {float(row.get("overtime_hours") or 0):.2f} | סה״כ שעות: {float(row.get("total_hours") or 0):.2f}</div>
               {f'<div style="margin-top:4px;color:#111827;font-weight:700;">מספר ימים לחישוב נסיעות: {html.escape(str(row.get("work_days") or ""))}</div>' if str(row.get("work_days") or "").strip() else ""}
+              {meal_line_html}
               {html_warning}
             </div>
             """
         )
 
+    # רשת ביטחון: נתח שלא נמצא לו רכיב עובד (עובד הושבת/שם השתנה) לא נעלם מהמייל
     meal_html = ""
-    if meal_value and meal_value.get("shares"):
-        source_label = str(meal_value.get("source_label") or "").strip()
-        total_label = str(meal_value.get("total_label") or "").strip()
-        plain_lines.extend(["", f"שווי ארוחות (סיבוס): {total_label}" + (f" — {source_label}" if source_label else "")])
-        for share in meal_value["shares"]:
-            plain_lines.append(f"- {share.get('employee_name')}: {share.get('amount_label')}")
-        meal_shares_html = "<br>".join(
+    orphan_shares = [
+        share for share in (meal_value or {}).get("shares") or []
+        if str(share.get("employee_id") or share.get("employee_name") or "") not in placed_meal_keys
+    ]
+    if orphan_shares:
+        plain_lines.append("")
+        for share in orphan_shares:
+            plain_lines.append(f"שווי ארוחות (סיבוס) — {share.get('employee_name')}: {share.get('amount_label')}")
+        if meal_source_label:
+            plain_lines.append(meal_source_label)
+        orphan_html = "<br>".join(
             f"{html.escape(str(share.get('employee_name') or ''))}: <strong>{html.escape(str(share.get('amount_label') or ''))}</strong>"
-            for share in meal_value["shares"]
+            for share in orphan_shares
         )
-        meal_source_html = f'<div style="margin-top:6px;color:#64748b;font-size:13px;">{html.escape(source_label)}</div>' if source_label else ""
+        meal_source_html = f'<div style="margin-top:6px;color:#64748b;font-size:13px;">{html.escape(meal_source_label)}</div>' if meal_source_label else ""
         meal_html = f"""
         <div style="border:1px solid #fed7aa;border-radius:16px;padding:14px 16px;margin-top:14px;background:#fffaf5;">
           <div style="font-size:17px;font-weight:700;color:#7c2d12;">שווי ארוחות (סיבוס)</div>
-          <div style="margin-top:6px;color:#111827;font-weight:700;">סה״כ לחלוקה: {html.escape(total_label)}</div>
-          <div style="margin-top:6px;color:#334155;">{meal_shares_html}</div>
+          <div style="margin-top:6px;color:#334155;">{orphan_html}</div>
           {meal_source_html}
         </div>
         """
