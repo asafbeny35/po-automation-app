@@ -27843,7 +27843,7 @@ def _hr_installations_month_pdf_bytes(month: dict, door_rate: float) -> tuple[by
 
         notes = []
         if any(r.get("is_min_doors") for r in rows):
-            notes.append(f"התקנת דלתות מחויבת בתשלום מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות לפי חוק, גם כשהותקנו פחות.")
+            notes.append(f"התקנת דלתות משולמת לפי מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות, גם אם הותקנו פחות.")
         dupes = sum(1 for r in rows if r.get("is_duplicate"))
         if dupes:
             notes.append(f"⚠ {dupes} שורות מסומנות ככפילות — אותה התקנה מופיעה יותר מפעם אחת ונספרת פעמיים בסיכום.")
@@ -27993,7 +27993,7 @@ def _hr_hours_detail_pdf_bytes(target_row: dict, details: list[dict]) -> tuple[b
         story.append(build_table(inst_headers, rows, [168, 78, 140, 96, 96, 96, 100], bold_last=True))
         if any(r.get("is_min_doors") for r in inst_rows):
             story += [Spacer(1, 5), Paragraph(pdf_rtl(
-                f"התקנת דלתות מחויבת בתשלום מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות לפי חוק, גם כשהותקנו פחות."), sub_style)]
+                f"התקנת דלתות משולמת לפי מינימום של {HR_INSTALLATIONS_MIN_DOORS:g} דלתות, גם אם הותקנו פחות."), sub_style)]
 
     story += [Spacer(1, 18), Paragraph(pdf_rtl("סיכום לתשלום"), section_style), Spacer(1, 6)]
     summary = [["שכר שעות", f"{total_hours:.2f} שעות × {money(hourly_rate)}", money(hours_pay)]]
