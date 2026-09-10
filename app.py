@@ -9058,6 +9058,241 @@ async def _finance_vat_summary_rows_for_due_dates(due_dates: list[str]) -> list[
     ]
 
 
+def _finance_morning_report_doc_kind(document: dict) -> str:
+    """'invoice' / 'credit' / '' — רק חשבוניות מס וזיכויים נכנסים לדוח המע"מ.
+
+    קבלות (400) לא נכנסות: הן לא מסמך מע"מ. חשבונית מס-קבלה (320) כן.
+    """
+    code = str((document or {}).get("type_code") or "").strip()
+    text = str((document or {}).get("type") or "")
+    lowered = text.lower()
+    if code == "330" or "זיכוי" in text or "credit" in lowered:
+        return "credit"
+    if code in {"305", "320"}:
+        return "invoice"
+    if "חשבונית מס" in text or "invoice" in lowered:
+        return "invoice"
+    return ""
+
+
+async def _fetch_finance_prod_income_documents() -> list[dict]:
+    """כל מסמכי ההכנסות ממורנינג (כולל זיכויים) — בשונה מ-get_invoice_documents שמסנן זיכויים החוצה."""
+    cfg = get_mode_config("prod")
+    client = GreenInvoiceClient(
+        base_url=cfg["base_url"],
+        api_key=cfg["api_key"],
+        api_secret=cfg["api_secret"],
+    )
+    return await client.get_income_documents(
+        date_from="2025-01-01",
+        date_to=date.today().isoformat(),
+        page_size=100,
+        max_pages=48,
+    )
+
+
+async def _finance_morning_income_report_for_due_dates(due_dates: list[str]) -> dict:
+    """הדוח הרציף ממורנינג לתקופות הדיווח + הצלבה מול שורת הסיכום הקיימת.
+
+    התקופה של כל מועד דיווח היא הדו-חודש שקודם לחודש הדיווח (למשל דיווח
+    15/09 ⇒ 01/07–31/08) — בדיוק _finance_period_for_due_date שמזין כבר היום
+    את שורת הסיכום, כדי שההצלבה תשווה תפוחים לתפוחים.
+    """
+    normalized_due_dates = _finance_normalize_due_dates(due_dates)
+    if not normalized_due_dates:
+        return {"periods": []}
+    documents = await _fetch_finance_prod_income_documents()
+    vat_summary_rows = await _finance_vat_summary_rows_for_due_dates(normalized_due_dates)
+    summary_by_due = {str(row.get("due_date") or "").strip(): row for row in vat_summary_rows}
+
+    periods: list[dict] = []
+    for due_display in normalized_due_dates:
+        due = _finance_parse_date_value(due_display)
+        if not due:
+            continue
+        period_start, period_end, effective_end = _finance_period_for_due_date(due)
+        rows: list[dict] = []
+        for document in documents:
+            kind = _finance_morning_report_doc_kind(document)
+            if not kind:
+                continue
+            doc_date = _finance_parse_date_value(document.get("date"))
+            if not doc_date or not (period_start <= doc_date <= period_end):
+                continue
+            totals = _finance_document_totals(document)
+            sign = -1 if kind == "credit" else 1
+            type_code = str(document.get("type_code") or "").strip()
+            type_label = {"305": "חשבונית מס", "320": "חשבונית מס-קבלה", "330": "חשבונית זיכוי"}.get(type_code, "")
+            if not type_label:
+                raw_type = str(document.get("type") or "").strip()
+                type_label = raw_type if raw_type and raw_type != "income document" else ("חשבונית זיכוי" if kind == "credit" else "חשבונית מס")
+            rows.append({
+                "date": doc_date,
+                "date_display": _finance_format_display_date(doc_date),
+                "kind": kind,
+                "type_label": type_label,
+                "number": str(document.get("number") or "").strip(),
+                "customer_name": str(document.get("customer_name") or "").strip(),
+                "subtotal": round(sign * abs(_finance_parse_number(totals.get("subtotal"))), 2),
+                "vat": round(sign * abs(_finance_parse_number(totals.get("vat"))), 2),
+                "total": round(sign * abs(_finance_parse_number(totals.get("total"))), 2),
+            })
+        rows.sort(key=lambda item: (item["date"], item["number"]))
+
+        invoices_vat = round(sum(r["vat"] for r in rows if r["kind"] == "invoice"), 2)
+        credits_vat = round(sum(r["vat"] for r in rows if r["kind"] == "credit"), 2)
+        net_vat = round(invoices_vat + credits_vat, 2)
+        summary = summary_by_due.get(due_display) or {}
+        summary_payable = round(_finance_parse_number(summary.get("vat_payable")), 2)
+        # שורת הסיכום הקיימת נבנית מחשבוניות בלבד (בלי זיכויים) — ההשוואה
+        # ההוגנת היא מול צד החשבוניות; הזיכויים מדווחים בנפרד ובמפורש.
+        reconciliation_diff = round(invoices_vat - summary_payable, 2)
+        periods.append({
+            "due_date": due_display,
+            "period_start": _finance_format_display_date(period_start),
+            "period_end": _finance_format_display_date(period_end),
+            "rows": rows,
+            "invoices_count": sum(1 for r in rows if r["kind"] == "invoice"),
+            "credits_count": sum(1 for r in rows if r["kind"] == "credit"),
+            "subtotal_sum": round(sum(r["subtotal"] for r in rows), 2),
+            "vat_sum": net_vat,
+            "total_sum": round(sum(r["total"] for r in rows), 2),
+            "invoices_vat": invoices_vat,
+            "credits_vat": credits_vat,
+            "summary_vat_payable": summary_payable,
+            "summary_vat_credit": round(_finance_parse_number(summary.get("vat_credit")), 2),
+            "summary_vat_due": round(_finance_parse_number(summary.get("vat_due")), 2),
+            "reconciliation_diff": reconciliation_diff,
+            "reconciliation_matched": abs(reconciliation_diff) <= 0.01,
+        })
+    return {"periods": periods}
+
+
+def _finance_morning_reconciliation_lines(report: dict) -> list[str]:
+    """שורות ההצלבה למייל — מספרי מורנינג מול שורת הסיכום, פער מודגש אם יש."""
+    lines: list[str] = []
+    for period in (report or {}).get("periods") or []:
+        matched = bool(period.get("reconciliation_matched"))
+        status = "תואם ✓" if matched else f"פער של ₪ {abs(float(period.get('reconciliation_diff') or 0)):,.2f} ✗"
+        lines.append(
+            f"דיווח {period.get('due_date')} (תקופה {period.get('period_start')}–{period.get('period_end')}): "
+            f"מע\"מ עסקאות ממורנינג ₪ {float(period.get('invoices_vat') or 0):,.2f}"
+            + (f", זיכויים ₪ {float(period.get('credits_vat') or 0):,.2f}" if period.get("credits_count") else "")
+            + f" | מול שורת הסיכום — {status}"
+            + f" | מע\"מ מוכר להפחתה ₪ {float(period.get('summary_vat_credit') or 0):,.2f}"
+            + f" | נותר לתשלום ₪ {float(period.get('summary_vat_due') or 0):,.2f}"
+        )
+    return lines
+
+
+def _build_finance_morning_income_pdf(report: dict) -> bytes:
+    """הדוח הרציף: כל החשבוניות והזיכויים ממורנינג לתקופה + קופסת ההצלבה."""
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle("MorningPdfTitle", parent=styles["Heading2"],
+        fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, fontSize=17, leading=23,
+        alignment=TA_RIGHT, textColor=colors.HexColor("#1f2d3d"))
+    meta_style = ParagraphStyle("MorningPdfMeta", parent=styles["BodyText"],
+        fontName=PDF_HEB_FONT, fontSize=10, leading=14, alignment=TA_RIGHT,
+        textColor=colors.HexColor("#4b5563"))
+    cell_style = ParagraphStyle("MorningPdfCell", parent=styles["BodyText"],
+        fontName=PDF_HEB_FONT, fontSize=9.5, leading=13, alignment=TA_RIGHT)
+    header_style = ParagraphStyle("MorningPdfHeader", parent=cell_style,
+        fontName=PDF_HEB_BOLD_FONT or PDF_HEB_FONT, textColor=colors.white)
+    recon_style = ParagraphStyle("MorningPdfRecon", parent=cell_style, fontSize=10.5, leading=16)
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=landscape(A4),
+                            rightMargin=28, leftMargin=28, topMargin=28, bottomMargin=24)
+    story: list = []
+    for index, period in enumerate((report or {}).get("periods") or []):
+        if index:
+            story.append(Spacer(1, 22))
+        story.append(Paragraph(pdf_rtl(
+            f"דוח הכנסות ממורנינג · תקופה {period.get('period_start')}–{period.get('period_end')} · דיווח {period.get('due_date')}"
+        ), title_style))
+        story.append(Paragraph(pdf_rtl(
+            f"{period.get('invoices_count')} חשבוניות ו-{period.get('credits_count')} זיכויים · הופק {datetime.now().strftime('%d/%m/%Y %H:%M')}"
+        ), meta_style))
+        story.append(Spacer(1, 10))
+
+        headers = ["תאריך", "מסמך", "מספר", "לקוח", "לפני מע״מ", "מע״מ", "סה״כ"]
+        table_data = [[Paragraph(pdf_rtl(text), header_style) for text in reversed(headers)]]
+        credit_row_indexes: list[int] = []
+        for row in period.get("rows") or []:
+            if row.get("kind") == "credit":
+                credit_row_indexes.append(len(table_data))
+            cells = [
+                Paragraph(pdf_rtl(row.get("date_display") or ""), cell_style),
+                Paragraph(pdf_rtl(row.get("type_label") or ""), cell_style),
+                Paragraph(str(row.get("number") or ""), cell_style),
+                Paragraph(pdf_rtl(row.get("customer_name") or ""), cell_style),
+                Paragraph(f"₪ {float(row.get('subtotal') or 0):,.2f}", cell_style),
+                Paragraph(f"₪ {float(row.get('vat') or 0):,.2f}", cell_style),
+                Paragraph(f"₪ {float(row.get('total') or 0):,.2f}", cell_style),
+            ]
+            table_data.append(list(reversed(cells)))
+        totals_cells = [
+            Paragraph(pdf_rtl(f"סה״כ · {len(period.get('rows') or [])} מסמכים"), cell_style),
+            Paragraph("", cell_style), Paragraph("", cell_style), Paragraph("", cell_style),
+            Paragraph(f"₪ {float(period.get('subtotal_sum') or 0):,.2f}", cell_style),
+            Paragraph(f"₪ {float(period.get('vat_sum') or 0):,.2f}", cell_style),
+            Paragraph(f"₪ {float(period.get('total_sum') or 0):,.2f}", cell_style),
+        ]
+        table_data.append(list(reversed(totals_cells)))
+        widths = list(reversed([72, 96, 62, 190, 92, 84, 92]))
+        table = Table(table_data, colWidths=widths, repeatRows=1)
+        table_style = [
+            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2d3d")),
+            ("FONTNAME", (0, 0), (-1, -1), PDF_HEB_FONT),
+            ("GRID", (0, 0), (-1, -1), 0.4, colors.HexColor("#d6d3d1")),
+            ("ROWBACKGROUNDS", (0, 1), (-1, -2), [colors.white, colors.HexColor("#f8fafc")]),
+            ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("BACKGROUND", (0, len(table_data) - 1), (-1, len(table_data) - 1), colors.HexColor("#eef2f7")),
+            ("FONTNAME", (0, len(table_data) - 1), (-1, len(table_data) - 1), PDF_HEB_BOLD_FONT or PDF_HEB_FONT),
+        ]
+        for row_index in credit_row_indexes:
+            table_style.append(("TEXTCOLOR", (0, row_index), (-1, row_index), colors.HexColor("#b91c1c")))
+        table.setStyle(TableStyle(table_style))
+        story.append(table)
+
+        story.append(Spacer(1, 12))
+        matched = bool(period.get("reconciliation_matched"))
+        recon_lines = [
+            f"מע\"מ עסקאות (חשבוניות בלבד): ₪ {float(period.get('invoices_vat') or 0):,.2f}",
+        ]
+        if period.get("credits_count"):
+            recon_lines.append(f"חשבוניות זיכוי: ₪ {float(period.get('credits_vat') or 0):,.2f}")
+            recon_lines.append(f"מע\"מ עסקאות נטו: ₪ {float(period.get('vat_sum') or 0):,.2f}")
+        recon_lines.append(
+            "הצלבה מול שורת הסיכום במערכת: " + ("תואם ✓" if matched else
+            f"פער של ₪ {abs(float(period.get('reconciliation_diff') or 0)):,.2f} (בסיכום: ₪ {float(period.get('summary_vat_payable') or 0):,.2f}) ✗")
+        )
+        recon_lines.append(
+            f"מע\"מ מוכר להפחתה (תשומות): ₪ {float(period.get('summary_vat_credit') or 0):,.2f} · "
+            f"נותר לתשלום לתקופה: ₪ {float(period.get('summary_vat_due') or 0):,.2f}"
+        )
+        recon_table = Table(
+            [[Paragraph(pdf_rtl(line), recon_style)] for line in recon_lines],
+            colWidths=[widths and sum(widths) or 680],
+        )
+        recon_table.setStyle(TableStyle([
+            ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#f0fdf4") if matched else colors.HexColor("#fef2f2")),
+            ("BOX", (0, 0), (-1, -1), 0.8, colors.HexColor("#16a34a") if matched else colors.HexColor("#dc2626")),
+            ("ALIGN", (0, 0), (-1, -1), "RIGHT"),
+            ("TOPPADDING", (0, 0), (-1, -1), 5),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 5),
+            ("RIGHTPADDING", (0, 0), (-1, -1), 10),
+        ]))
+        story.append(recon_table)
+    if not story:
+        story = [Paragraph(pdf_rtl("לא נמצאו מסמכי הכנסות לתקופות שנבחרו."), meta_style)]
+    doc.build(story)
+    return buffer.getvalue()
+
+
 def _build_finance_invoices_xlsx(rows: list[dict], vat_summary_rows: list[dict] | None = None) -> bytes:
     headers = ["תאריך", "ספק", "מספר אסמכתא", "מספר הקצאה", "שירות / מוצר", "סה״כ (לפני מע״מ)", "מע״מ", "סה״כ (כולל מע״מ)"]
     normalized_rows = [_normalize_finance_invoice_row_app(row or {}) for row in rows or []]
@@ -22782,7 +23017,8 @@ async def finance_invoices_send_email(request: Request):
     include_pdf = bool(body.get("include_pdf"))
     include_xlsx = bool(body.get("include_xlsx"))
     include_vat_summary = bool(body.get("include_vat_summary"))
-    if not any([include_zip, include_pdf, include_xlsx]):
+    include_morning_report = bool(body.get("include_morning_report"))
+    if not any([include_zip, include_pdf, include_xlsx, include_morning_report]):
         return JSONResponse({"error": "יש לבחור לפחות סוג צרופה אחד."}, status_code=400)
     recipients = _customer_email_list(body.get("recipients") or "")
     is_test_send = bool(body.get("test_send"))
@@ -22797,7 +23033,7 @@ async def finance_invoices_send_email(request: Request):
     try:
         all_rows = _finance_backfill_stored_rows(load_marketing_rows("finance_invoices"), persist=True)
         filtered_rows = _finance_rows_for_due_dates(all_rows, selected_due_dates)
-        if not filtered_rows:
+        if not filtered_rows and not include_morning_report:
             return JSONResponse({"error": "לא נמצאו חשבוניות עבור מועדי הדיווח שבחרת."}, status_code=404)
 
         export_dir = _finance_export_cache_dir() / f"mail_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
@@ -22831,6 +23067,37 @@ async def finance_invoices_send_email(request: Request):
             xlsx_path.write_bytes(_build_finance_invoices_xlsx(filtered_rows, vat_summary_rows=vat_summary_rows))
             attachments.append(str(xlsx_path))
 
+        morning_reconciliation: list[dict] = []
+        if include_morning_report:
+            try:
+                morning_report = await _finance_morning_income_report_for_due_dates(selected_due_dates)
+                morning_pdf_path = export_dir / f"דוח-הכנסות-מורנינג-{ '-'.join(_finance_safe_due_date_slug(item) for item in selected_due_dates) or 'all' }.pdf"
+                morning_pdf_path.write_bytes(_build_finance_morning_income_pdf(morning_report))
+                attachments.append(str(morning_pdf_path))
+                reconciliation_lines = _finance_morning_reconciliation_lines(morning_report)
+                if reconciliation_lines:
+                    message = message.rstrip() + "\n\nהצלבת נתוני מורנינג מול סיכום המע\"מ במערכת:\n" + "\n".join(f"- {line}" for line in reconciliation_lines)
+                for period in morning_report.get("periods") or []:
+                    morning_reconciliation.append({
+                        "due_date": period.get("due_date"),
+                        "period": f"{period.get('period_start')}–{period.get('period_end')}",
+                        "invoices_count": period.get("invoices_count"),
+                        "credits_count": period.get("credits_count"),
+                        "invoices_vat": period.get("invoices_vat"),
+                        "credits_vat": period.get("credits_vat"),
+                        "summary_vat_payable": period.get("summary_vat_payable"),
+                        "matched": period.get("reconciliation_matched"),
+                        "diff": period.get("reconciliation_diff"),
+                    })
+                    if not period.get("reconciliation_matched"):
+                        warnings.append(
+                            f"דיווח {period.get('due_date')}: מע\"מ העסקאות ממורנינג (₪ {float(period.get('invoices_vat') or 0):,.2f}) "
+                            f"לא תואם את שורת הסיכום (₪ {float(period.get('summary_vat_payable') or 0):,.2f}) — פער של ₪ {abs(float(period.get('reconciliation_diff') or 0)):,.2f}."
+                        )
+            except Exception as morning_exc:
+                log_handled_error("finance morning income report failed", morning_exc)
+                warnings.append("לא הצלחתי להפיק את דוח ההכנסות ממורנינג — המייל נשלח בלעדיו.")
+
         html_body = _delivery_confirmation_mail_html_from_text(message)
         _send_delivery_confirmation_mail(
             ", ".join(recipients),
@@ -22848,6 +23115,7 @@ async def finance_invoices_send_email(request: Request):
                 "rows_count": len(filtered_rows),
                 "due_dates": selected_due_dates,
                 "warnings": warnings,
+                "morning_reconciliation": morning_reconciliation,
             }
         )
     except Exception as exc:

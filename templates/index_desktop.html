@@ -5374,6 +5374,175 @@ tr[data-hr-inst-dirty] td:first-child { box-shadow: inset 3px 0 0 #f59e0b; }
   overflow: auto;
 }
 
+/* ── העיצוב המחודש של מודאל שליחת החשבוניות ── */
+.finance-send-redesign {
+  width: min(100%, 780px);
+  max-width: 780px !important;
+}
+
+.finance-send-redesign .modal-head {
+  background:
+    radial-gradient(circle at top right, rgba(255, 173, 104, 0.2), transparent 38%),
+    linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,248,241,0.98) 100%);
+  border-bottom: 1px solid rgba(255, 125, 18, 0.12);
+  margin: -28px -28px 0;
+  padding: 24px 28px 18px;
+  border-top-left-radius: 28px;
+  border-top-right-radius: 28px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.finance-send-subtitle {
+  margin: 6px 0 0;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.finance-send-meta {
+  margin: 16px 0 0;
+  border: 1px solid rgba(255, 125, 18, 0.16);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+  padding: 12px 16px;
+  color: #7c2d12;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.finance-send-redesign .reminder-modal-body {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.finance-send-section {
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 20px;
+  background: white;
+  padding: 14px 16px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.03);
+}
+
+.finance-send-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c2d12;
+  margin-bottom: 10px;
+}
+
+.finance-send-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.finance-send-field {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-send-field span {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.finance-send-field input {
+  min-height: 44px;
+  border-radius: 14px;
+  border: 1px solid rgba(203, 213, 225, 0.92);
+  background: white;
+  font: inherit;
+  padding: 10px 12px;
+  color: var(--ink);
+}
+
+.finance-send-message {
+  width: 100%;
+  border-radius: 14px;
+}
+
+.finance-send-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.finance-send-hint {
+  margin-top: 10px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.finance-send-attach-list {
+  display: grid;
+  gap: 8px;
+}
+
+.finance-send-attach-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.finance-send-attach-option:hover {
+  border-color: rgba(255, 125, 18, 0.35);
+  background: #fffdfb;
+}
+
+.finance-send-attach-option:has(input:checked) {
+  border-color: rgba(255, 125, 18, 0.55);
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 100%);
+}
+
+.finance-send-attach-option input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--brand, #ff7d12);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.finance-send-attach-body {
+  display: grid;
+  gap: 2px;
+}
+
+.finance-send-attach-body strong {
+  font-size: 13.5px;
+  color: #111827;
+}
+
+.finance-send-attach-body small {
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.finance-send-attach-morning:has(input:checked) {
+  border-color: rgba(22, 163, 74, 0.5);
+  background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+}
+
+@media (max-width: 720px) {
+  .finance-send-fields,
+  .finance-send-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .finance-export-modal-card {
   width: min(100%, 760px);
   max-width: 760px !important;
@@ -19179,30 +19348,36 @@ input:focus {
 </div>
 
 <div id="financeInvoicesSendModal" class="confirm-modal" aria-hidden="true">
-  <div class="confirm-modal-card reminder-modal-card customer-mail-modal-card finance-invoices-send-modal-card">
+  <div class="confirm-modal-card reminder-modal-card customer-mail-modal-card finance-invoices-send-modal-card finance-send-redesign">
     <div class="modal-head">
-      <h3>שליחת חשבוניות</h3>
+      <div>
+        <h3>שליחת חשבוניות לרו״ח</h3>
+        <p class="finance-send-subtitle">חבילת הדיווח המלאה: קבצי המקור, הטבלה המרוכזת, ודוח ההכנסות ממורנינג עם הצלבת מע״מ.</p>
+      </div>
       <button type="button" class="modal-close-btn" id="financeInvoicesSendClose" aria-label="סגור חלון">×</button>
     </div>
-    <div id="financeInvoicesSendMeta" class="reminder-modal-meta"></div>
+    <div id="financeInvoicesSendMeta" class="finance-send-meta"></div>
     <div class="reminder-modal-body">
-      <div class="customer-create-grid">
-        <label class="customer-create-field" style="grid-column:1 / -1;">
-          <span>כתובת מייל לשליחה</span>
-          <input id="financeInvoicesSendRecipients" type="text" dir="ltr" placeholder="name@example.com">
-        </label>
-        <label class="customer-create-field" style="grid-column:1 / -1;">
-          <span>נושא המייל</span>
-          <input id="financeInvoicesSendSubject" type="text" placeholder="מצורפות חשבוניות מס לדיווח...">
-        </label>
+      <div class="finance-send-section">
+        <div class="finance-send-section-title">נמען ונושא</div>
+        <div class="finance-send-fields">
+          <label class="finance-send-field">
+            <span>כתובת מייל לשליחה</span>
+            <input id="financeInvoicesSendRecipients" type="text" dir="ltr" placeholder="name@example.com">
+          </label>
+          <label class="finance-send-field">
+            <span>נושא המייל</span>
+            <input id="financeInvoicesSendSubject" type="text" placeholder="מצורפות חשבוניות מס לדיווח...">
+          </label>
+        </div>
       </div>
-      <div class="receipt-field" style="margin-top:14px;">
-        <label for="financeInvoicesSendMessage">תוכן המייל</label>
-        <textarea id="financeInvoicesSendMessage" class="reminder-textarea" rows="8" placeholder="תוכן המייל"></textarea>
+      <div class="finance-send-section">
+        <div class="finance-send-section-title">תוכן המייל</div>
+        <textarea id="financeInvoicesSendMessage" class="reminder-textarea finance-send-message" rows="6" placeholder="תוכן המייל"></textarea>
       </div>
-      <div class="finance-invoices-send-grid">
-        <div class="marketing-mail-field-card">
-          <label>מועדי דיווח</label>
+      <div class="finance-send-columns">
+        <div class="finance-send-section">
+          <div class="finance-send-section-title">מועדי דיווח</div>
           <div id="financeInvoicesSendDueDatesDropdown" class="marketing-doc-dropdown">
             <button type="button" id="financeInvoicesSendDueDatesToggle" class="marketing-doc-dropdown-trigger" aria-expanded="false">
               <strong id="financeInvoicesSendDueDatesSummary">בחר מועד/י דיווח</strong>
@@ -19210,24 +19385,46 @@ input:focus {
             </button>
             <div id="financeInvoicesSendDueDatesPanel" class="marketing-doc-dropdown-panel" hidden></div>
           </div>
+          <div class="finance-send-hint">כל דיווח מכסה דו-חודש: מה-1 של חודשיים לפני חודש הדיווח ועד סוף החודש שלפניו.</div>
         </div>
-        <div class="marketing-mail-field-card">
-          <label>צרופות</label>
-          <div id="financeInvoicesSendAttachmentOptions" class="marketing-doc-dropdown-panel finance-invoices-send-attachments">
-            <label class="marketing-doc-option"><input type="checkbox" data-finance-send-attachment="zip"> <span>קובץ Zip</span></label>
-            <label class="marketing-doc-option"><input type="checkbox" data-finance-send-attachment="pdf"> <span>מסמך PDF</span></label>
-            <label class="marketing-doc-option"><input type="checkbox" data-finance-send-attachment="xlsx"> <span>קובץ אקסל</span></label>
-          </div>
-        </div>
-        <div class="marketing-mail-field-card">
-          <label class="marketing-doc-option" style="cursor:pointer;">
-            <input type="checkbox" id="financeInvoicesSendIncludeVat">
-            <span>הוסף נתוני מע״מ ל־PDF / אקסל</span>
-          </label>
-          <div class="marketing-doc-dropdown-panel" style="margin-top:10px;">
-            <div class="marketing-doc-option" style="cursor:default;color:#64748b;">
-              אם תסמן, נוסיף בתחתית הקבצים שורת סיכום מע״מ לפי מועדי הדיווח שבחרת.
-            </div>
+        <div class="finance-send-section">
+          <div class="finance-send-section-title">מה מצורף למייל</div>
+          <div id="financeInvoicesSendAttachmentOptions" class="finance-send-attach-list">
+            <label class="finance-send-attach-option">
+              <input type="checkbox" data-finance-send-attachment="zip">
+              <span class="finance-send-attach-body">
+                <strong>קובץ ZIP</strong>
+                <small>קבצי המקור הסרוקים של כל חשבוניות הספקים</small>
+              </span>
+            </label>
+            <label class="finance-send-attach-option">
+              <input type="checkbox" data-finance-send-attachment="pdf">
+              <span class="finance-send-attach-body">
+                <strong>מסמך PDF</strong>
+                <small>הטבלה המרוכזת של חשבוניות הספקים</small>
+              </span>
+            </label>
+            <label class="finance-send-attach-option">
+              <input type="checkbox" data-finance-send-attachment="xlsx">
+              <span class="finance-send-attach-body">
+                <strong>קובץ אקסל</strong>
+                <small>אותה טבלה בפורמט לעריכה</small>
+              </span>
+            </label>
+            <label class="finance-send-attach-option finance-send-attach-morning">
+              <input type="checkbox" id="financeInvoicesSendIncludeMorning">
+              <span class="finance-send-attach-body">
+                <strong>דוח הכנסות ממורנינג</strong>
+                <small>כל החשבוניות והזיכויים שהופקו בתקופת הדיווח, כדוח רציף אחד, כולל הצלבה מול סיכום המע״מ במערכת</small>
+              </span>
+            </label>
+            <label class="finance-send-attach-option">
+              <input type="checkbox" id="financeInvoicesSendIncludeVat">
+              <span class="finance-send-attach-body">
+                <strong>שורת סיכום מע״מ</strong>
+                <small>תתווסף בתחתית ה-PDF והאקסל: מע״מ עסקאות, מוכר להפחתה, ונותר לתשלום</small>
+              </span>
+            </label>
           </div>
         </div>
       </div>
@@ -35993,6 +36190,8 @@ document.addEventListener("DOMContentLoaded", () => {
     syncFinanceInvoicesSendTemplates();
     if (financeInvoicesSendRecipients) financeInvoicesSendRecipients.value = "";
     if (financeInvoicesSendIncludeVat) financeInvoicesSendIncludeVat.checked = false;
+    const morningCheckbox = document.getElementById("financeInvoicesSendIncludeMorning");
+    if (morningCheckbox) morningCheckbox.checked = true;
     document.querySelectorAll("[data-finance-send-attachment]").forEach(input => {
       const type = String(input.dataset.financeSendAttachment || "").trim();
       input.checked = type === "zip";
@@ -36049,7 +36248,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const attachments = financeInvoicesSendAttachmentSelection();
-    if (!attachments.zip && !attachments.pdf && !attachments.xlsx) {
+    const includeMorningReport = !!document.getElementById("financeInvoicesSendIncludeMorning")?.checked;
+    if (!attachments.zip && !attachments.pdf && !attachments.xlsx && !includeMorningReport) {
       showToast("info", "חסרות צרופות", "יש לבחור לפחות סוג צרופה אחד לפני השליחה.");
       return;
     }
@@ -36080,6 +36280,7 @@ document.addEventListener("DOMContentLoaded", () => {
           include_pdf: attachments.pdf,
           include_xlsx: attachments.xlsx,
           include_vat_summary: !!financeInvoicesSendIncludeVat?.checked,
+          include_morning_report: includeMorningReport,
           recipients,
           test_send: !!testSend,
           subject: String(financeInvoicesSendSubject?.value || "").trim(),
@@ -36099,6 +36300,11 @@ document.addEventListener("DOMContentLoaded", () => {
           ? `מייל טסט נשלח ל-asafbeny@gmail.com עבור ${escapeHtml(financeInvoicesSendDatesLabel(dueDates))}.`
           : `המייל נשלח אל ${escapeHtml(sentTo)} עבור ${escapeHtml(financeInvoicesSendDatesLabel(dueDates))}.`
       );
+      (payload.morning_reconciliation || []).forEach(item => {
+        if (item?.matched) {
+          showToast("success", "הצלבת מורנינג תואמת", `דיווח ${escapeHtml(String(item.due_date || ""))}: מע״מ העסקאות ממורנינג תואם את שורת הסיכום ✓`);
+        }
+      });
       (payload.warnings || []).forEach(warning => {
         showToast("warning", "שים לב", escapeHtml(String(warning || "")));
       });
