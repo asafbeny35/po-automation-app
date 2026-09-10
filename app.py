@@ -9144,9 +9144,8 @@ async def _finance_morning_income_report_for_due_dates(due_dates: list[str]) -> 
         net_vat = round(invoices_vat + credits_vat, 2)
         summary = summary_by_due.get(due_display) or {}
         summary_payable = round(_finance_parse_number(summary.get("vat_payable")), 2)
-        # שורת הסיכום הקיימת נבנית מחשבוניות בלבד (בלי זיכויים) — ההשוואה
-        # ההוגנת היא מול צד החשבוניות; הזיכויים מדווחים בנפרד ובמפורש.
-        reconciliation_diff = round(invoices_vat - summary_payable, 2)
+        # שורת הסיכום מקזזת זיכויים (מ-10.09) — ההשוואה היא נטו מול נטו.
+        reconciliation_diff = round(net_vat - summary_payable, 2)
         periods.append({
             "due_date": due_display,
             "period_start": _finance_format_display_date(period_start),
@@ -9177,7 +9176,7 @@ def _finance_morning_reconciliation_lines(report: dict) -> list[str]:
         lines.append(
             f"דיווח {period.get('due_date')} (תקופה {period.get('period_start')}–{period.get('period_end')}): "
             f"מע\"מ עסקאות ממורנינג ₪ {float(period.get('invoices_vat') or 0):,.2f}"
-            + (f", זיכויים ₪ {float(period.get('credits_vat') or 0):,.2f}" if period.get("credits_count") else "")
+            + (f", זיכויים ₪ {float(period.get('credits_vat') or 0):,.2f}, נטו ₪ {float(period.get('vat_sum') or 0):,.2f}" if period.get("credits_count") else "")
             + f" | מול שורת הסיכום — {status}"
             + f" | מע\"מ מוכר להפחתה ₪ {float(period.get('summary_vat_credit') or 0):,.2f}"
             + f" | נותר לתשלום ₪ {float(period.get('summary_vat_due') or 0):,.2f}"
@@ -12603,21 +12602,6 @@ def _invalidate_finance_state_cache(schedule_refresh: bool = True) -> None:
         _ensure_finance_state_refresh_started(force_refresh=True)
 
 
-async def _fetch_finance_prod_invoice_documents() -> list[dict]:
-    cfg = get_mode_config("prod")
-    client = GreenInvoiceClient(
-        base_url=cfg["base_url"],
-        api_key=cfg["api_key"],
-        api_secret=cfg["api_secret"],
-    )
-    return await client.get_invoice_documents(
-        date_from="2025-01-01",
-        date_to=date.today().isoformat(),
-        page_size=100,
-        max_pages=48,
-    )
-
-
 async def _build_finance_payload(force_refresh: bool = False) -> dict:
     invoice_rows = _finance_backfill_stored_rows(
         load_marketing_rows("finance_invoices", force_refresh=force_refresh),
@@ -12631,18 +12615,24 @@ async def _build_finance_payload(force_refresh: bool = False) -> dict:
     )
     settings_rows = load_marketing_rows("finance_settings", force_refresh=force_refresh)
     income_tax_rate = _load_finance_income_tax_rate_setting()
-    documents = await _fetch_finance_prod_invoice_documents()
+    # כולל חשבוניות זיכוי בסימן שלילי: מע"מ העסקאות ומחזור ההכנסות מקוזזים
+    # בזיכויים, אחרת הסיכום מנפח גם את המע"מ לתשלום וגם את מקדמות מס ההכנסה.
+    documents = await _fetch_finance_prod_income_documents()
     document_entries: list[dict] = []
     for document in documents:
+        kind = _finance_morning_report_doc_kind(document)
+        if not kind:
+            continue
         doc_date = _finance_parse_date_value(document.get("date"))
         totals = _finance_document_totals(document)
+        sign = -1 if kind == "credit" else 1
         document_entries.append(
             {
                 "date": doc_date,
                 "date_text": str(document.get("date") or "").strip(),
-                "subtotal": totals["subtotal"],
-                "vat": totals["vat"],
-                "total": totals["total"],
+                "subtotal": round(sign * abs(_finance_parse_number(totals["subtotal"])), 2),
+                "vat": round(sign * abs(_finance_parse_number(totals["vat"])), 2),
+                "total": round(sign * abs(_finance_parse_number(totals["total"])), 2),
                 "number": str(document.get("number") or "").strip(),
             }
         )
@@ -23091,7 +23081,7 @@ async def finance_invoices_send_email(request: Request):
                     })
                     if not period.get("reconciliation_matched"):
                         warnings.append(
-                            f"דיווח {period.get('due_date')}: מע\"מ העסקאות ממורנינג (₪ {float(period.get('invoices_vat') or 0):,.2f}) "
+                            f"דיווח {period.get('due_date')}: מע\"מ העסקאות נטו ממורנינג (₪ {float(period.get('vat_sum') or 0):,.2f}) "
                             f"לא תואם את שורת הסיכום (₪ {float(period.get('summary_vat_payable') or 0):,.2f}) — פער של ₪ {abs(float(period.get('reconciliation_diff') or 0)):,.2f}."
                         )
             except Exception as morning_exc:

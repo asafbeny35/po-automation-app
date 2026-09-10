@@ -1,8 +1,8 @@
 """דוח ההכנסות ממורנינג לתקופת הדיווח + ההצלבה מול סיכום המע"מ.
 
 הדיווח דו-חודשי: דיווח 15/09 מכסה 01/07–31/08. הדוח כולל חשבוניות מס
-(305/320) וחשבוניות זיכוי (330, בסכומים שליליים) — קבלות לא. ההצלבה משווה
-את צד החשבוניות מול vat_payable של שורת הסיכום הקיימת, שנבנית בלי זיכויים.
+(305/320) וחשבוניות זיכוי (330, בסכומים שליליים) — קבלות לא. מ-10.09 שורת
+הסיכום עצמה מקזזת זיכויים, ולכן ההצלבה משווה נטו מול נטו.
 """
 from __future__ import annotations
 
@@ -79,12 +79,26 @@ def test_credits_are_negative_and_reported_separately(monkeypatch):
     assert period["vat_sum"] == 90.0
 
 
-def test_reconciliation_matches_when_invoice_vat_equals_summary(monkeypatch):
+def test_reconciliation_matches_when_net_vat_equals_summary(monkeypatch):
     docs = [_doc("10", "2026-07-05", 180, 1180), _doc("11", "2026-08-01", 20, 120)]
     report = _run_report(monkeypatch, docs, [{"due_date": "15/09/2026", "vat_payable": 200.0, "vat_credit": 50.0, "vat_due": 150.0}])
     period = report["periods"][0]
     assert period["reconciliation_matched"] is True
     assert period["summary_vat_due"] == 150.0
+
+
+def test_with_credits_the_summary_must_be_net_to_match(monkeypatch):
+    """הסיכום מקזז זיכויים — סיכום שמציג רק את צד החשבוניות נחשב פער."""
+    docs = [
+        _doc("10", "2026-07-05", 180, 1180),
+        _doc("11", "2026-07-20", 90, 590, type_code="330"),
+    ]
+    net_summary = [{"due_date": "15/09/2026", "vat_payable": 90.0, "vat_credit": 0, "vat_due": 90.0}]
+    gross_summary = [{"due_date": "15/09/2026", "vat_payable": 180.0, "vat_credit": 0, "vat_due": 180.0}]
+    assert _run_report(monkeypatch, docs, net_summary)["periods"][0]["reconciliation_matched"] is True
+    mismatch = _run_report(monkeypatch, docs, gross_summary)["periods"][0]
+    assert mismatch["reconciliation_matched"] is False
+    assert mismatch["reconciliation_diff"] == -90.0
 
 
 def test_reconciliation_flags_a_gap(monkeypatch):
