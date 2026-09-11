@@ -8009,15 +8009,16 @@ def _finance_region_to_rect(region, page_rect) -> list[float] | None:
 
 
 _FINANCE_MUNICIPAL_TERMS = ("ארנונה", "עיריית", "עירית ", "מועצה אזורית", "מועצה מקומית", "מים וביוב", "היטל שמירה")
+_FINANCE_MEALS_TERMS = ("פלאקסי", "סיבוס", "cibus")
 _FINANCE_FOREIGN_SUPPLIER_HINT = re.compile(r"\b(inc\.?|llc|corp\.?|corporation|ltd|pte|gmbh)\b", re.IGNORECASE)
 
 
 def _finance_vat_disallowed_reason(supplier_name: str, service_or_product: str, currency_code: str = "") -> str:
-    """'foreign' / 'municipal' / '' — מסמכים שאין בהם מע"מ תשומות ישראלי.
+    """'foreign' / 'municipal' / 'meals' / '' — מסמכים בלי מע"מ תשומות מוכר.
 
-    הערת הרו"ח (10.09.2026): המערכת לקחה מע"מ גם מחשבוניות חו"ל וגם מארנונה.
-    חשבונית במטבע זר לא נושאת מע"מ ישראלי, וחיובים עירוניים (ארנונה, מים
-    וביוב, היטלים) פטורים — ה-18% שהמודל גזר שם היו פיקציה.
+    הערות הרו"ח (10.09.2026 + 15.09.2026): חשבונית במטבע זר לא נושאת מע"מ
+    ישראלי; חיובים עירוניים (ארנונה, מים וביוב, היטלים) פטורים; ומע"מ סיבוס
+    (פלאקסי — ארוחות עובדים) קיים בחשבונית אבל אינו מוכר בניכוי.
     """
     currency = str(currency_code or "").strip().upper()
     if re.fullmatch(r"[A-Z]{3}", currency) and currency not in {"ILS", "NIS"}:
@@ -8027,6 +8028,8 @@ def _finance_vat_disallowed_reason(supplier_name: str, service_or_product: str, 
     blob = f"{supplier_name or ''} {service_or_product or ''}"
     if any(term in blob for term in _FINANCE_MUNICIPAL_TERMS):
         return "municipal"
+    if any(term in blob or term in blob.lower() for term in _FINANCE_MEALS_TERMS):
+        return "meals"
     return ""
 
 
