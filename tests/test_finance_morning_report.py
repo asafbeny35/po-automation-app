@@ -132,3 +132,53 @@ def test_an_empty_period_still_renders_a_document(monkeypatch):
     report = _run_report(monkeypatch, [], [{"due_date": "15/09/2026", "vat_payable": 0, "vat_credit": 0, "vat_due": 0}])
     pdf = app._build_finance_morning_income_pdf(report)
     assert fitz.open(stream=pdf, filetype="pdf").page_count >= 1
+
+
+# ── מע"מ תשומות אסור: חו"ל וחיובים עירוניים (הערת הרו"ח 10.09) ────────────────
+
+@pytest.mark.parametrize("supplier, service, currency, reason", [
+    ("Kapwing, Inc.", "subscription", "USD", "foreign"),
+    ("Supabase", "compute", "USD", "foreign"),
+    ("Runway AI, Inc.", "credits", "", "foreign"),          # סיומת Inc בלי מטבע
+    ("עיריית תל אביב-יפו", "חשבון ארנונה כללית", "ILS", "municipal"),
+    ("מועצה אזורית חוף הכרמל", "חשבון מים וביוב", "ILS", "municipal"),
+    ("מי אביבים", "חשבון מים וביוב 7-8/2026", "ILS", "municipal"),
+    ("פלציב עין הנציב", "יריעות", "ILS", ""),               # ספק ישראלי רגיל
+    ("פרטנר תקשורת בע״מ", "סלולר", "ILS", ""),
+])
+def test_disallowed_vat_reasons(supplier, service, currency, reason):
+    assert app._finance_vat_disallowed_reason(supplier, service, currency) == reason
+
+
+def test_a_foreign_invoice_draft_gets_no_vat(tmp_path):
+    draft = app._finance_vision_invoice_to_draft(
+        {"supplier_name": "Vercel Inc.", "subtotal": "20.00", "vat": "3.05", "total": "23.05", "currency": "USD"},
+        tmp_path / "x.pdf", "x.pdf")
+    assert draft["vat"] == "0.00" or draft["vat"] == ""
+    assert draft["subtotal"] == draft["total"]
+
+
+def test_an_arnona_draft_gets_no_vat(tmp_path):
+    draft = app._finance_vision_invoice_to_draft(
+        {"supplier_name": "עיריית תל אביב-יפו", "service_or_product": "חשבון ארנונה כללית",
+         "subtotal": "430.47", "vat": "77.49", "total": "507.96", "currency": "ILS"},
+        tmp_path / "x.pdf", "x.pdf")
+    assert app._finance_parse_number(draft["vat"]) == 0
+    assert draft["subtotal"] == draft["total"]
+
+
+def test_imputation_never_invents_vat_for_disallowed_rows():
+    """זה המנגנון שהחזיר את המע"מ אחרי כל איפוס — חייב להישאר חסום."""
+    row = {"supplier_name": "עיריית תל אביב-יפו", "service_or_product": "ארנונה",
+           "invoice_date": "16/08/2026", "subtotal": "507.96", "vat": "0.00",
+           "total": "507.96", "currency_code": "ILS"}
+    result = app._finance_impute_vat_from_total_if_needed(row)
+    assert app._finance_parse_number(result["vat"]) == 0
+
+
+def test_imputation_still_blocked_for_foreign_currency():
+    row = {"supplier_name": "Supabase", "service_or_product": "compute",
+           "invoice_date": "18/08/2026", "subtotal": "98.07", "vat": "",
+           "total": "98.07", "currency_code": "USD"}
+    result = app._finance_impute_vat_from_total_if_needed(row)
+    assert app._finance_parse_number(result["vat"]) == 0

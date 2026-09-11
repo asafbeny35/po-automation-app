@@ -3689,6 +3689,12 @@ def _finance_impute_vat_from_total_if_needed(row: dict, text_cache: dict[str, st
     subtotal_value = _finance_parse_number(normalized.get("subtotal"))
     if total_value <= 0 or vat_value > 0.009:
         return normalized
+    # חשבונית חו"ל או חיוב עירוני: אסור להמציא 18% מתוך הסה"כ — אין שם מע"מ.
+    # בלי החסימה הזו כל איפוס מע"מ בשורות האלה היה מתבטל ברענון הבא.
+    if _finance_vat_disallowed_reason(
+        normalized.get("supplier_name"), normalized.get("service_or_product"), normalized.get("currency_code")
+    ):
+        return normalized
     source_text = _finance_load_source_text_for_row(normalized, text_cache=text_cache)
     if not _finance_should_impute_vat_from_total(normalized, source_text):
         return normalized
@@ -8002,6 +8008,28 @@ def _finance_region_to_rect(region, page_rect) -> list[float] | None:
     ]
 
 
+_FINANCE_MUNICIPAL_TERMS = ("ארנונה", "עיריית", "עירית ", "מועצה אזורית", "מועצה מקומית", "מים וביוב", "היטל שמירה")
+_FINANCE_FOREIGN_SUPPLIER_HINT = re.compile(r"\b(inc\.?|llc|corp\.?|corporation|ltd|pte|gmbh)\b", re.IGNORECASE)
+
+
+def _finance_vat_disallowed_reason(supplier_name: str, service_or_product: str, currency_code: str = "") -> str:
+    """'foreign' / 'municipal' / '' — מסמכים שאין בהם מע"מ תשומות ישראלי.
+
+    הערת הרו"ח (10.09.2026): המערכת לקחה מע"מ גם מחשבוניות חו"ל וגם מארנונה.
+    חשבונית במטבע זר לא נושאת מע"מ ישראלי, וחיובים עירוניים (ארנונה, מים
+    וביוב, היטלים) פטורים — ה-18% שהמודל גזר שם היו פיקציה.
+    """
+    currency = str(currency_code or "").strip().upper()
+    if re.fullmatch(r"[A-Z]{3}", currency) and currency not in {"ILS", "NIS"}:
+        return "foreign"
+    if not currency and _FINANCE_FOREIGN_SUPPLIER_HINT.search(str(supplier_name or "")):
+        return "foreign"
+    blob = f"{supplier_name or ''} {service_or_product or ''}"
+    if any(term in blob for term in _FINANCE_MUNICIPAL_TERMS):
+        return "municipal"
+    return ""
+
+
 def _finance_vision_invoice_to_draft(parsed: dict, file_path: Path, original_name: str) -> dict | None:
     """שדות שהמודל החזיר -> טיוטת חשבונית. משותף למסלול הבודד ולמסלול המרובה."""
     def clean(value):
@@ -8031,6 +8059,11 @@ def _finance_vision_invoice_to_draft(parsed: dict, file_path: Path, original_nam
         total = subtotal
     if not subtotal and total:
         subtotal = total
+    currency_code = (clean(parsed.get("currency")) or "ILS").upper()
+    if vat and _finance_vat_disallowed_reason(supplier_name, clean(parsed.get("service_or_product")), currency_code):
+        # חשבונית חו"ל או חיוב עירוני: אין מע"מ תשומות — הסכום המלא הוא הבסיס
+        vat = ""
+        subtotal = total or subtotal
     invoice_date = clean(parsed.get("invoice_date")) or date.today().strftime("%d/%m/%Y")
     return _normalize_finance_invoice_row_app({
         "row_id": f"finance-upload-{uuid.uuid4().hex}",
@@ -8039,7 +8072,7 @@ def _finance_vision_invoice_to_draft(parsed: dict, file_path: Path, original_nam
         "reference_number": clean(parsed.get("reference_number")),
         "allocation_number": "",
         "service_or_product": clean(parsed.get("service_or_product")),
-        "currency_code": (clean(parsed.get("currency")) or "ILS").upper(),
+        "currency_code": currency_code,
         "subtotal": subtotal,
         "vat": vat,
         "total": total,
