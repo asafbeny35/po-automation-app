@@ -13895,7 +13895,7 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "מלגזה - חובה.pdf",
     },
     "vehicle-plane-airworthiness": {
-        "local_path": Path("/Users/asafbeny/Downloads/WhatsApp Image 2026-04-23 at 21.05.33.jpeg"),
+        "local_path": Path("/Users/asafbeny/Downloads/Images/2026/WhatsApp Image 2026-04-23 at 21.05.33.jpeg"),
         "folders": ("רכבים", "Cessna 172 4X-CGQ"),
         "drive_name": "4X-CGQ - תעודת כושר טיסה.jpeg",
     },
@@ -13945,7 +13945,7 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "הפניקס - דוח בריאות שנתי 2025.pdf",
     },
     "insurance-phoenix-factory": {
-        "local_path": ADMIN_INSURANCE_DIR / "G261486321001590000.f14024pwL7ea_TIF (1).pdf",
+        "local_path": Path("/Users/asafbeny/Downloads/Documents/2026/G261486321001590000.f14024pwL7ea_TIF.pdf"),
         "folders": ("ביטוחים", "הפניקס"),
         "drive_name": "הפניקס - ביטוח מפעל EXTRA.pdf",
     },
@@ -13965,22 +13965,22 @@ ADMIN_DRIVE_ASSETS = {
         "drive_name": "הפניקס - אישור מס פנסיה 2025.pdf",
     },
     "real-estate-rothschild-tabu": {
-        "local_path": Path("/Users/asafbeny/Downloads/ רוטשילד נסח טאבו.pdf"),
+        "local_path": Path("/Users/asafbeny/Downloads/Documents/2026/ רוטשילד נסח טאבו.pdf"),
         "folders": ("נכסי נדל\"ן", "רוטשילד 8א׳, חיפה"),
         "drive_name": "רוטשילד 8א׳, חיפה - נסח טאבו.pdf",
     },
     "real-estate-rothschild-lease": {
-        "local_path": Path("/Users/asafbeny/Downloads/אלון וענת חוזה חידוש25-26 .pdf"),
+        "local_path": Path("/Users/asafbeny/Downloads/Documents/2026/אלון וענת חוזה חידוש25-26 .pdf"),
         "folders": ("נכסי נדל\"ן", "רוטשילד 8א׳, חיפה"),
         "drive_name": "רוטשילד 8א׳, חיפה - חוזה שכירות 2025-2026.pdf",
     },
     "real-estate-rothschild-renewal-26-27": {
-        "local_path": Path("/Users/asafbeny/Downloads/אלון וענת חידוש 26-27.docx"),
+        "local_path": Path("/Users/asafbeny/Downloads/Documents/2026/אלון וענת חידוש 26-27.docx"),
         "folders": ("נכסי נדל\"ן", "רוטשילד 8א׳, חיפה"),
         "drive_name": "רוטשילד 8א׳, חיפה - חידוש 2026-2027.docx",
     },
     "real-estate-hadera-tabu": {
-        "local_path": Path("/Users/asafbeny/Downloads/נסחי טאבו.pdf"),
+        "local_path": Path("/Users/asafbeny/Downloads/Documents/2026/נסחי טאבו.pdf"),
         "folders": ("נכסי נדל\"ן", "קרקע בחדרה"),
         "drive_name": "קרקע בחדרה - נסחי טאבו.pdf",
     },
