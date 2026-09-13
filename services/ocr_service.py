@@ -185,12 +185,46 @@ def _ocr_image_bytes_via_anthropic(image_bytes: bytes) -> str:
         return ""
 
 
+_DRIVE_OCR_MAX_UPLOAD_BYTES = 4_000_000
+
+
+def _shrink_image_bytes_for_upload(image_bytes: bytes, max_bytes: int) -> bytes:
+    """Re-encode an oversized scan as JPEG so the upload stays under the cap.
+
+    A WhatsApp scan of an arnona bill rendered to a 9.8MB PNG and Drive's
+    multipart upload answered 413 Request Too Large, so this OCR step produced
+    nothing at all and the parsers downstream were left guessing.
+    """
+    if len(image_bytes) <= max_bytes:
+        return image_bytes
+    try:
+        import io
+
+        from PIL import Image
+
+        image = Image.open(io.BytesIO(image_bytes))
+        if image.mode not in ("RGB", "L"):
+            image = image.convert("RGB")
+        buffer = io.BytesIO()
+        for quality in (85, 70, 55):
+            buffer = io.BytesIO()
+            image.save(buffer, format="JPEG", quality=quality, optimize=True)
+            if buffer.tell() <= max_bytes:
+                break
+        return buffer.getvalue()
+    except Exception as exc:
+        logger.warning("OCR image shrink failed: %s: %s", type(exc).__name__, exc)
+        return image_bytes
+
+
 def _ocr_image_bytes_via_drive(image_bytes: bytes) -> str:
     """OCR an image through Google Drive's image-to-Docs conversion."""
     try:
         from .google_drive_sync import ocr_image_bytes_to_text
 
-        text = ocr_image_bytes_to_text(image_bytes)
+        text = ocr_image_bytes_to_text(
+            _shrink_image_bytes_for_upload(image_bytes, _DRIVE_OCR_MAX_UPLOAD_BYTES)
+        )
         logger.info("OCR Drive image completed: text_length=%s", len(text.strip()))
         return text
     except Exception as exc:

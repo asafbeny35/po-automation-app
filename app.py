@@ -6640,6 +6640,87 @@ def _finance_parse_hof_hacarmel_invoice(raw_text: str, fixed_text: str, original
     )
 
 
+def _finance_detect_haifa_arnona_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
+    raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
+    # כתובת הגבייה היא העוגן היציב: היא שורה לטינית שה-OCR לא מערבב, בעוד
+    # ש"חיפה" מופיע בסריקה גם כ"היפה" וגם כ"חיפר".
+    if "haifa.muni.il" in lowered:
+        return True
+    has_arnona = "ארנונה" in lowered or "הנונרא" in raw_haystack
+    has_haifa = any(token in raw_haystack for token in ("חיפה", "היפה", "עיריית חיפה", "haifa"))
+    return has_arnona and has_haifa
+
+
+def _finance_parse_haifa_arnona_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
+    """חשבון ארנונה והיטל שמירה של עיריית חיפה (דו-חודשי).
+
+    חיוב עירוני — אין בו מע"מ תשומות מוכר, ולכן vat=0 והסכום המלא הוא הבסיס.
+    """
+    raw = raw_text or ""
+    combined = "\n".join([fixed_text or "", raw]).strip()
+
+    period_match = re.search(r"\b(\d{1,2}-\d{1,2}/\d{4})\b", combined)
+    period_label = normalize_ws(period_match.group(1)) if period_match else ""
+
+    # "מועד התשלום" הוא התאריך המודפס היחיד שמזוהה בוודאות בסריקה
+    payment_date_match = (
+        re.search(r"(\d{2}/\d{2}/\d{4})\s*=?\s*\|*\s*הודעה", raw)
+        or re.search(r"מועד\s*התשלום[^\d]{0,20}(\d{2}/\d{2}/\d{4})", combined)
+        or re.search(r"\b(\d{2}/\d{2}/\d{4})\b", combined)
+    )
+    invoice_date = normalize_date(payment_date_match.group(1)) if payment_date_match else ""
+    if not invoice_date and period_label:
+        # נפילה לאחור: ה-1 בחודש הראשון של התקופה הדו-חודשית
+        start_month, year = period_label.split("-")[0], period_label.split("/")[-1]
+        invoice_date = f"01/{int(start_month):02d}/{year}"
+    if not invoice_date:
+        invoice_date = _finance_guess_invoice_date(combined)
+
+    amounts = [
+        round(float(value.replace(",", "")), 2)
+        for value in re.findall(r"\b([\d,]+\.\d{2})\b", combined)
+    ]
+    total = None
+    labeled_total = re.search(r"₪\s*\(?\s*([\d,]+\.\d{2})", raw)
+    if labeled_total:
+        total = round(float(labeled_total.group(1).replace(",", "")), 2)
+    if total is None and amounts:
+        # שורות החיוב (ארנונה + היטל שמירה) מסתכמות בדיוק לסכום לתשלום —
+        # הסכום שהוא צירוף של שניים אחרים הוא הסה"כ, גם אם ה-OCR ערבב סדר.
+        for candidate in sorted(set(amounts), reverse=True):
+            others = [value for value in amounts if value != candidate]
+            if any(
+                abs(first + second - candidate) <= 0.02
+                for index, first in enumerate(others)
+                for second in others[index + 1:]
+            ):
+                total = candidate
+                break
+        if total is None:
+            total = max(amounts)
+
+    service_or_product = f"ארנונה והיטל שמירה {period_label}".strip() if period_label else "ארנונה והיטל שמירה"
+
+    return _normalize_finance_invoice_row_app(
+        {
+            "row_id": f"finance-upload-{uuid.uuid4().hex}",
+            "invoice_date": invoice_date or date.today().strftime("%d/%m/%Y"),
+            "supplier_name": "עיריית חיפה",
+            "reference_number": "",
+            "allocation_number": "",
+            "service_or_product": service_or_product,
+            "currency_code": "ILS",
+            "subtotal": f"{total:.2f}" if total is not None else "",
+            "vat": "0.00",
+            "total": f"{total:.2f}" if total is not None else "",
+            "source_file_name": Path(original_name).name,
+            "source_file_path": str(file_path),
+            "report_due_date": _finance_due_date_display(invoice_date),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+
+
 def _finance_detect_carmel_tunnels_invoice(raw_text: str, fixed_text: str, original_name: str) -> bool:
     raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
     return (
@@ -8126,17 +8207,18 @@ def _finance_parse_multi_invoice_page(file_path: Path, original_name: str) -> li
                 return []
             page = pdf.load_page(0)
             page_rect = page.rect
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(2.4, 2.4), alpha=False)
-            b64 = base64.standard_b64encode(pixmap.tobytes("png")).decode("utf-8")
+            image_block = _vision_image_block_from_page(page)
         finally:
             pdf.close()
+        if not image_block:
+            return []
 
         response = _anthropic_messages_post(
             {
                 "model": "claude-sonnet-4-6",
                 "max_tokens": 2048,
                 "messages": [{"role": "user", "content": [
-                    {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64}},
+                    image_block,
                     {"type": "text", "text": _FINANCE_MULTI_INVOICE_PROMPT},
                 ]}],
             },
@@ -8163,6 +8245,47 @@ def _finance_parse_multi_invoice_page(file_path: Path, original_name: str) -> li
     return results
 
 
+# מעבר ל-1568px בצלע הארוכה ה-API מקטין בעצמו — רינדור גדול יותר הוא בזבוז
+# נטו. המגבלה הקשיחה היא 5MB לתמונה אחרי base64, ואנחנו עוצרים מתחתיה.
+_VISION_IMAGE_MAX_EDGE = 1568
+_VISION_IMAGE_MAX_B64_BYTES = 4_500_000
+
+
+def _vision_image_block_from_page(page, clip=None, max_edge: int = _VISION_IMAGE_MAX_EDGE) -> dict | None:
+    """בלוק תמונה ל-Anthropic עם תקרת ממדים ומשקל, או None אם אי אפשר להקטין.
+
+    רינדור בקנה מידה קבוע התפוצץ על סריקות גדולות: "WhatsApp Scan" של חשבון
+    ארנונה (1611x3045 נק') הפיק ב-1.5x קובץ PNG של 13MB ב-base64, הקריאה
+    נדחתה, ה-except בלע את השגיאה — והפרסר נפל בשקט לניחוש רגקסים על OCR
+    משובש. הקנה מידה נגזר עכשיו מהעמוד, וסריקות צילום עוברות ל-JPEG שנדחס
+    פי כמה טוב יותר מ-PNG.
+    """
+    import base64
+    import fitz
+
+    rect = clip if clip is not None else page.rect
+    longest_edge = max(float(rect.width), float(rect.height))
+    if longest_edge <= 0:
+        return None
+    scale = max(0.05, min(max_edge / longest_edge, 4.0))
+    pixmap = page.get_pixmap(matrix=fitz.Matrix(scale, scale), clip=clip, alpha=False)
+
+    data = pixmap.tobytes("png")
+    media_type = "image/png"
+    if len(data) * 4 // 3 > _VISION_IMAGE_MAX_B64_BYTES:
+        for quality in (85, 70, 55):
+            candidate = pixmap.tobytes("jpg", jpg_quality=quality)
+            if len(candidate) < len(data):
+                data, media_type = candidate, "image/jpeg"
+            if len(data) * 4 // 3 <= _VISION_IMAGE_MAX_B64_BYTES:
+                break
+
+    encoded = base64.standard_b64encode(data).decode("utf-8")
+    if len(encoded) > _VISION_IMAGE_MAX_B64_BYTES:
+        return None
+    return {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": encoded}}
+
+
 def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dict | None:
     api_key = str(settings.anthropic_api_key or "").strip()
     if not api_key:
@@ -8177,27 +8300,27 @@ def _finance_parse_via_claude_vision(file_path: Path, original_name: str) -> dic
         if suffix == ".pdf":
             pdf = fitz.open(str(file_path))
             page = pdf.load_page(0)
-            pixmap = page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False)
-            img_bytes = pixmap.tobytes("png")
-            b64_full = base64.standard_b64encode(img_bytes).decode("utf-8")
-            image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_full}})
-            # Long, narrow thermal receipts render at very low effective resolution when
-            # downscaled by the vision API (max ~1568px on the long edge), making small
-            # print near the bottom (totals) hard to read. Send an extra zoomed-in crop
-            # of the bottom third at higher DPI so totals stay legible.
+            full_block = _vision_image_block_from_page(page)
+            if full_block:
+                image_blocks.append(full_block)
+            # סריקה גבוהה מוקטנת ע"י ה-API ל-1568px בצלע הארוכה, והדפוס הקטן
+            # בתחתית (הסכומים) נמרח. לכן נשלח גם קרופ מוגדל של השליש התחתון.
+            # הסף היה 2.0 ופספס סריקות "כמעט גבוהות" כמו חשבון ארנונה של
+            # עיריית חיפה (יחס 1.89) — שם בדיוק יושב הסכום לתשלום.
             page_rect = page.rect
-            if page_rect.width > 0 and (page_rect.height / page_rect.width) > 2.0:
+            if page_rect.width > 0 and (page_rect.height / page_rect.width) > 1.6:
                 crop_rect = fitz.Rect(
                     page_rect.x0,
                     page_rect.y0 + page_rect.height * 0.6,
                     page_rect.x1,
                     page_rect.y1,
                 )
-                crop_pixmap = page.get_pixmap(matrix=fitz.Matrix(4.0, 4.0), clip=crop_rect, alpha=False)
-                crop_bytes = crop_pixmap.tobytes("png")
-                b64_crop = base64.standard_b64encode(crop_bytes).decode("utf-8")
-                image_blocks.append({"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": b64_crop}})
+                crop_block = _vision_image_block_from_page(page, clip=crop_rect)
+                if crop_block:
+                    image_blocks.append(crop_block)
             pdf.close()
+            if not image_blocks:
+                return None
         elif suffix in {".jpg", ".jpeg"}:
             img_bytes = file_path.read_bytes()
             media_type = "image/jpeg"
@@ -8335,6 +8458,8 @@ def _finance_parse_uploaded_invoice_draft(file_path: Path, original_name: str) -
         return _finance_parse_road6_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_carmel_tunnels_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_carmel_tunnels_invoice(raw_text, fixed_text, original_name, file_path)
+    if _finance_detect_haifa_arnona_invoice(raw_text, fixed_text, original_name):
+        return _finance_parse_haifa_arnona_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_mei_avivim_invoice(raw_text, fixed_text, original_name):
         return _finance_parse_mei_avivim_invoice(raw_text, fixed_text, original_name, file_path)
     if _finance_detect_iec_invoice(raw_text, fixed_text, original_name):
