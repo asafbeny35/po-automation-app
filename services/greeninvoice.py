@@ -601,8 +601,14 @@ class GreenInvoiceClient:
 
     @staticmethod
     def _is_quietpipe_sheet(item) -> bool:
+        # אלמוג ב.ז. מזמינה את היריעה בשמה הלועזי ("יריעה אקוסטית - QUIETPIPE"),
+        # וברשימה העברית בלבד ההזמנה לא זוהתה — 60 מ"ר היו יוצאים כ-60 יריעות
+        # במקום 30 גלילים, בדיוק תקרית טובול.
         text = f"{getattr(item, 'description', '') or ''} {getattr(item, 'sku', '') or ''}"
-        return any(marker in text for marker in ("אקוסטיפייפ", "קוואיטפייפ", "קויאטפייפ")) or "QTP" in text.upper()
+        upper = text.upper()
+        if any(marker in text for marker in ("אקוסטיפייפ", "קוואיטפייפ", "קויאטפייפ")):
+            return True
+        return "QTP" in upper or "QUIETPIPE" in upper or "QUIET PIPE" in upper
 
     @staticmethod
     def _is_square_meter_unit(unit) -> bool:

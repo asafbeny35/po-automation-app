@@ -127,7 +127,7 @@ def parse_purchase_order(pdf_path: str | Path):
     if portal_template == "lati":
         return _build_purchase_order(parse_lati(raw_text), raw_text, "lati")
     if portal_template == "almogim":
-        return _build_purchase_order(parse_almogim(raw_text), raw_text, "almogim")
+        return _build_purchase_order(parse_almogim(raw_text, pdf_path=pdf_path), raw_text, "almogim")
     if portal_template == "sela":
         return _build_purchase_order(parse_sela(raw_text), raw_text, "sela")
     if portal_template == "damari":

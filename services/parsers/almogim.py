@@ -4,7 +4,10 @@ from services.models import POItem
 from services.parsers.common import normalize_date, normalize_ws, sanitize_contact_pair
 
 
-CUSTOMER_NAME = 'אלמוגים בניה והשקעות בע"מ'
+# השם כפי שהוא רשום בחשבונית ירוקה ובכל 5 ההזמנות הקודמות. הערך הקודם
+# ("אלמוגים בניה והשקעות") הוא חברה שלא קיימת במאגר — בפיינליז הוא ניצל
+# בזכות חיפוש לפי ח.פ, אבל המשתמש ראה שם לקוח שגוי לפני האישור.
+CUSTOMER_NAME = "אלמוג ב.ז בנייה והשקעות בעמ"
 
 
 def _clean_line(value: str) -> str:
@@ -98,7 +101,9 @@ def _extract_delivery_and_contact(lines: list[str], customer_phone: str) -> tupl
             delivery_address += ", ליד רחוב יום הכיפורים"
 
         for candidate in lines[index + 2:index + 5]:
-            m = re.search(r"(05\d{8})\s*-\s*([א-ת\"'׳\-]+)", candidate)
+            # ההזמנה כותבת "עיאד 0547957596" בלי מקף מפריד, והדרישה למקף
+            # השאירה כל הזמנה בלי איש קשר לתעודת המשלוח.
+            m = re.search(r"(05\d{8})\s*[-\s]\s*([א-ת\"'׳]+)", candidate)
             if not m:
                 continue
             phone = m.group(1)
@@ -113,33 +118,158 @@ def _extract_delivery_and_contact(lines: list[str], customer_phone: str) -> tupl
     return delivery_address, contact_name, contact_phone
 
 
-def _extract_item(lines: list[str]) -> POItem:
-    for line in lines:
-        if "356640153" not in line or "QUIETPIPE" not in line:
-            continue
+_DATE_TOKEN = re.compile(r"^\d{2}/\d{2}/\d{2}$")
+_AMOUNT_TOKEN = re.compile(r"^[\d,]+\.\d{2}$")
+_SKU_TOKEN = re.compile(r"^\d{6,12}$")
+_LATIN_CHAR = re.compile(r"[A-Za-z0-9]")
+_HEBREW_CHAR = re.compile(r"[֐-׿]")
+_MIRRORED_PUNCTUATION = {"(": ")", ")": "(", "[": "]", "]": "[", "{": "}", "}": "{"}
 
-        m = re.search(
-            r"([\d,]+\.\d{2})\s+ח\"ש\s+([\d,]+\.\d{2})\s+ר'מ\s+([\d,]+\.\d{2})\s+ר'מ\s+([\d,]+\.\d{2})\s+(\d{2}/\d{2}/\d{2})\s+QUIETPIPE\s*-\s*([א-ת\"'׳\-\s]+)\s+(\d{6,12})\s+\d+",
+
+def _logical_text_from_visual(words: list[tuple[float, float, str]]) -> str:
+    """סדר לוגי מתוך מילים שמוינו ימין→שמאל בעמוד.
+
+    חילוץ טקסט מ-PDF עברי מחזיר את הסדר החזותי, ובו ריצה לטינית מוטמעת
+    ("QUIETPIPE (2*1") מופיעה הפוכה ביחס לשאר השורה והסוגריים משוקפים.
+    כאן מחזירים כל ריצה לטינית לסדרה, משקפים פיסוק נייטרלי, ומאחים מילים
+    שה-bidi פיצל — שם רווח מזערי בין התיבות מסגיר שהן מילה אחת.
+    """
+    ordered: list[tuple[float, float, str]] = []
+    latin_run: list[tuple[float, float, str]] = []
+
+    def flush_latin() -> None:
+        nonlocal latin_run
+        if latin_run:
+            ordered.extend(reversed(latin_run))
+            latin_run = []
+
+    for x0, x1, token in words:
+        if _LATIN_CHAR.search(token) and not _HEBREW_CHAR.search(token):
+            latin_run.append((x0, x1, token))
+            continue
+        flush_latin()
+        if not _HEBREW_CHAR.search(token):
+            token = "".join(_MIRRORED_PUNCTUATION.get(char, char) for char in reversed(token))
+        ordered.append((x0, x1, token))
+    flush_latin()
+
+    parts: list[str] = []
+    for index, (x0, x1, token) in enumerate(ordered):
+        if index:
+            previous_x0, previous_x1, _ = ordered[index - 1]
+            gap = min(abs(x0 - previous_x1), abs(previous_x0 - x1))
+            parts.append("" if gap < 1.2 else " ")
+        parts.append(token)
+    return normalize_ws("".join(parts))
+
+
+def _visual_lines(pdf_path) -> list[list[tuple]]:
+    import fitz
+
+    document = fitz.open(str(pdf_path))
+    try:
+        words = document.load_page(0).get_text("words")
+    finally:
+        document.close()
+
+    lines: list[list[tuple]] = []
+    for word in sorted(words, key=lambda item: item[1]):
+        for line in lines:
+            if abs(line[0][1] - word[1]) <= 3.0:
+                line.append(word)
+                break
+        else:
+            lines.append([word])
+    return [sorted(line, key=lambda item: -item[0]) for line in lines]
+
+
+def _item_from_visual_line(line: list[tuple]) -> POItem | None:
+    """שורת פריט: [מס' שורה][מק"ט][תיאור][ת. אספקה][כמות][יח'][יתרה][יח'][מחיר][מטבע][סה"כ]."""
+    tokens = [word[4] for word in line]
+    if len(tokens) < 8 or not tokens[0].isdigit() or len(tokens[0]) > 3:
+        return None
+    if not _SKU_TOKEN.match(tokens[1]):
+        return None
+    date_index = next((index for index, token in enumerate(tokens) if _DATE_TOKEN.match(token)), None)
+    if date_index is None or date_index < 3:
+        return None
+
+    tail = tokens[date_index + 1:]
+    amounts = [_amount(token) for token in tail if _AMOUNT_TOKEN.match(token)]
+    if len(amounts) < 3:
+        return None
+
+    # היחידה ("מ'ר") מגיעה כתווים נפרדים ומוצמדים; בסדר ימין→שמאל הם כבר
+    # קריאים, ולכן משרשרים כמות שהם במקום להפוך תו בודד.
+    unit_chars: list[str] = []
+    for word in line[date_index + 1:]:
+        token = word[4]
+        if _AMOUNT_TOKEN.match(token):
+            if unit_chars:
+                break
+            continue
+        if _HEBREW_CHAR.search(token) or token in {"'", '"', "׳", "״"}:
+            unit_chars.append(token)
+        elif unit_chars:
+            break
+    unit = "".join(unit_chars)
+
+    description = _logical_text_from_visual(
+        [(word[0], word[2], word[4]) for word in line[2:date_index]]
+    )
+    # הסדר בזנב (ימין→שמאל): כמות, יתרה לאספקה, מחיר ליחידה, סה"כ שורה
+    quantity, unit_price, line_total = amounts[0], amounts[-2], amounts[-1]
+    return POItem(
+        sku=tokens[1],
+        description=description,
+        unit=unit,
+        quantity=quantity,
+        unit_price=unit_price,
+        line_total=line_total,
+    )
+
+
+def _extract_items(lines: list[str], pdf_path=None) -> list[POItem]:
+    """כל שורות הפריטים. הגרסה הקודמת נעלה מק"ט יחיד ודרשה ש-QUIETPIPE יהיה
+    מוקף ברווחים; כשהספק הוסיף לתיאור את מידות הגליל — (2*1 מ') — ההתאמה
+    נכשלה וכל הזמנה חזרה עם "פריט לא זוהה"."""
+    items: list[POItem] = []
+    if pdf_path:
+        try:
+            for line in _visual_lines(pdf_path):
+                item = _item_from_visual_line(line)
+                if item and item.line_total:
+                    items.append(item)
+        except Exception:
+            items = []
+    if items:
+        return items
+
+    # נפילה לאחור על הטקסט בלבד (סריקות בלי שכבת טקסט מסודרת)
+    for line in lines:
+        match = re.search(
+            r"([\d,]+\.\d{2})\s+ח\"ש\s+([\d,]+\.\d{2})\s+(\S+)\s+([\d,]+\.\d{2})\s+\S+\s+"
+            r"([\d,]+\.\d{2})\s+(\d{2}/\d{2}/\d{2})\s+(.+?)\s+(\d{6,12})\s+\d+\s*$",
             line,
         )
-        if not m:
+        if not match:
             continue
-
-        hebrew_part = _reverse_words(m.group(6))
-        description = normalize_ws(f"{hebrew_part} QUIETPIPE").strip()
-
-        return POItem(
-            sku=m.group(7),
-            description=description,
-            quantity=_amount(m.group(4)),
-            unit_price=_amount(m.group(2)),
-            line_total=_amount(m.group(1)),
+        items.append(
+            POItem(
+                sku=match.group(8),
+                description=_reverse_words(match.group(7)),
+                unit=match.group(3)[::-1],
+                quantity=_amount(match.group(5)),
+                unit_price=_amount(match.group(2)),
+                line_total=_amount(match.group(1)),
+            )
         )
+    if items:
+        return items
+    return [POItem(description="פריט לא זוהה", quantity=1, unit_price=0, line_total=0, sku="")]
 
-    return POItem(description="פריט לא זוהה", quantity=1, unit_price=0, line_total=0, sku="")
 
-
-def parse(text: str):
+def parse(text: str, pdf_path=None):
     if ("גומלא" not in text and "אלמוג" not in text) or ("רפסמ שכר תנמזה" not in text and "הזמנת רכש" not in text):
         return None
 
@@ -150,12 +280,13 @@ def parse(text: str):
     header["contact_name"] = contact_name
     header["contact_phone"] = contact_phone
 
-    item = _extract_item(lines)
-    if not header["subtotal"] and item.line_total:
-        header["subtotal"] = item.line_total
+    items = _extract_items(lines, pdf_path=pdf_path)
+    items_total = round(sum(item.line_total or 0 for item in items), 2)
+    if not header["subtotal"] and items_total:
+        header["subtotal"] = items_total
     if not header["vat"] and header["subtotal"]:
         header["vat"] = round(header["subtotal"] * 0.18, 2)
     if not header["total"] and header["subtotal"]:
         header["total"] = round(header["subtotal"] + header["vat"], 2)
 
-    return CUSTOMER_NAME, [item], header
+    return CUSTOMER_NAME, items, header
