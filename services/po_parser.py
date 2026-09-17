@@ -12,6 +12,7 @@ from services.parsers.common import extract_text_pdfplumber, fix_hebrew_text, fi
 from services.parsers.damari import parse as parse_damari
 from services.parsers.generic import parse_generic, parse_prashkovsky
 from services.parsers.hagivaa import parse as parse_hagivaa
+from services.parsers.plasan_raam import detect as detect_plasan_raam, parse as parse_plasan_raam
 from services.parsers.haikon import parse as parse_haikon
 from services.parsers.kedar import parse as parse_kedar
 from services.parsers.lati import parse as parse_lati
@@ -109,6 +110,13 @@ def parse_purchase_order(pdf_path: str | Path):
     mister_fix_result = parse_mister_fix(raw_text)
     if mister_fix_result:
         parsed = _build_purchase_order(mister_fix_result, raw_text, "mister_fix")
+        if parsed:
+            return parsed
+
+    # פלסן רא"ם (רמת דלתון) נבדק לפני פלסן סאסא: זיהוי לפי ח.פ 515057412,
+    # בעוד שסאסא מזוהה לפי האנגלית של ההזמנות שלה — אין חפיפה, אבל שתיהן "פלסן".
+    if detect_plasan_raam(raw_text):
+        parsed = _build_purchase_order(parse_plasan_raam(raw_text), raw_text, "plasan_raam")
         if parsed:
             return parsed
 
