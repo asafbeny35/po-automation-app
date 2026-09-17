@@ -11671,6 +11671,34 @@ a.admin-expense-status:hover {
   margin-top: 16px;
 }
 
+.label-split-manual-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 125, 18, 0.25);
+  border-radius: 14px;
+  background: #fffaf5;
+  font-size: 13px;
+  line-height: 1.6;
+  cursor: pointer;
+}
+
+.label-split-manual-toggle input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--brand, #ff7d12);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+/* במצב ידני שדה הכמות מיותר — נשאר רק מספר המדבקות */
+.label-split-rows.manual-qty .label-split-field:has([data-label-split-field="quantity_per_label"]) {
+  display: none;
+}
+
 .label-split-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
@@ -20407,6 +20435,10 @@ input:focus {
   <div class="confirm-modal-card label-split-modal-card">
     <h3>חלוקה למדבקות</h3>
     <p id="labelSplitModalMeta" class="label-split-modal-meta">כאן מגדירים כמה מדבקות ייווצרו וכמה סחורה תופיע על כל אחת מהן.</p>
+    <label class="reminder-edit-toggle label-split-manual-toggle" for="labelSplitManualQty">
+      <input type="checkbox" id="labelSplitManualQty">
+      ידני — במקום מספר, על המדבקה יודפס קו תחתון להשלמה בכתב יד, ואחריו היחידה (מ״ר / יח׳)
+    </label>
     <div id="labelSplitRows" class="label-split-rows"></div>
     <button type="button" id="labelSplitAddRow" class="label-split-add">＋ הוסף מדבקה</button>
     <div id="labelSplitError" class="label-split-error" aria-live="polite"></div>
@@ -20963,6 +20995,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const labelSplitRows = document.getElementById("labelSplitRows");
   const labelSplitAddRow = document.getElementById("labelSplitAddRow");
   const labelSplitError = document.getElementById("labelSplitError");
+  const labelSplitManualQty = document.getElementById("labelSplitManualQty");
   const labelSplitCancel = document.getElementById("labelSplitCancel");
   const labelSplitSave = document.getElementById("labelSplitSave");
   const paymentDeleteModal = document.getElementById("paymentDeleteModal");
@@ -39752,8 +39785,9 @@ document.addEventListener("DOMContentLoaded", () => {
         label_count: Math.max(0, Math.floor(parseNumericValue(row?.label_count))),
         quantity_per_label: parseNumericValue(row?.quantity_per_label),
         item_index: Number.isFinite(Number(row?.item_index)) ? Number(row.item_index) : 0,
+        manual_quantity: !!row?.manual_quantity,
       }))
-      .filter(row => row.label_count > 0 && row.quantity_per_label > 0);
+      .filter(row => row.label_count > 0 && (row.manual_quantity || row.quantity_per_label > 0));
   }
 
   function getAutomaticLabelPerItemRows(source = "main") {
@@ -39827,9 +39861,10 @@ document.addEventListener("DOMContentLoaded", () => {
     return normalizedRows
       .map(row => {
         const itemLabel = getLabelSplitItemLabel(row.item_index);
+        const quantityLabel = row.manual_quantity ? "ידני" : formatLabelSplitNumber(row.quantity_per_label);
         return itemLabel
-          ? `${row.label_count}×${formatLabelSplitNumber(row.quantity_per_label)} · ${itemLabel}`
-          : `${row.label_count}×${formatLabelSplitNumber(row.quantity_per_label)}`;
+          ? `${row.label_count}×${quantityLabel} · ${itemLabel}`
+          : `${row.label_count}×${quantityLabel}`;
       })
       .join(" | ");
   }
@@ -39934,6 +39969,16 @@ document.addEventListener("DOMContentLoaded", () => {
     syncLabelSplitRemoveButtons();
   }
 
+  function syncLabelSplitManualMode(isManual) {
+    if (labelSplitManualQty) labelSplitManualQty.checked = !!isManual;
+    labelSplitRows?.classList.toggle("manual-qty", !!isManual);
+  }
+
+  labelSplitManualQty?.addEventListener("change", () => {
+    labelSplitRows?.classList.toggle("manual-qty", !!labelSplitManualQty.checked);
+    if (labelSplitError) labelSplitError.textContent = "";
+  });
+
   function openLabelSplitModal() {
     if (!labelSplitModal) return;
     labelSplitSource = "main";
@@ -39944,6 +39989,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? savedRows
       : [{ item_index: defaultItem, label_count: 1, quantity_per_label: formatLabelSplitNumber(labelSplitDraftQuantity || 1) }];
     labelSplitModalMeta.textContent = `הכמות הכוללת בהזמנה היא ${formatLabelSplitNumber(labelSplitDraftQuantity || 0)}. אם יש כמה שורות מוצר, אפשר לבחור לכל סוג מדבקה את שורת המוצר המתאימה.`;
+    syncLabelSplitManualMode(labelSplitDraftRows.some(row => row.manual_quantity));
     renderLabelSplitDraftRows(labelSplitDraftRows);
     labelSplitError.textContent = "";
     labelSplitModal.classList.add("visible");
@@ -39960,6 +40006,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? savedRows
       : [{ item_index: defaultItem, label_count: 1, quantity_per_label: formatLabelSplitNumber(labelSplitDraftQuantity || 1) }];
     labelSplitModalMeta.textContent = `הכמות הכוללת בהזמנה הידנית היא ${formatLabelSplitNumber(labelSplitDraftQuantity || 0)}. אם יש כמה שורות מוצר, אפשר לבחור לכל סוג מדבקה את שורת המוצר המתאימה.`;
+    syncLabelSplitManualMode(labelSplitDraftRows.some(row => row.manual_quantity));
     renderLabelSplitDraftRows(labelSplitDraftRows);
     labelSplitError.textContent = "";
     labelSplitModal.classList.add("visible");
@@ -39976,6 +40023,7 @@ document.addEventListener("DOMContentLoaded", () => {
         label_count: parseNumericValue(labelCount),
         quantity_per_label: parseNumericValue(quantityPerLabel),
         item_index: Number.isFinite(Number(itemIndex)) ? Number(itemIndex) : 0,
+        manual_quantity: !!labelSplitManualQty?.checked,
       };
     });
   }
@@ -39984,6 +40032,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const normalizedRows = getNormalizedLabelSplitRows(rows);
     if (!normalizedRows.length) {
       return { ok: false, message: "צריך להגדיר לפחות מדבקה אחת עם כמות תקינה." };
+    }
+    if (normalizedRows.some(row => row.manual_quantity)) {
+      // ידני: הכמות תושלם בכתב יד על המדבקה — אין סכומים לאמת
+      return { ok: true, rows: normalizedRows };
     }
     const sourceItems = getLabelSplitSourceItems();
     const totalsByItem = new Map();

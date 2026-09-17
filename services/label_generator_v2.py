@@ -134,6 +134,20 @@ def split_item(text: str, max_chars=24):
     return line1, line2
 
 
+def quantity_display_text(quantity, unit) -> str:
+    """שורת הכמות: מספר + יחידה מפורשת מההזמנה, עם נפילה ל-יח׳ מהעידן שקדם
+    להעברת היחידה. במדבקה ידנית המספר הוא קו תחתון ("________") להשלמה
+    בכתב יד — והיחידה חייבת להופיע אחריו."""
+    qty = str(quantity or "").strip()
+    explicit_unit = str(unit or "").strip()
+    has_unit = any("א" <= c <= "ת" for c in qty)
+    if qty and explicit_unit and not has_unit:
+        return f"{qty} {explicit_unit}"
+    if not qty or has_unit:
+        return qty
+    return f"{qty} יח׳"
+
+
 def generate_label_pdf(data, output="output/label_v2.pdf", debug=False):
     bg_path = ensure_background()
     img = Image.open(bg_path).convert("RGB")
@@ -161,10 +175,7 @@ def generate_label_pdf(data, output="output/label_v2.pdf", debug=False):
     item1 = rtl(product_text)  # שורה אחת, גופן מתכווץ אוטומטית
     item2 = ""
 
-    qty = str(data.get("quantity", "")).strip()
-    # אם הכמות כבר מכילה יחידה (מ"ר, ק"ג וכו') — לא מוסיפים יח'
-    has_unit = any('א' <= c <= 'ת' for c in qty)
-    qty_text = rtl(qty if (not qty or has_unit) else f"{qty} יח׳")
+    qty_text = rtl(quantity_display_text(data.get("quantity"), data.get("unit")))
 
     sku = str(data.get("sku", "")).strip()
     sku_text = sku  # מספר — לא צריך bidi

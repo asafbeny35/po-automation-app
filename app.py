@@ -18471,6 +18471,34 @@ def _quote_file_relative_to_output(path: Path | str | None) -> str:
         return ""
 
 
+def _normalize_label_split_rows(raw_rows) -> list[dict]:
+    """שורות חלוקת המדבקות מהלקוח. שורה "ידנית" (manual_quantity) תקפה גם בלי
+    כמות — הכמות תיכתב בכתב יד על קו תחתון שמודפס במקום המספר."""
+    normalized: list[dict] = []
+    if not isinstance(raw_rows, list):
+        return normalized
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, dict):
+            continue
+        try:
+            label_count = int(float(raw_row.get("label_count") or 0))
+            quantity_per_label = float(raw_row.get("quantity_per_label") or 0)
+        except (TypeError, ValueError):
+            continue
+        manual_quantity = bool(raw_row.get("manual_quantity"))
+        if label_count <= 0 or (quantity_per_label <= 0 and not manual_quantity):
+            continue
+        normalized.append(
+            {
+                "item_index": int(float(raw_row.get("item_index") or 0)),
+                "label_count": label_count,
+                "quantity_per_label": quantity_per_label,
+                "manual_quantity": manual_quantity,
+            }
+        )
+    return normalized
+
+
 def _label_unit_text(value: str) -> str:
     raw = str(value or "").strip()
     if not raw:
@@ -30038,28 +30066,13 @@ async def finalize(request: Request):
         elif item and item.quantity is not None:
             qty_value = int(item.quantity) if float(item.quantity).is_integer() else item.quantity
 
-        raw_label_split_rows = data.get("label_split_rows") or []
-        normalized_label_split_rows = []
-        if isinstance(raw_label_split_rows, list):
-            for raw_row in raw_label_split_rows:
-                if not isinstance(raw_row, dict):
-                    continue
-                try:
-                    label_count = int(float(raw_row.get("label_count") or 0))
-                    quantity_per_label = float(raw_row.get("quantity_per_label") or 0)
-                except (TypeError, ValueError):
-                    continue
-                if label_count <= 0 or quantity_per_label <= 0:
-                    continue
-                normalized_label_split_rows.append(
-                    {
-                        "item_index": int(float(raw_row.get("item_index") or 0)),
-                        "label_count": label_count,
-                        "quantity_per_label": quantity_per_label,
-                    }
-                )
+        normalized_label_split_rows = _normalize_label_split_rows(data.get("label_split_rows") or [])
 
-        if normalized_label_split_rows:
+        has_manual_quantity_rows = any(row.get("manual_quantity") for row in normalized_label_split_rows)
+        if normalized_label_split_rows and has_manual_quantity_rows:
+            # במצב ידני אין מספרים לסכם — הכמות תושלם בכתב יד על המדבקה
+            pass
+        elif normalized_label_split_rows:
             try:
                 if len(merchandise_items) > 1:
                     for merchandise_index, merchandise_item in enumerate(merchandise_items):
@@ -30102,10 +30115,12 @@ async def finalize(request: Request):
         label_quantities = []
         if normalized_label_split_rows:
             for split_row in normalized_label_split_rows:
+                is_manual_quantity = bool(split_row.get("manual_quantity"))
                 label_quantities.extend(
                     [{
                         "item_index": int(split_row.get("item_index") or 0),
-                        "quantity": _display_quantity(split_row["quantity_per_label"]),
+                        "quantity": None if is_manual_quantity else _display_quantity(split_row["quantity_per_label"]),
+                        "manual_quantity": is_manual_quantity,
                     }] * split_row["label_count"]
                 )
         elif len(merchandise_items) > 1:
@@ -30147,7 +30162,8 @@ async def finalize(request: Request):
                     or _label_product_lines_for_po(po)
                     or ([label_product] if label_product else [])
                 ),
-                "quantity": split_quantity,
+                # מדבקה ידנית: קו תחתון במקום המספר, והכמות תושלם בכתב יד לפני היחידה
+                "quantity": "________" if split_meta.get("manual_quantity") else split_quantity,
                 "sku": getattr(split_item, "sku", "") if split_item else (item.sku if item else ""),
                 "unit": _label_unit_text(getattr(split_item, "unit", "") or getattr(item, "unit", "") or (po.extra or {}).get("item_unit") or ""),
             }
