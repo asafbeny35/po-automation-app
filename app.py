@@ -14751,10 +14751,23 @@ def _normalize_delivery_confirmation_po_number(value: str) -> str:
     return raw
 
 
+def _coc_customer_profile(customer_name: str) -> dict | None:
+    """פרופיל תעודת ה-C.O.C לפי לקוח; None = הלקוח לא דורש תעודה.
+
+    שני לקוחות פלסן, אותה דרישת תעודה, נוסח כמות שונה: סאסא מקבלת גם את
+    מספר הגלילים, רא"ם ביקש סכום מ"ר בלבד (הנחיית אסף 16.09.2026).
+    """
+    stripped = _normalize_company_name(str(customer_name or "")).replace('"', "").replace("״", "")
+    if "פלסן סאסא" in stripped:
+        return {"company": "פלסן סאסא בע״מ", "show_rolls": True}
+    if "פלסן ראמ" in stripped or "פלסאן ראמ" in stripped:
+        # שני האיותים חיים במערכת: "פלסן רא״מ" בחשבונית ירוקה, "פלסאן ראמ" בספר המקומי
+        return {"company": "פלסן רא״מ בע״מ", "show_rolls": False}
+    return None
+
+
 def _is_plasan_delivery_confirmation_row(row: dict | None) -> bool:
-    company = _normalize_company_name(str((row or {}).get("company") or ""))
-    normalized = company.replace('"', "").replace("״", "")
-    return "פלסן סאסא" in normalized
+    return _coc_customer_profile(str((row or {}).get("company") or "")) is not None
 
 
 DELIVERY_CONFIRMATION_INTERNAL_PRINT_EMAIL = "asafbeny@gmail.com"
@@ -16049,7 +16062,7 @@ async def _resolve_delivery_confirmation_coc_attachment(row: dict, mode: str) ->
     if local_coc_pdf and local_coc_pdf.exists():
         return local_coc_pdf.resolve()
 
-    raise RuntimeError("ללקוח פלסן סאסא צריך לצרף מסמך COC לפני שליחת המייל.")
+    raise RuntimeError("ללקוח פלסן צריך לצרף מסמך COC לפני שליחת המייל.")
 
 
 @app.middleware("http")
@@ -20979,7 +20992,7 @@ async def delivery_confirmations_send(request: Request):
             if coc_path:
                 attachments.append(coc_path)
             else:
-                return JSONResponse({"error": "ללקוח פלסן סאסא צריך לצרף גם מסמך COC לפני שליחת המייל."}, status_code=400)
+                return JSONResponse({"error": "ללקוח פלסן צריך לצרף גם מסמך COC לפני שליחת המייל."}, status_code=400)
 
         minimum_attachments = 1 if internal_print_only and not test_send else (3 if _is_plasan_delivery_confirmation_row(row) else 2)
         if len(attachments) < minimum_attachments:
@@ -30173,18 +30186,24 @@ async def finalize(request: Request):
     try:
         import subprocess
 
-        if document_mode != "invoice_only" and "פלסן סאסא" in _normalize_company_name(po.customer_name or ""):
+        coc_profile = _coc_customer_profile(po.customer_name or "")
+        if document_mode != "invoice_only" and coc_profile:
             target_dir = Path(delivery_pdf_path).parent if delivery_pdf_path else OUTPUT_DIR
             target_dir.mkdir(parents=True, exist_ok=True)
 
             coc_path = target_dir / f"coc_{po.po_number}.pdf"
+            # רא"ם שולחת כמה שורות זהות (שורה = גליל) — הכמות בתעודה היא הסכום.
+            # אצל סאסא ההזמנות חד-שורתיות, כך שהסכום זהה לשורה הראשונה.
+            total_quantity = round(sum(float(item.quantity or 0) for item in (po.items or [])), 2)
             coc_payload = {
                 "po": po.po_number,
                 "sku": po.items[0].sku,
                 "desc": po.items[0].description,
-                "qty": po.items[0].quantity,
+                "qty": total_quantity or po.items[0].quantity,
                 "date": po.po_date,
                 "rolls": label_count_for_coc,
+                "company": coc_profile["company"],
+                "show_rolls": coc_profile["show_rolls"],
             }
             if IS_VERCEL:
                 # scripts/generate_coc.py מרנדר דרך Chromium, ו-Playwright לא מותקן
@@ -30200,11 +30219,16 @@ async def finalize(request: Request):
                     text=True,
                     check=False,
                 )
-                if coc_result.returncode != 0:
-                    raise RuntimeError(
-                        f"COC generator exited with {coc_result.returncode}: "
-                        f"{(coc_result.stderr or coc_result.stdout or '').strip()}"
+                if coc_result.returncode != 0 or not coc_path.exists():
+                    # דפדפני Playwright נמחקים לפעמים מהמטמון המקומי (קרה 16.09) —
+                    # במקום תעודה שנעלמת בשקט, נופלים למחולל ה-PyMuPDF של Vercel.
+                    log_handled_error(
+                        f"COC chromium generator failed for PO {po.po_number}, falling back to PyMuPDF",
+                        RuntimeError((coc_result.stderr or coc_result.stdout or "").strip()[:400]),
                     )
+                    from services.coc_generator_pdf import generate_coc_pdf as _generate_coc_pdf
+
+                    await asyncio.to_thread(_generate_coc_pdf, coc_payload, str(coc_path))
             if not coc_path.exists():
                 raise FileNotFoundError(f"COC was not created at {coc_path}")
 

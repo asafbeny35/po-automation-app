@@ -63,10 +63,13 @@ class _Renderer:
         )
 
     def centered(self, text: str, *, top: float, size: float) -> None:
-        width = self.font.text_length(text, fontsize=size)
+        # גם כאן חובה עיצוב bidi: אצל סאסא התיאור באנגלית (no-op), אבל התיאור
+        # העברי של רא"ם ("ריפוד גג...") יצא הפוך בלעדיו.
+        shaped = _visual(text)
+        width = self.font.text_length(shaped, fontsize=size)
         self.page.insert_text(
             ((PAGE_WIDTH - width) / 2, top + size),
-            text, fontname="heb", fontsize=size, fill=(0, 0, 0),
+            shaped, fontname="heb", fontsize=size, fill=(0, 0, 0),
         )
 
     def wrap(self, text: str, *, max_width: float, size: float) -> list[str]:
@@ -85,8 +88,16 @@ class _Renderer:
         return lines
 
 
+def coc_quantity_line(qty: str, rolls: int, show_rolls: bool) -> str:
+    """שורת הכמות: סאסא מקבלת גם את מספר הגלילים, רא"ם סכום מ"ר בלבד."""
+    if show_rolls:
+        return f"כמות: {qty} מ״ר | אספקה ב {rolls} גלילים"
+    return f"כמות: {qty} מ״ר"
+
+
 def generate_coc_pdf(data: dict, output: str) -> str:
-    """`data`: po, sku, desc, qty, date, rolls — אותו חוזה כמו scripts/generate_coc.py."""
+    """`data`: po, sku, desc, qty, date, rolls, company?, show_rolls? — אותו חוזה
+    כמו scripts/generate_coc.py; ברירות המחדל משמרות את התנהגות סאסא."""
     now = datetime.now()
     po = str(data.get("po") or "").strip()
     sku = str(data.get("sku") or "").strip()
@@ -94,6 +105,9 @@ def generate_coc_pdf(data: dict, output: str) -> str:
     raw_qty = data.get("qty")
     qty = f"{float(raw_qty):g}" if isinstance(raw_qty, (int, float)) else str(raw_qty or "")
     rolls = max(int(float(data.get("rolls") or 1)), 1)
+    company = str(data.get("company") or "").strip() or "פלסן סאסא בע״מ"
+    show_rolls = data.get("show_rolls")
+    show_rolls = True if show_rolls is None else bool(show_rolls)
     date_text = str(data.get("date") or "").strip() or now.strftime("%d/%m/%Y")
     expiry = f"{now.strftime('%m')}/{now.year + 8}"
     batch = f"{now.strftime('%m')}{now.strftime('%m')}/{now.year}"
@@ -103,7 +117,7 @@ def generate_coc_pdf(data: dict, output: str) -> str:
     page.insert_font(fontname="heb", fontfile=str(HEBREW_FONT))
     render = _Renderer(page, fitz.Font(fontfile=str(HEBREW_FONT)))
 
-    render.rtl("לכבוד: פלסן סאסא בע״מ", top=HEADER_TOP, right=HEADER_RIGHT, size=HEADER_SIZE)
+    render.rtl(f"לכבוד: {company}", top=HEADER_TOP, right=HEADER_RIGHT, size=HEADER_SIZE)
     render.rtl(f"C.O.C עבור הזמנה מספר: {po}", top=TITLE_TOP, right=TITLE_RIGHT, size=TITLE_SIZE)
 
     meta = {
@@ -119,7 +133,7 @@ def generate_coc_pdf(data: dict, output: str) -> str:
     for index, line in enumerate(render.wrap(desc, max_width=PAGE_WIDTH - 2 * DESC_SIDE, size=DESC_SIZE)):
         render.centered(line, top=DESC_TOP + index * DESC_SIZE * 1.4, size=DESC_SIZE)
 
-    render.rtl(f"כמות: {qty} מ״ר | אספקה ב {rolls} גלילים", top=QTY_TOP, right=QTY_RIGHT, size=QTY_SIZE)
+    render.rtl(coc_quantity_line(qty, rolls, show_rolls), top=QTY_TOP, right=QTY_RIGHT, size=QTY_SIZE)
 
     # שני הסעיפים, כל אחד נשבר לרוחב התיבה
     line_top = STATEMENTS_TOP

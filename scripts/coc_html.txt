@@ -116,7 +116,7 @@
 
   <!-- HEADER -->
   <div id="header" class="field">
-    לכבוד: פלסן סאסא בע״מ
+    לכבוד: {{ company }}
   </div>
 
   <!-- TITLE (FIXED) -->
@@ -135,7 +135,7 @@
 
   <!-- QUANTITY -->
   <div id="qty" class="field">
-    כמות: {{ qty }} מ״ר | אספקה ב {{ rolls }} גלילים
+    {{ qty_line }}
   </div>
 
   <!-- 🔥 סעיפים חזרו -->

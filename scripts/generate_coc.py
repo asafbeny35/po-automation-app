@@ -41,6 +41,9 @@ def main():
 
     bg_path = render_bg()
 
+    raw_qty = data.get("qty")
+    qty_text = f"{float(raw_qty):g}" if isinstance(raw_qty, (int, float)) else str(raw_qty or "")
+
     html = tpl.render(
         bg=to_data_uri(bg_path),
         po=data["po"],
@@ -50,6 +53,12 @@ def main():
         desc=data["desc"],
         qty=data["qty"],
         rolls=max(int(data.get("rolls") or 1), 1),
+        company=data.get("company") or "פלסן סאסא בע״מ",
+        qty_line=(
+            f"כמות: {qty_text} מ״ר | אספקה ב {max(int(data.get('rolls') or 1), 1)} גלילים"
+            if data.get("show_rolls", True)
+            else f"כמות: {qty_text} מ״ר"
+        ),
         batch=f"{now.strftime('%m')}{now.strftime('%m')}/{now.year}"
     )
 

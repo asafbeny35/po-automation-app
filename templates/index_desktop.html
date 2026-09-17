@@ -37882,7 +37882,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function isPlasanDeliveryConfirmationRow(row) {
-    return normalizeDeliveryCompanyName(row?.company || "").includes("פלסן סאסא");
+    // שני לקוחות פלסן דורשים COC; רא"ם חי בשני איותים (חשבונית ירוקה / הספר המקומי)
+    const name = normalizeDeliveryCompanyName(row?.company || "");
+    return name.includes("פלסן סאסא") || name.includes("פלסן ראמ") || name.includes("פלסאן ראמ");
   }
 
   function deliveryConfirmationRowKey(row) {
@@ -38012,7 +38014,7 @@ document.addEventListener("DOMContentLoaded", () => {
       deliveryMailBankUpdatePreview.hidden = !includeNewBankDetails;
     }
     if (deliveryMailAttachments) {
-      const isPlasan = String(row?.company || "").replace(/[״"]/g, "").includes("פלסן סאסא");
+      const isPlasan = isPlasanDeliveryConfirmationRow(row);
       if (isInternalPrintOnly) {
         deliveryMailAttachments.innerHTML = [
           `<strong>הקובץ שיצורף:</strong>`,
@@ -42625,7 +42627,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const documentMode = String(options.documentMode || "full").trim();
     const isQuoteFlow = !!options.isQuoteFlow;
     const customerName = String(options.customerName || "").trim();
-    const hasQualityDocs = !isQuoteFlow && documentMode !== "invoice_only" && customerName === "פלסן סאסא בע\"מ";
+    const normalizedQualityName = customerName.replace(/[״"']/g, "");
+    const hasQualityDocs = !isQuoteFlow && documentMode !== "invoice_only" &&
+      (normalizedQualityName.includes("פלסן סאסא") || normalizedQualityName.includes("פלסן ראמ") || normalizedQualityName.includes("פלסאן ראמ"));
 
     if (isQuoteFlow) {
       return [
