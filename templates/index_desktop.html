@@ -40033,35 +40033,19 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!normalizedRows.length) {
       return { ok: false, message: "צריך להגדיר לפחות מדבקה אחת עם כמות תקינה." };
     }
-    if (normalizedRows.some(row => row.manual_quantity)) {
-      // ידני: הכמות תושלם בכתב יד על המדבקה — אין סכומים לאמת
-      return { ok: true, rows: normalizedRows };
-    }
-    const sourceItems = getLabelSplitSourceItems();
-    const totalsByItem = new Map();
-    normalizedRows.forEach(row => {
-      const key = Number(row.item_index || 0);
-      totalsByItem.set(key, Number(totalsByItem.get(key) || 0) + (row.label_count * row.quantity_per_label));
-    });
-    const sourceTotal = sourceItems.reduce((sum, item) => sum + item.quantity, 0);
-    const splitTotal = normalizedRows.reduce((sum, row) => sum + (row.label_count * row.quantity_per_label), 0);
-    if (sourceItems.length > 1) {
-      for (const item of sourceItems) {
-        const splitForItem = Number(totalsByItem.get(item.item_index) || 0);
-        if (Math.abs(splitForItem - item.quantity) > 0.0001) {
-          return {
-            ok: false,
-            message: `החלוקה עבור ${item.description || item.sku || `פריט ${item.item_index + 1}`} לא מסתכמת נכון. הוגדרו ${formatLabelSplitNumber(splitForItem)} יחידות, אבל בשורת המוצר יש ${formatLabelSplitNumber(item.quantity)}.`,
-          };
-        }
+    // אין אימות סכומים מול כמות ההזמנה: לפעמים מספקים יותר מהמוזמן בלי חיוב
+    // נוסף, והחסימה מנעה להתקדם (הוסרה 16.09.2026 לבקשת אסף). אם הסכומים לא
+    // תואמים — מציגים הודעה אינפורמטיבית בלבד, לא חוסמים.
+    let notice = "";
+    if (!normalizedRows.some(row => row.manual_quantity)) {
+      const sourceItems = getLabelSplitSourceItems();
+      const sourceTotal = sourceItems.reduce((sum, item) => sum + item.quantity, 0);
+      const splitTotal = normalizedRows.reduce((sum, row) => sum + (row.label_count * row.quantity_per_label), 0);
+      if (sourceTotal > 0 && Math.abs(splitTotal - sourceTotal) > 0.0001) {
+        notice = `לתשומת לבך: בחלוקה הוגדרו ${formatLabelSplitNumber(splitTotal)} ובהזמנה ${formatLabelSplitNumber(sourceTotal)} — נשמר כפי שהגדרת.`;
       }
-    } else if (sourceTotal > 0 && Math.abs(splitTotal - sourceTotal) > 0.0001) {
-      return {
-        ok: false,
-        message: `החלוקה לא מסתכמת נכון. כרגע הוגדרו ${formatLabelSplitNumber(splitTotal)} יחידות, אבל בהזמנה יש ${formatLabelSplitNumber(sourceTotal)}.`,
-      };
     }
-    return { ok: true, rows: normalizedRows };
+    return { ok: true, rows: normalizedRows, notice };
   }
 
   function updateLabelSplitButtonState(button, rows = window.currentData?.label_split_rows) {
@@ -40115,6 +40099,9 @@ document.addEventListener("DOMContentLoaded", () => {
     syncDraftStorage();
     closeLabelSplitModal();
     showToast("success", "חלוקת המדבקות נשמרה", "מספר המדבקות וכמות הסחורה לכל מדבקה יעברו עכשיו לתהליך היצירה.");
+    if (validation.notice) {
+      showToast("info", "הסכומים לא תואמים להזמנה", validation.notice, 8000);
+    }
   });
 
   function clearUiState() {

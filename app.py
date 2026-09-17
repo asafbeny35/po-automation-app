@@ -30067,36 +30067,8 @@ async def finalize(request: Request):
             qty_value = int(item.quantity) if float(item.quantity).is_integer() else item.quantity
 
         normalized_label_split_rows = _normalize_label_split_rows(data.get("label_split_rows") or [])
-
-        has_manual_quantity_rows = any(row.get("manual_quantity") for row in normalized_label_split_rows)
-        if normalized_label_split_rows and has_manual_quantity_rows:
-            # במצב ידני אין מספרים לסכם — הכמות תושלם בכתב יד על המדבקה
-            pass
-        elif normalized_label_split_rows:
-            try:
-                if len(merchandise_items) > 1:
-                    for merchandise_index, merchandise_item in enumerate(merchandise_items):
-                        split_for_item = sum(
-                            row["label_count"] * row["quantity_per_label"]
-                            for row in normalized_label_split_rows
-                            if int(row.get("item_index") or 0) == merchandise_index
-                        )
-                        item_quantity = float(merchandise_item.quantity or 0)
-                        if item_quantity > 0 and abs(split_for_item - item_quantity) > 0.0001:
-                            raise RuntimeError(
-                                f"חלוקת המדבקות לא תואמת עבור {merchandise_item.description}. הוגדרו {split_for_item} יחידות, אבל בהזמנה יש {item_quantity}."
-                            )
-                else:
-                    total_split_quantity = sum(
-                        row["label_count"] * row["quantity_per_label"] for row in normalized_label_split_rows
-                    )
-                    original_quantity = float(total_merchandise_quantity or (item.quantity if item and item.quantity is not None else 0))
-                    if original_quantity > 0 and abs(total_split_quantity - original_quantity) > 0.0001:
-                        raise RuntimeError(
-                            f"חלוקת המדבקות לא תואמת לכמות הכוללת. הוגדרו {total_split_quantity} יחידות, אבל בהזמנה יש {original_quantity}."
-                        )
-            except Exception:
-                raise
+        # אין אימות סכומים מול כמות ההזמנה: לפעמים מספקים יותר מהמוזמן בלי חיוב
+        # נוסף, והחסימה מנעה מאסף להתקדם (הוסרה 16.09.2026 לבקשתו).
 
         # Label content should come from the parsed PO item, not from a non-existent
         # PurchaseOrderData attribute.
