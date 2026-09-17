@@ -132,3 +132,10 @@ def test_totals_are_derived_when_the_summary_page_is_missing():
     assert header["subtotal"] == 46080.0
     assert header["vat"] == 8294.4
     assert header["total"] == 54374.4
+
+
+def test_items_default_to_square_meters(parsed):
+    """אין עמודת יחידה בטבלת חשבשבת — הסחורה של רא"ם היא יריעות במ"ר.
+    ההזמנה הראשונה (56590) יצאה עם מדבקות "יח׳" בגלל ברירת המחדל הריקה."""
+    _customer, items, _header = parsed
+    assert all(item.unit == 'מ"ר' for item in items)

@@ -45920,7 +45920,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const checkbox = event.target.closest("[data-finance-bank-type-option]");
     if (!checkbox) return;
     const value = String(checkbox.dataset.financeBankTypeOption || "").trim();
-    if (!value) return;
+    if (!value && key !== "item_unit") return;
     const next = new Set(financeBankMovementsSelectedTypes || []);
     if (checkbox.checked) {
       next.add(value);
@@ -47459,6 +47459,10 @@ document.addEventListener("DOMContentLoaded", () => {
       targetItem.sku = String(rawValue || "").trim();
       return;
     }
+    if (key === "item_unit") {
+      targetItem.unit = String(rawValue || "").trim();
+      return;
+    }
     if (key === "item_quantity") {
       const numeric = parseFloat(String(rawValue || "").replace(/[^\d.]/g, ""));
       if (!Number.isNaN(numeric)) {
@@ -47565,6 +47569,7 @@ document.addEventListener("DOMContentLoaded", () => {
     total: "סה״כ",
     item_description: "תיאור מוצר",
     item_quantity: "כמות",
+    item_unit: "יח׳ — סוג היחידה",
     item_unit_price: "מחיר יחידה",
     item_line_total: "סכום שורה",
     item_sku: "מק״ט",
@@ -47577,6 +47582,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const fields = document.getElementById("fields");
   fields.innerHTML = "";
   window.fieldRegistry = {};
+
+  // שדה היחידה חייב להופיע תמיד (מ״ר / מטר רץ / יח׳) — גם כשהפרסר לא זיהה
+  // יחידה. בלי זה הזמנת רא"ם יצאה עם מדבקות "יח׳" על סחורה במ"ר.
+  if (!String(data.item_unit || "").trim()) {
+    const firstUnit = Array.isArray(data.items) ? String(data.items[0]?.unit || "").trim() : "";
+    data.item_unit = firstUnit;
+  }
 
   Object.entries(data).forEach(([key, value]) => {
     if (key === "transport_label_path" || key === "transport_label_base64" || key === "transport_label_name" || key === "send_to_dad" || key === "label_split_rows" || key === "label_per_item" || key === "item_generate_label" || key === "manual_entry" || key === "source_file" || key === "source_file_path" || key === "mode" || key === "items" || key === "ordered_items" || key === "partial_delivery" || key === "partial_root_history_id" || key === "quote_history_id" || key === "quote_document_id" || key === "order_drive_folder_id" || key === "order_drive_folder_url" || key === "secondary_contact_name" || key === "secondary_contact_phone") return;
@@ -47611,6 +47623,9 @@ document.addEventListener("DOMContentLoaded", () => {
     input.className = "value-input";
     input.value = value;
     input.disabled = true;
+    if (key === "item_unit") {
+      input.placeholder = 'מ״ר / מטר רץ / יח׳';
+    }
     if (["po_number", "customer_id", "contact_phone", "customer_phone"].includes(key)) {
       input.setAttribute("dir", "ltr");
       input.style.textAlign = "left";

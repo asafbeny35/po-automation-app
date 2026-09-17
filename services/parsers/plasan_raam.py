@@ -89,6 +89,10 @@ def _extract_items(lines: list[str]) -> list[POItem]:
         item = POItem(
             sku=match.group(7),
             description=description,
+            # לטבלת חשבשבת של רא"ם אין עמודת יחידה; הסחורה שלהם היא יריעות
+            # במ"ר (גליל 1.5×64 = 96 מ"ר לשורה בהזמנה 56590), וההזמנה הראשונה
+            # יצאה עם מדבקות "יח׳" בגלל ברירת המחדל. אפשר לשנות במסך הבדיקה.
+            unit='מ"ר',
             quantity=_amount(match.group(5)),
             unit_price=_amount(match.group(4)),
             line_total=_amount(match.group(2)),
