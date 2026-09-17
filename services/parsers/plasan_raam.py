@@ -18,10 +18,10 @@ from services.models import POItem
 from services.parsers.common import normalize_date, normalize_ws
 
 
-# השם כפי שהוא רשום בספר הלקוחות (ח.פ 515057412) — לא כמו שמופיע ב-PDF.
-# הלקח מאלמוג: שם שלא קיים במאגר שורד רק בזכות התאמת ח.פ, והמשתמש רואה
-# שם שגוי במסך האישור.
-CUSTOMER_NAME = "פלסאן ראמ"
+# השם המדויק כפי שהלקוח רשום בחשבונית ירוקה (אומת מול ה-API לפי הח.פ,
+# guid 4c4b7b0b). לא כמו שמופיע ב-PDF ("פלסן רא"ם...רכב אזרחי ממוגן") ולא
+# כמו בעותק המקומי של ספר הלקוחות ("פלסאן ראמ") — ה-API הוא מקור האמת.
+CUSTOMER_NAME = "פלסן רא״מ"
 CUSTOMER_TAX_ID = "515057412"
 
 _HEBREW_CHAR = re.compile(r"[֐-׿]")

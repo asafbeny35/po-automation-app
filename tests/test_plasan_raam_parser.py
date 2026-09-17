@@ -61,9 +61,10 @@ def test_a_sasa_order_is_not_captured():
 
 # ── כותרת ────────────────────────────────────────────────────────────────────
 
-def test_the_customer_matches_the_book(parsed):
+def test_the_customer_matches_greeninvoice(parsed):
+    """השם המדויק מחשבונית ירוקה — אומת מול ה-API לפי ח.פ 515057412."""
     customer_name, _items, header = parsed
-    assert customer_name == "פלסאן ראמ"
+    assert customer_name == "פלסן רא״מ"
     assert header["customer_id"] == "515057412"
 
 
