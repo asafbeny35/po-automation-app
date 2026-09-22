@@ -13,6 +13,7 @@ from services.parsers.damari import parse as parse_damari
 from services.parsers.generic import parse_generic, parse_prashkovsky
 from services.parsers.hagivaa import parse as parse_hagivaa
 from services.parsers.plasan_raam import detect as detect_plasan_raam, parse as parse_plasan_raam
+from services.parsers.fixman import detect as detect_fixman, parse as parse_fixman
 from services.parsers.haikon import parse as parse_haikon
 from services.parsers.kedar import parse as parse_kedar
 from services.parsers.lati import parse as parse_lati
@@ -117,6 +118,13 @@ def parse_purchase_order(pdf_path: str | Path):
     # בעוד שסאסא מזוהה לפי האנגלית של ההזמנות שלה — אין חפיפה, אבל שתיהן "פלסן".
     if detect_plasan_raam(raw_text):
         parsed = _build_purchase_order(parse_plasan_raam(raw_text), raw_text, "plasan_raam")
+        if parsed:
+            return parsed
+
+    # פיקסמן בנייה: זיהוי לפי ח.פ/דומיין — חייב לרוץ לפני הגנרי כי הגליף
+    # השבור (נ' בתור cid) מפיל כל עוגן עברי רגיל
+    if detect_fixman(raw_text):
+        parsed = _build_purchase_order(parse_fixman(raw_text), raw_text, "fixman")
         if parsed:
             return parsed
 
