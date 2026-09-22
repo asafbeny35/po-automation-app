@@ -18476,6 +18476,73 @@ def _quote_file_relative_to_output(path: Path | str | None) -> str:
         return ""
 
 
+def _quote_history_row_drive_file_id(row: dict) -> str:
+    """מזהה הדרייב של קובץ ההצעה בשורת היסטוריה: עמודה ייעודית אם קיימת,
+    ואחרת קישור ה"/file/d/" מתוך document_links_json (כך נשמר בפועל)."""
+    direct = str((row or {}).get("quote_drive_file_id") or "").strip()
+    if direct:
+        return direct
+    try:
+        links = json.loads(str((row or {}).get("document_links_json") or "") or "[]")
+    except Exception:
+        links = []
+    for link in links if isinstance(links, list) else []:
+        url = str((link or {}).get("url") or "")
+        if "/file/d/" in url:
+            file_id = _extract_drive_file_id_from_url(url)
+            if file_id:
+                return file_id
+    return ""
+
+
+def _resolve_quote_pdf_for_send(
+    quote_file: str = "",
+    quote_drive_file_id: str = "",
+    history_id: str = "",
+    quote_number: str = "",
+) -> Path | None:
+    """מאתר את קובץ ההצעה לשליחה (וואטסאפ/מייל). בפרודקשן הקובץ המקומי חי רק
+    בתוך הבקשה שיצרה אותו, ולכן אחרי הקובץ המקומי מנסים את עותק הדרייב —
+    לפי מזהה מפורש, ואם אין — דרך שורת ההיסטוריה."""
+    relative = str(quote_file or "").strip().lstrip("/")
+    if relative:
+        candidate = (OUTPUT_DIR / relative).resolve()
+        if candidate.exists() and candidate.is_file():
+            return candidate
+
+    drive_id = str(quote_drive_file_id or "").strip()
+    display_number = str(quote_number or "").strip()
+    if not drive_id and (history_id or display_number):
+        try:
+            rows = load_quote_history_rows()
+        except Exception as exc:
+            log_handled_error("quote send history lookup failed", exc)
+            rows = []
+        wanted_history = str(history_id or "").strip()
+        row = None
+        for item in rows:
+            if wanted_history and str(item.get("history_id") or "").strip() == wanted_history:
+                row = item
+                break
+            if not wanted_history and display_number and str(item.get("quote_number") or "").strip() == display_number:
+                row = item
+                break
+        if row is not None:
+            drive_id = _quote_history_row_drive_file_id(row)
+            if not display_number:
+                display_number = str(row.get("quote_number") or "").strip()
+    if not drive_id:
+        return None
+
+    target = OUTPUT_DIR / "quote-send-cache" / f"הצעת מחיר {display_number or drive_id}.pdf"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        return Path(download_drive_file(drive_id, target))
+    except Exception as exc:
+        log_handled_error("quote drive download for send failed", exc)
+        return None
+
+
 def _normalize_label_split_rows(raw_rows) -> list[dict]:
     """שורות חלוקת המדבקות מהלקוח. שורה "ידנית" (manual_quantity) תקפה גם בלי
     כמות — הכמות תיכתב בכתב יד על קו תחתון שמודפס במקום המספר."""
@@ -22208,6 +22275,7 @@ async def quote_send_email(
     plain_body: str = Form(""),
     html_body: str = Form(""),
     quote_file: str = Form(""),
+    quote_drive_file_id: str = Form(""),
     history_id: str = Form(""),
     test_send: str = Form("false"),
     attachments: list[UploadFile] | None = File(None),
@@ -22225,11 +22293,17 @@ async def quote_send_email(
     upload_dir = OUTPUT_DIR / "quote-mails"
     try:
         quote_relative = str(quote_file or "").strip().lstrip("/")
-        if quote_relative:
-            quote_path = (OUTPUT_DIR / quote_relative).resolve()
-            if not quote_path.exists() or not quote_path.is_file():
-                return JSONResponse({"error": "קובץ הצעת המחיר לא נמצא."}, status_code=404)
+        # בפרודקשן quote_file ריק בכוונה (הקובץ המקומי מת עם הבקשה שיצרה
+        # אותו) — נופלים לעותק הדרייב, אחרת המייל היה יוצא בלי ההצעה עצמה
+        quote_path = _resolve_quote_pdf_for_send(
+            quote_file=quote_relative,
+            quote_drive_file_id=quote_drive_file_id,
+            history_id=history_id,
+        )
+        if quote_path is not None:
             stored_files.append(quote_path)
+        elif quote_relative or str(quote_drive_file_id or "").strip():
+            return JSONResponse({"error": "קובץ הצעת המחיר לא נמצא — לא מקומית ולא ב-Drive."}, status_code=404)
 
         for file in attachments or []:
             stored_path, _ = await _store_uploaded_attachment(file, upload_dir, fallback_name="quote-mail-attachment.pdf")
@@ -22281,11 +22355,15 @@ async def quote_send_whatsapp(request: Request):
     quote_file = str(body.get("quote_file") or "").strip().lstrip("/")
     if not phone:
         return JSONResponse({"error": "חסר מספר טלפון לשליחה."}, status_code=400)
-    if not quote_file:
-        return JSONResponse({"error": "חסר קובץ הצעת מחיר לשליחה."}, status_code=400)
-    quote_path = (OUTPUT_DIR / quote_file).resolve()
-    if not quote_path.exists() or not quote_path.is_file():
-        return JSONResponse({"error": "קובץ הצעת המחיר לא נמצא."}, status_code=404)
+    # בפרודקשן אין קובץ מקומי (quote_file ריק בכוונה) — נופלים לעותק הדרייב
+    quote_path = _resolve_quote_pdf_for_send(
+        quote_file=quote_file,
+        quote_drive_file_id=str(body.get("quote_drive_file_id") or ""),
+        history_id=str(body.get("history_id") or ""),
+        quote_number=str(body.get("quote_document_number") or ""),
+    )
+    if quote_path is None:
+        return JSONResponse({"error": "קובץ הצעת המחיר לא נמצא — לא מקומית ולא ב-Drive."}, status_code=404)
     try:
         await send_files_via_whatsapp(
             phone=phone,

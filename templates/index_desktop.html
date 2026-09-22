@@ -26261,6 +26261,7 @@ document.addEventListener("DOMContentLoaded", () => {
       formData.append("plain_body", plainBody);
       formData.append("html_body", htmlBody);
       formData.append("quote_file", String(currentQuoteResult.quote_file || ""));
+      formData.append("quote_drive_file_id", String(currentQuoteResult.quote_drive_file_id || ""));
       formData.append("history_id", String(currentQuoteResult.history_id || ""));
       formData.append("test_send", String(!!testSend));
       Array.from(quoteMailAttachments.files || []).forEach(file => formData.append("attachments", file));
@@ -26316,6 +26317,9 @@ document.addEventListener("DOMContentLoaded", () => {
         phone,
         message,
         quote_file: String(currentQuoteResult.quote_file || ""),
+        quote_drive_file_id: String(currentQuoteResult.quote_drive_file_id || ""),
+        history_id: String(currentQuoteResult.history_id || ""),
+        quote_document_number: String(currentQuoteResult.quote_document_number || ""),
       }),
     });
     const payload = await response.json();
@@ -41299,6 +41303,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return decodeURIComponent(url.replace(/^\/files\//, ""));
   }
 
+  function getQuoteHistoryDriveFileId(row) {
+    const direct = String(row?.quote_drive_file_id || "").trim();
+    if (direct) return direct;
+    const links = Array.isArray(row?.document_links) ? row.document_links : [];
+    for (const link of links) {
+      const match = String(link?.url || "").match(/\/file\/d\/([A-Za-z0-9_-]{20,})/);
+      if (match) return match[1];
+    }
+    return "";
+  }
+
   function quoteHistoryRowToQuoteResult(row) {
     return {
       history_id: String(row?.history_id || "").trim(),
@@ -41310,6 +41325,7 @@ document.addEventListener("DOMContentLoaded", () => {
       item_summary: String(row?.item_description || "").trim() || "הפריטים שבהצעה",
       quote_document_number: String(row?.quote_number || "").trim(),
       quote_file: getQuoteHistoryLocalFile(row),
+      quote_drive_file_id: getQuoteHistoryDriveFileId(row),
       quote_drive_folder_url: String(row?.quote_drive_folder_url || "").trim(),
     };
   }
@@ -41458,8 +41474,8 @@ document.addEventListener("DOMContentLoaded", () => {
           showToast("error", "טעינת פרטי מייל נכשלה", error.message || "לא הצלחתי להביא את כתובת המייל של הלקוח.");
         }
         const result = quoteHistoryRowToQuoteResult(row);
-        if (!result.quote_file) {
-          showToast("info", "חסר קובץ להצעת המחיר", "לא נמצא קובץ מקומי להצעת המחיר הזו, ולכן אי אפשר לשלוח אותה מתוך ההיסטוריה.");
+        if (!result.quote_file && !result.quote_drive_file_id && !result.history_id) {
+          showToast("info", "חסר קובץ להצעת המחיר", "לא נמצא קובץ להצעת המחיר הזו — לא מקומית ולא ב-Drive — ולכן אי אפשר לשלוח אותה מתוך ההיסטוריה.");
           return;
         }
         openQuoteMailModal(result);
@@ -41472,8 +41488,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const row = quoteHistoryRows.find(item => String(item.history_id || "") === historyId);
         if (!row) return;
         const result = quoteHistoryRowToQuoteResult(row);
-        if (!result.quote_file) {
-          showToast("info", "חסר קובץ להצעת המחיר", "לא נמצא קובץ מקומי להצעת המחיר הזו, ולכן אי אפשר לשלוח אותה מתוך ההיסטוריה.");
+        if (!result.quote_file && !result.quote_drive_file_id && !result.history_id) {
+          showToast("info", "חסר קובץ להצעת המחיר", "לא נמצא קובץ להצעת המחיר הזו — לא מקומית ולא ב-Drive — ולכן אי אפשר לשלוח אותה מתוך ההיסטוריה.");
           return;
         }
         openQuoteWhatsappModal(result);
