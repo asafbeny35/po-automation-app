@@ -683,6 +683,11 @@ body {
   color: #4b5563;
 }
 
+.history-chip.morning {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
 .history-chip.partial-delivery {
   background: #ecfdf5;
   color: #0f766e;
@@ -41403,6 +41408,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     host.innerHTML = safeRows.map(row => {
       const mode = String(row.mode || "").toUpperCase() === "SB" ? "SB" : "PROD";
+      const isMorning = !!row.morning_source;
       const inputSource = String(row.input_source || "").trim() || "—";
       const quoteDate = String(row.quote_date || "").trim() || "—";
       const folderId = String(row.quote_drive_folder_id || "").trim();
@@ -41425,7 +41431,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const url = String(link?.url || "").trim();
         return !!url && !seenUrls.has(url);
       });
-      if (primaryQuoteLink) {
+      if (primaryQuoteLink && isMorning) {
+        // הצעת מורנינג נפתחת ישירות מה-URL שכבר בידינו — בלי סבב שרת שתלוי
+        // במטמון זמני (ב-Vercel כל בקשה עלולה לנחות על מופע אחר)
+        renderedLinks.push(`<a class="history-link-chip" href="${escapeHtml(String(primaryQuoteLink.url || ""))}" target="_blank" rel="noopener noreferrer">הצעת המחיר במורנינג</a>`);
+      } else if (primaryQuoteLink) {
         renderedLinks.push(`<button type="button" class="history-link-chip buttonish" data-quote-history-open="${escapeHtml(row.history_id || "")}">הצעת המחיר</button>`);
       }
       return `
@@ -41435,6 +41445,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="history-item-title">
                 <strong>${escapeHtml(quoteHistoryRowLabel(row))}</strong>
                 <span class="history-chip ${mode === "SB" ? "sb" : "prod"}">${escapeHtml(mode)}</span>
+                ${isMorning ? `<span class="history-chip morning">מורנינג</span>` : ""}
                 <span class="history-chip ${row.order_created ? "order-created" : "order-not-created"}">${escapeHtml(quoteHistoryOrderStatusLabel(row))}</span>
               </div>
               <div class="history-item-meta">
@@ -41443,14 +41454,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>תאריך הצעה: ${escapeHtml(quoteDate)}</span>
                 <span>הזמנת רכש: ${escapeHtml(String(row.po_number || "").trim() || "—")}</span>
               </div>
-              <div class="history-item-actions">
+              ${isMorning ? "" : `<div class="history-item-actions">
                 <button type="button" class="ghost-btn history-action-btn create-order" data-quote-history-create-order="${escapeHtml(row.history_id || "")}">צור הזמנה</button>
                 <button type="button" class="assistant-submit history-action-btn" data-quote-history-mail="${escapeHtml(row.history_id || "")}">${escapeHtml(quoteHistoryMailButtonLabel(row))}</button>
                 <button type="button" class="secondary-btn history-action-btn" data-quote-history-whatsapp="${escapeHtml(row.history_id || "")}">שלח בווטסאפ</button>
-              </div>
-              <div class="history-item-links">${renderedLinks.join("") || `<span class="history-link-chip">אין עדיין קישורי Drive</span>`}</div>
+              </div>`}
+              <div class="history-item-links">${renderedLinks.join("") || `<span class="history-link-chip">${isMorning ? "אין קישור זמין להצעה במורנינג" : "אין עדיין קישורי Drive"}</span>`}</div>
             </div>
-            <button type="button" class="history-delete-btn" data-quote-history-delete="${escapeHtml(row.history_id || "")}" aria-label="מחיקת שורת היסטוריית הצעת מחיר">
+            ${isMorning ? "" : `<button type="button" class="history-delete-btn" data-quote-history-delete="${escapeHtml(row.history_id || "")}" aria-label="מחיקת שורת היסטוריית הצעת מחיר">
               <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M3 6h18"></path>
                 <path d="M8 6V4.75C8 3.78 8.78 3 9.75 3h4.5C15.22 3 16 3.78 16 4.75V6"></path>
@@ -41458,7 +41469,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <path d="M10 10.5v6"></path>
                 <path d="M14 10.5v6"></path>
               </svg>
-            </button>
+            </button>`}
           </div>
         </article>
       `;

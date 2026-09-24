@@ -20681,7 +20681,7 @@ async def installer_view_page(token: str):
 async def quote_history_state():
     try:
         rows = get_cached_quote_history_rows() or load_quote_history_rows(force_refresh=False)
-        return JSONResponse({"status": "ok", **_build_quote_history_payload(rows)})
+        return JSONResponse({"status": "ok", **_build_quote_history_payload(_combined_quote_history_rows(rows))})
     except Exception as exc:
         log_handled_error("quote_history_state failed", exc)
         return JSONResponse({"error": f"לא הצלחתי לטעון את היסטוריית ההצעות: {exc}"}, status_code=500)
@@ -20689,9 +20689,21 @@ async def quote_history_state():
 
 @app.post("/quote-history-refresh")
 async def quote_history_refresh():
+    global _MORNING_QUOTE_HISTORY_CACHE
     try:
         rows = load_quote_history_rows(force_refresh=True)
-        return JSONResponse({"status": "ok", **_build_quote_history_payload(rows)})
+        # ייבוא ההצעות שהופקו ישירות במורנינג — כישלון כאן לא מפיל את הטעינה
+        morning_warning = ""
+        try:
+            our_numbers = {str(row.get("quote_number") or "").strip() for row in rows}
+            _MORNING_QUOTE_HISTORY_CACHE = await _fetch_morning_quote_history_rows(our_numbers)
+        except Exception as morning_exc:
+            log_handled_error("morning quote history import failed", morning_exc)
+            morning_warning = "היסטוריית ההצעות שלנו נטענה, אך ייבוא ההצעות ממורנינג לא הצליח כרגע."
+        payload = _build_quote_history_payload(_combined_quote_history_rows(rows))
+        if morning_warning:
+            payload["warning"] = morning_warning
+        return JSONResponse({"status": "ok", **payload})
     except Exception as exc:
         log_handled_error("quote_history_refresh failed", exc)
         cached_rows = get_cached_quote_history_rows()
@@ -20699,7 +20711,7 @@ async def quote_history_refresh():
             return JSONResponse(
                 {
                     "status": "ok",
-                    **_build_quote_history_payload(cached_rows),
+                    **_build_quote_history_payload(_combined_quote_history_rows(cached_rows)),
                     "warning": "הוצגו נתוני היסטוריית ההצעות האחרונים שנשמרו, כי טעינה מלאה מהשיט לא הצליחה כרגע.",
                 }
             )
@@ -20839,6 +20851,9 @@ async def quote_history_quote_resolve(request: Request):
         row = next((item for item in rows if str(item.get("history_id") or "").strip() == history_id), None)
         if row is None:
             row = next((item for item in get_cached_quote_history_rows() if str(item.get("history_id") or "").strip() == history_id), None)
+        if row is None:
+            # הצעה שהופקה ישירות במורנינג — הקישור נמצא במטמון הנפרד, לא בשיט
+            row = next((item for item in _MORNING_QUOTE_HISTORY_CACHE if str(item.get("history_id") or "").strip() == history_id), None)
         if row is None:
             return JSONResponse({"error": "לא נמצאה שורת היסטוריית הצעת מחיר מתאימה."}, status_code=404)
         target_link = _resolve_quote_history_primary_link(row)
@@ -27079,6 +27094,83 @@ def _quote_history_has_created_order(
     return False
 
 
+# הצעות שהופקו ישירות במורנינג (לא דרך המערכת שלנו) — נטענות בלחיצה על "טען
+# היסטוריה" וממוזגות לתצוגה בלבד. שומרים אותן במטמון נפרד כדי שלא ייכתבו בטעות
+# חזרה לשיט של ההיסטוריה שלנו (שליחת מייל/וואטסאפ קוראת ל-save_quote_history_rows).
+_MORNING_QUOTE_HISTORY_CACHE: list[dict] = []
+_MORNING_QUOTE_IMPORT_MONTHS = 24
+
+
+def _iso_date_to_ddmmyyyy(value: str) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    try:
+        return datetime.strptime(raw[:10], "%Y-%m-%d").strftime("%d/%m/%Y")
+    except Exception:
+        return raw
+
+
+async def _fetch_morning_quote_history_rows(existing_quote_numbers: set[str]) -> list[dict]:
+    """מושך הצעות מחיר שהופקו ישירות במורנינג וממפה אותן לשורות היסטוריה
+    לתצוגה. מדלג על הצעות שכבר קיימות אצלנו (לפי מספר ההצעה), כי אלו נוצרו
+    דרך המערכת ויש להן שורה עשירה יותר (פריטים, קישורי Drive, סטטוס מייל)."""
+    cfg = get_mode_config("prod")
+    client = GreenInvoiceClient(
+        base_url=cfg["base_url"],
+        api_key=cfg["api_key"],
+        api_secret=cfg["api_secret"],
+    )
+    date_to = date.today().isoformat()
+    date_from = _month_start_months_ago(_MORNING_QUOTE_IMPORT_MONTHS).isoformat()
+    documents = await client.get_quote_documents(date_from=date_from, date_to=date_to, page_size=100, max_pages=48)
+
+    rows: list[dict] = []
+    seen_numbers: set[str] = set()
+    amount_keys = ("amount", "sum", "total", "totalAmount", "gross", "grossAmount", "grandTotal")
+    for doc in documents:
+        number = str(doc.get("number") or "").strip()
+        if not number or number in existing_quote_numbers or number in seen_numbers:
+            continue
+        seen_numbers.add(number)
+        iso_date = str(doc.get("date") or "").strip()
+        display_date = _iso_date_to_ddmmyyyy(iso_date)
+        amount = client._extract_number(doc.get("raw") or {}, amount_keys)
+        subtotal = round(amount / 1.18, 2) if amount else 0.0
+        vat = round(amount - subtotal, 2) if amount else 0.0
+        source_url = str(doc.get("source_url") or "").strip()
+        document_links = [{"name": "הצעת מחיר במורנינג", "url": source_url}] if source_url else []
+        rows.append(
+            {
+                "history_id": f"morning::{doc.get('id') or number}",
+                "created_at": f"{iso_date}T12:00:00" if iso_date else "",
+                "input_source": "מורנינג",
+                "morning_source": True,
+                "mode": "PROD",
+                "customer_name": str(doc.get("customer_name") or "").strip(),
+                "customer_id": str(doc.get("customer_id") or "").strip(),
+                "po_number": "",
+                "quote_number": number,
+                "quote_document_id": str(doc.get("id") or "").strip(),
+                "quote_date": display_date,
+                "item_description": str(doc.get("item_name") or "").strip(),
+                "subtotal": f"{subtotal:.2f}" if subtotal else "",
+                "vat": f"{vat:.2f}" if vat else "",
+                "total": f"{amount:.2f}" if amount else "",
+                "document_links_json": json.dumps(document_links, ensure_ascii=False),
+                "updated_at": datetime.now().isoformat(timespec="seconds"),
+            }
+        )
+    return rows
+
+
+def _combined_quote_history_rows(sheet_rows: list[dict]) -> list[dict]:
+    """שורות ההיסטוריה שלנו + שורות המורנינג מהמטמון (בלי כפילויות מספר הצעה)."""
+    our_numbers = {str(row.get("quote_number") or "").strip() for row in (sheet_rows or [])}
+    extra = [row for row in _MORNING_QUOTE_HISTORY_CACHE if str(row.get("quote_number") or "").strip() not in our_numbers]
+    return list(sheet_rows or []) + extra
+
+
 def _build_quote_history_payload(rows: list[dict] | None = None) -> dict:
     rows = rows if rows is not None else get_cached_quote_history_rows()
     created_quote_keys, created_po_keys = _quote_history_created_order_keys()
@@ -27122,6 +27214,7 @@ def _build_quote_history_payload(rows: list[dict] | None = None) -> dict:
                 "document_links": _normalize_order_history_links(row.get("document_links_json")),
                 "quote_mail_status": str(row.get("quote_mail_status") or "").strip().lower(),
                 "quote_mail_sent_at": str(row.get("quote_mail_sent_at") or "").strip(),
+                "morning_source": bool(row.get("morning_source")),
                 "order_created": order_created,
                 "order_created_label": "בוצעה הזמנה" if order_created else "לא בוצעה הזמנה",
                 "updated_at": str(row.get("updated_at") or "").strip(),
