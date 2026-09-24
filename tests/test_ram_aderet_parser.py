@@ -74,6 +74,19 @@ def test_the_invoice_email_is_preferred_over_office(parsed):
     assert header["customer_email"] == "invoices@ram-aderet.co.il"
 
 
+def test_the_contact_is_read_from_the_order_not_from_greeninvoice(parsed):
+    """איש הקשר מופיע כ"טלפון (שם)" — /054-7300990 (הרצל). קודם הופיע חמוטל,
+    ששלף מכרטיס הלקוח ב-GreenInvoice כי הפרסר החזיר איש קשר ריק."""
+    _c, _i, header = parsed
+    assert header["contact_name"] == "הרצל"
+    assert header["contact_phone"] == "054-7300990"
+
+
+def test_our_own_phone_is_never_taken_as_the_contact(parsed):
+    _c, _i, header = parsed
+    assert header["contact_phone"].replace("-", "") != "0547720142"
+
+
 # ── מספרים דבוקים לעברית לא מתהפכים ──────────────────────────────────────────
 
 def test_project_keeps_its_plot_number(parsed):

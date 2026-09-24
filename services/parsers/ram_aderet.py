@@ -168,6 +168,14 @@ def parse(text: str):
         header["delivery_address"] = _reverse_hebrew_tokens(address_visual)
         break
 
+    # איש הקשר משתנה מהזמנה להזמנה ומופיע כ"טלפון (שם)" — למשל
+    # "/054-7300990 (לצרה)" ⇐ הרצל, 054-7300990. חמוטל שהופיע קודם *לא* היה
+    # במסמך אלא נשלף מכרטיס הלקוח ב-GreenInvoice כשהפרסר החזיר איש קשר ריק.
+    m = re.search(r"(0\d{1,2}-?\d{6,7})\s*\(([^)]+)\)", full_text)
+    if m and m.group(1).replace("-", "") != OUR_PHONE_DIGITS:
+        header["contact_phone"] = m.group(1)
+        header["contact_name"] = _reverse_hebrew_tokens(m.group(2))
+
     item = _extract_item(lines)
     items = [item] if item else [POItem(description="פריט לא זוהה", quantity=1, unit_price=0, line_total=0, sku="", unit="יח'")]
 
