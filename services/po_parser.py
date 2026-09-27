@@ -14,6 +14,7 @@ from services.parsers.generic import parse_generic, parse_prashkovsky
 from services.parsers.hagivaa import parse as parse_hagivaa
 from services.parsers.plasan_raam import detect as detect_plasan_raam, parse as parse_plasan_raam
 from services.parsers.fixman import detect as detect_fixman, parse as parse_fixman
+from services.parsers.kapaim import detect as detect_kapaim, parse as parse_kapaim
 from services.parsers.haikon import parse as parse_haikon
 from services.parsers.kedar import parse as parse_kedar
 from services.parsers.lati import parse as parse_lati
@@ -125,6 +126,13 @@ def parse_purchase_order(pdf_path: str | Path):
     # השבור (נ' בתור cid) מפיל כל עוגן עברי רגיל
     if detect_fixman(raw_text):
         parsed = _build_purchase_order(parse_fixman(raw_text), raw_text, "fixman")
+        if parsed:
+            return parsed
+
+    # כפיים בנייה (פריהד סגל): אותו פורטל של רם אדרת אבל ע.מ/דומיין משלה —
+    # נבדק על הטקסט הגולמי לפני הניתוב הכללי
+    if detect_kapaim(raw_text):
+        parsed = _build_purchase_order(parse_kapaim(raw_text), raw_text, "kapaim")
         if parsed:
             return parsed
 
