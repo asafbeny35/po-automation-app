@@ -88,9 +88,12 @@ def test_the_finance_email_is_captured(parsed):
     assert header["customer_email"] == "finance@kpym.co.il"
 
 
-def test_the_office_phone_is_captured(parsed):
+def test_the_office_phone_is_deliberately_dropped(parsed):
+    """הטלפון הרלוונטי להזמנה הוא של דוד באתר (על איש הקשר); טלפון המשרד
+    03-681-0497 לא ממולא — וגם אסור להעתיק את טלפון האתר ל-customer_phone,
+    כי הסניטציה הגלובלית מוחקת איש קשר שהטלפון שלו זהה לטלפון הלקוח."""
     _c, _i, header = parsed
-    assert header["customer_phone"] == "03-681-0497"
+    assert header["customer_phone"] == ""
 
 
 def test_project_and_delivery_address(parsed):

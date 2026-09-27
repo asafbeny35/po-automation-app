@@ -128,10 +128,10 @@ def parse(text: str):
     if m:
         header["total"] = _amount(m.group(1))
 
-    # טלפון המשרד של הלקוח (בכותרת העליונה, לפני בלוק הכתובת שלנו): 03-681-0497
-    m = re.search(r"(0\d{1,2}(?:-\d{3,4}){1,3})\s*:\s*ןופלט", "\n".join(lines[:7]))
-    if m:
-        header["customer_phone"] = m.group(1)
+    # בכוונה לא ממלאים את טלפון המשרד (03-681-0497): הטלפון שרלוונטי להזמנה
+    # הוא של האיש באתר שמקבל את המשלוח, והוא נוסע על איש הקשר. אסור גם להעתיק
+    # אותו ל-customer_phone — הסניטציה הגלובלית (to_purchase_order) מוחקת
+    # איש קשר שהטלפון שלו זהה לטלפון הלקוח.
 
     emails = re.findall(r"[\w.-]+@[\w.-]+\.\w+", full_text)
     header["customer_email"] = next((e for e in emails if e.lower().startswith("finance@")), emails[0] if emails else "")
