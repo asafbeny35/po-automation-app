@@ -6507,9 +6507,12 @@ def _finance_detect_hof_hacarmel_invoice(raw_text: str, fixed_text: str, origina
     raw_haystack, lowered = _finance_text_haystacks(raw_text, fixed_text, original_name)
     return (
         "מועצה אזורית חוף הכרמל" in lowered
+        or "המועצה האזורית חוף הכרמל" in lowered
+        or "hof-hacarmel.co.il" in lowered
         or "חשבון מים וביוב" in lowered
         or "למרכה ףוח" in raw_haystack
         or ("מים" in lowered and "ביוב" in lowered and "חוף הכרמל" in lowered)
+        or ("ארנונה" in lowered and "חוף הכרמל" in lowered)
     )
 
 
@@ -6586,8 +6589,79 @@ def _finance_parse_mei_avivim_invoice(raw_text: str, fixed_text: str, original_n
     )
 
 
+def _finance_parse_hof_hacarmel_arnona(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
+    """חשבון תקופתי ארנונה (ויתרת פיגורים) של מועצה אזורית חוף הכרמל.
+
+    סריקה בלי שכבת טקסט — ה-OCR מוציא את הסכום לפעמים "636.70" ולפעמים
+    "636 70" (רווח במקום נקודה), ושורת הסכום יושבת כמה שורות לפני התווית
+    "הסכום לתשלום". חיוב עירוני — אין מע"מ תשומות, vat=0.
+    """
+    # raw ו-fixed זהים בסריקה (אין שכבת טקסט) — איחוד שלהם היה מכפיל כל ערך
+    # והופך את בדיקת "הופיע פעמיים" לחסרת משמעות
+    parts = [part for part in (fixed_text or "", raw_text or "") if part.strip()]
+    if len(parts) == 2 and parts[0].strip() == parts[1].strip():
+        parts = parts[:1]
+    combined = "\n".join(parts).strip()
+
+    # הסכום: חלון קצר (60 תווים) לפני כל "הסכום לתשלום" — מספיק ל"636.70" או
+    # "636 70" הצמודים לתווית, וקצר מכדי לאסוף רעש מטבלת החיובים שמעליה
+    # ("1351.4 09/26" היה נקרא 4.09). שתי ההופעות (קבלה + ספח) מאמתות זו את זו.
+    candidates: list[float] = []
+    for label_match in re.finditer(r"הסכום\s+לתשלום", combined):
+        window = combined[max(0, label_match.start() - 60):label_match.start()]
+        window_amounts = re.findall(r"(?<![\d.,%-])(\d[\d,]*)[. ](\d{2})(?![\d%/])", window)
+        if window_amounts:
+            whole, cents = window_amounts[-1]
+            candidates.append(round(float(f"{whole.replace(',', '')}.{cents}"), 2))
+    total = None
+    if candidates:
+        total = next((value for value in candidates if candidates.count(value) > 1), candidates[0])
+
+    period_match = re.search(r"\b(\d{1,2}-\d{1,2}/\d{2,4})\b", combined)
+    period_label = normalize_ws(period_match.group(1)) if period_match else ""
+
+    # "לתשלום עד" הוא התאריך המודפס האמין היחיד בסריקה
+    due_match = re.search(r"לתשלום\s+עד\s*\n?\s*(\d{2}/\d{2}/\d{2,4})", combined) or re.search(
+        r"(\d{2}/\d{2}/\d{2,4})\s*\n\s*לתשלום\s+עד", combined
+    )
+    invoice_date = normalize_date(due_match.group(1)) if due_match else ""
+    if not invoice_date and period_label:
+        start_month, year = period_label.split("-")[0], period_label.split("/")[-1]
+        year_full = year if len(year) == 4 else f"20{year}"
+        invoice_date = f"01/{int(start_month):02d}/{year_full}"
+    if not invoice_date:
+        invoice_date = _finance_guess_invoice_date(combined)
+
+    reference_match = re.search(r"(\d{6,})\s*\n?\s*מספר\s+מסלקה", combined) or re.search(
+        r"מספר\s+מסלקה\s*\n?\s*(\d{6,})", combined
+    )
+
+    service_or_product = f"חשבון תקופתי ארנונה {period_label}".strip() if period_label else "חשבון תקופתי ארנונה"
+
+    return _normalize_finance_invoice_row_app(
+        {
+            "row_id": f"finance-upload-{uuid.uuid4().hex}",
+            "invoice_date": invoice_date or date.today().strftime("%d/%m/%Y"),
+            "supplier_name": "מועצה אזורית חוף הכרמל",
+            "reference_number": reference_match.group(1) if reference_match else "",
+            "service_or_product": service_or_product,
+            "subtotal": f"{total:.2f}" if total is not None else "",
+            "vat": "0.00",
+            "total": f"{total:.2f}" if total is not None else "",
+            "source_file_name": Path(original_name).name,
+            "source_file_path": str(file_path),
+            "report_due_date": _finance_due_date_display(invoice_date),
+            "updated_at": datetime.now().isoformat(timespec="seconds"),
+        }
+    )
+
+
 def _finance_parse_hof_hacarmel_invoice(raw_text: str, fixed_text: str, original_name: str, file_path: Path) -> dict:
     combined = "\n".join([fixed_text or "", raw_text or ""]).strip()
+    # לאותה מועצה שני מסמכים שונים לגמרי: חשבון מים וביוב וחשבון ארנונה —
+    # העוגנים של המים לא קיימים בארנונה והסכומים יצאו ריקים (01.10.2026)
+    if "חשבון תקופתי ארנונה" in combined or "תקופת ארנונה" in combined:
+        return _finance_parse_hof_hacarmel_arnona(raw_text, fixed_text, original_name, file_path)
     print_date_match = (
         re.search(r"(\d{2}[./]\d{2}[./]\d{4})\s*:\s*הספדה\s*ךיראת", raw_text or "")
         or re.search(r"תאריך\s*הדפסה[:\s]*([0-9./-]+)", fixed_text or "")
