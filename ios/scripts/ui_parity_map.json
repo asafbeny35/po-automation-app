@@ -263,5 +263,12 @@
   "data-payments-date-to": "app:payments-date-to",
   "data-payments-date-clear": "app:payments-date-clear",
   "data-payments-date-scope": "app:payments-date-field",
-  "data-payments-date-count": "מונה שורות בטווח — טקסט עזר בדסקטופ; באפליקציה הרשימה עצמה מציגה את התוצאה"
+  "data-payments-date-count": "מונה שורות בטווח — טקסט עזר בדסקטופ; באפליקציה הרשימה עצמה מציגה את התוצאה",
+  "data-account-passkey-remove": "ניהול passkeys הוא מסך חשבון בדסקטופ בלבד; באפליקציה הכניסה ב-TOTP/קוד מייל + FaceID",
+  "checkbox:deliveryMailAttachTaxCertificate": "פער אמיתי — בתור לפיתוח: מתג צירוף אישור ניכוי מס במייל אישור מסירה (השרת מצרף כברירת מחדל גם בלי המפתח)",
+  "checkbox:financeInvoicesSendIncludeMorning": "פער אמיתי — בתור לפיתוח: צירוף דוח הכנסות מורנינג למייל רו\"ח",
+  "checkbox:hrPayrollWhatsappIncludeHours": "פער אמיתי — בתור לפיתוח: מתג צירוף דוח נוכחות לתלוש בוואטסאפ (השרת מצרף כברירת מחדל גם בלי המפתח)",
+  "checkbox:hrPayslipPrepMealEnabled": "פער אמיתי — בתור לפיתוח: שווי ארוחות במודאל תלושים להפקה (זרימת הכנה לרו\"ח — דסקטופית בעיקרה)",
+  "checkbox:labelSplitManualQty": "פער אמיתי — בתור לפיתוח: מצב \"ידני\" בחלוקת מדבקות (קו תחתון במקום כמות)",
+  "data-extra-item-description": "עריכת תיאור לכל שורת פריט קיימת בקומפוזר האפליקציה — order-item-description-<index> ב-ComposerItemsEditor (מזהה אינטרפולציה מלאה שהמחלץ לא רואה)"
 }

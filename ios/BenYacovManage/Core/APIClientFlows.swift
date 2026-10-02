@@ -141,9 +141,16 @@ extension APIClient {
         return "ההצעה נשלחה במייל."
     }
 
-    func sendQuoteWhatsapp(phone: String, message: String, quoteFile: String) async throws {
+    /// בפרודקשן quote_file ריק (הקובץ המקומי של השרת מת עם הבקשה שיצרה אותו) —
+    /// השרת נופל לעותק הדרייב לפי history_id/quote_drive_file_id, ולכן חובה לשלוח אותם.
+    func sendQuoteWhatsapp(phone: String, message: String, quoteFile: String,
+                           historyID: String = "", quoteNumber: String = "",
+                           driveFileID: String = "") async throws {
         try await postJSON("quote-send-whatsapp", body: [
             "phone": phone, "message": message, "quote_file": quoteFile,
+            "history_id": historyID,
+            "quote_document_number": quoteNumber,
+            "quote_drive_file_id": driveFileID,
         ])
     }
 

@@ -73,7 +73,12 @@ struct QuoteActionsCard: View {
                 let phone = whatsappPhone
                 let message = whatsappMessage
                 let file = record.first(of: ["quote_local_file", "quote_file"])
-                try await api.sendQuoteWhatsapp(phone: phone, message: message, quoteFile: file)
+                try await api.sendQuoteWhatsapp(
+                    phone: phone, message: message, quoteFile: file,
+                    historyID: record["history_id"],
+                    quoteNumber: record["quote_number"],
+                    driveFileID: record["quote_drive_file_id"]
+                )
                 return "ההצעה נשלחה בוואטסאפ."
             }
         }

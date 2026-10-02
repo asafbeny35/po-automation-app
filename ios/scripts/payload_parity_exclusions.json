@@ -21,5 +21,10 @@
  "/finance-customer-withholdings-save::row.withholding_percent": "השרת מחשב 3% אוטומטית כש-withholding_applied דלוק — אין צורך לשלוח",
  "/finance-customer-withholdings-save::row.withheld_amount": "השרת מחשב מ-gross_amount — אין צורך לשלוח",
  "/finance-customer-withholdings-save::row.paid_amount": "השרת מחשב מ-gross_amount — אין צורך לשלוח",
- "/finance-customer-withholdings-save::row.source_mode": "פער אמיתי — בתור לפיתוח: סימון SB/PROD בשמירת ניכוי מהאפליקציה"
+ "/finance-customer-withholdings-save::row.source_mode": "פער אמיתי — בתור לפיתוח: סימון SB/PROD בשמירת ניכוי מהאפליקציה",
+ "/quote-send-email::quote_drive_file_id": "השרת פותר את קובץ ההצעה מ-history_id שכבר נשלח — אותו רציונל כמו quote_file",
+ "/auth/totp/verify::setup": "הרשמת TOTP ראשונית נעשית בדסקטופ בלבד; האפליקציה מאמתת קוד קיים",
+ "/delivery-confirmations-send::attach_tax_certificate": "פער אמיתי — בתור לפיתוח: מתג צירוף אישור ניכוי מס במייל אישור מסירה (בהיעדר המפתח השרת מצרף — כמו ברירת המחדל בדסקטופ)",
+ "/hr-payroll-send-whatsapp::include_hours": "פער אמיתי — בתור לפיתוח: מתג צירוף דוח נוכחות לתלוש בוואטסאפ (בהיעדר המפתח השרת מצרף — כמו ברירת המחדל בדסקטופ)",
+ "/finance-invoices-send-email::include_morning_report": "פער אמיתי — בתור לפיתוח: צירוף דוח הכנסות מורנינג למייל רו\"ח (בהיעדר המפתח השרת לא מצרף)"
 }
