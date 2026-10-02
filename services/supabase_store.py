@@ -605,6 +605,29 @@ def _fetch_existing_ids(domain: str) -> list[str]:
     return ids
 
 
+def insert_domain_row_if_absent(domain: str, row: JsonDict) -> dict[str, Any]:
+    """Insert one row; never overwrite or delete anything.
+
+    Uses ignore-duplicates, so an existing row with the same primary key (for
+    example a production customer) is left exactly as it is.
+    """
+    config = _config(domain)
+    pk_field = _as_str(config.get("pk_field")) or "id"
+    mapper: Callable[[JsonDict], JsonDict] = config["mapper"]
+    mapped = mapper(dict(row))
+    row_id = _as_str(mapped.get(pk_field))
+    if not row_id:
+        return {"table": config["table"], "inserted": False, "reason": "missing_id"}
+    mapped[pk_field] = row_id
+    _request_json(
+        "POST",
+        f"/rest/v1/{config['table']}?on_conflict={pk_field}",
+        payload=[mapped],
+        headers={**_base_headers(write=True), "Prefer": "resolution=ignore-duplicates,return=minimal"},
+    )
+    return {"table": config["table"], "inserted": True, "id": row_id}
+
+
 def _delete_row(domain: str, row_id: str) -> None:
     config = _config(domain)
     pk_field = _as_str(config.get("pk_field")) or "id"
