@@ -90,6 +90,7 @@ from services.google_sheets import (
     get_cached_delivery_confirmation_rows,
     get_cached_delivery_contact_rows,
     load_customer_rows,
+    add_customer_row_if_absent,
     save_customer_rows,
     get_cached_customer_rows,
     load_inactive_customer_rows,
@@ -16869,6 +16870,32 @@ def _build_manual_customer_payload(po: PurchaseOrderData, allow_missing_id_numbe
     return payload
 
 
+def _persist_customer_cache_after_create(mode: str, fetched_rows: list[dict], customer_name: str = "", tax_id: str = "") -> dict:
+    """Refresh the stored customer table after creating a customer.
+
+    Production keeps its existing behavior. A sandbox run only inserts the one
+    customer it just created, tagged SB, as a single row that never overwrites. A sandbox
+    fetch holds only sandbox customers, and a replace-style save would delete
+    every production row, so no whole-table save happens in sandbox mode.
+    """
+    if _normalize_customer_mode(mode) != "sandbox":
+        return save_customer_rows(_sort_customer_rows(fetched_rows))
+    wanted_id = re.sub(r"\D+", "", str(tax_id or ""))
+    wanted_name = _canonical_income_customer_name(customer_name or "")
+    for row in fetched_rows or []:
+        if not isinstance(row, dict):
+            continue
+        row_id = re.sub(r"\D+", "", str(row.get("customer_id") or ""))
+        row_name = _canonical_income_customer_name(row.get("customer_name") or "")
+        if (wanted_id and row_id == wanted_id) or (not wanted_id and wanted_name and row_name == wanted_name):
+            tagged = dict(row)
+            tagged["source_mode"] = "SB"
+            if not str(tagged.get("customer_guid") or "").strip():
+                return {"skipped": True, "reason": "sandbox_customer_has_no_guid"}
+            return add_customer_row_if_absent(tagged)
+    return {"skipped": True, "reason": "created_customer_not_in_sandbox_fetch"}
+
+
 async def _ensure_finalize_customer(po: PurchaseOrderData, mode: str, client: GreenInvoiceClient) -> dict:
     raw_tax_id = re.sub(r"\D+", "", str(po.customer_id or "").strip())
     allow_missing_id_number = _customer_can_skip_tax_id(po)
@@ -16917,7 +16944,7 @@ async def _ensure_finalize_customer(po: PurchaseOrderData, mode: str, client: Gr
             raise RuntimeError(f"לא הצלחתי ליצור לקוח חדש בחשבונית ירוקה: {exc}") from exc
 
         fetched_rows = await _fetch_greeninvoice_customers(mode)
-        save_customer_rows(_sort_customer_rows(fetched_rows))
+        _persist_customer_cache_after_create(mode, fetched_rows, str(po.customer_name or ""), "")
         refreshed_candidates = await client.get_existing_customer_candidates_by_name(str(po.customer_name or "").strip())
         created_customer = _pick_existing_customer_candidate_without_tax_id(
             refreshed_candidates,
@@ -17040,7 +17067,7 @@ async def _ensure_finalize_customer(po: PurchaseOrderData, mode: str, client: Gr
         raise RuntimeError(f"לא הצלחתי ליצור לקוח חדש בחשבונית ירוקה: {exc}") from exc
 
     fetched_rows = await _fetch_greeninvoice_customers(mode)
-    save_customer_rows(_sort_customer_rows(fetched_rows))
+    _persist_customer_cache_after_create(mode, fetched_rows, str(po.customer_name or ""), tax_id)
 
     created_customer = await client.get_existing_customer_details(tax_id)
     if not created_customer:
