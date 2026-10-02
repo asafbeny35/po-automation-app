@@ -30,12 +30,26 @@ def _isolate_numeric_runs(text: str) -> str:
     return _NUM_RUN.sub(lambda m: "\u2066" + m.group(0) + "\u2069", text)
 
 
+def _mark_numeric_runs_ltr(text: str) -> str:
+    """גרסת bidi (בלי raqm): LRM סביב המפרידים, כדי שהמידה תישאר 181.5*33 ולא 33*181.5."""
+    def mark(m):
+        return re.sub(r"([*xX×/\-])", "\u200e\\1\u200e", m.group(0))
+    return _NUM_RUN.sub(mark, text)
+
+
 def rtl(text: str) -> str:
-    text = _isolate_numeric_runs(str(text or "").strip())
+    text = str(text or "").strip()
     if _HAS_RAQM:
-        return text  # RAQM handles RTL shaping and direction natively
+        # raqm מטפל ב-RTL; מידות נשארות ברצף אחד משמאל לימין
+        return _isolate_numeric_runs(text)
     if _HAS_BIDI:
-        return _bidi_get_display(text)
+        try:
+            return _bidi_get_display(_mark_numeric_runs_ltr(text)).replace("\u200e", "")
+        except Exception:
+            try:
+                return _bidi_get_display(text)
+            except Exception:
+                return text
     return text
 
 
