@@ -5451,6 +5451,19 @@ def load_customer_rows(kind: str = "active") -> list[dict]:
     return rows
 
 
+def add_customer_row_if_absent(row: dict, kind: str = "active") -> dict:
+    """Add one customer row without rewriting or deleting any other row.
+
+    Only the row-level Supabase backend can do this atomically. With the Sheets
+    backend there is no safe single-row path here, so nothing is written.
+    """
+    domain = "inactive_customers" if kind == "inactive" else "customers"
+    if not _supabase_enabled_for(domain):
+        return {"skipped": True, "reason": "no_row_level_backend"}
+    normalized = _normalize_customer_row(row)
+    return supabase_store.insert_domain_row_if_absent(domain, normalized)
+
+
 def save_customer_rows(rows: list[dict], kind: str = "active") -> dict:
     global _CUSTOMER_ROWS_CACHE, _CUSTOMER_ROWS_CACHE_TS, _INACTIVE_CUSTOMER_ROWS_CACHE, _INACTIVE_CUSTOMER_ROWS_CACHE_TS
     normalized_rows = _dedupe_customer_rows([_normalize_customer_row(row) for row in (rows or [])])
