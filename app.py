@@ -29839,16 +29839,30 @@ async def process(
     except ValueError as exc:
         return JSONResponse({"error": str(exc)}, status_code=400)
 
+    # Same condition that picks the sandbox Green Invoice config above: anything
+    # other than the exact value "sandbox" keeps the previous (production) behavior.
+    is_sandbox_process = mode == "sandbox"
     cfg = {
-        "base_url": settings.greeninvoice_sandbox_base_url if mode == "sandbox" else settings.greeninvoice_prod_base_url,
-        "api_key": settings.greeninvoice_sandbox_api_key if mode == "sandbox" else settings.greeninvoice_prod_api_key,
-        "api_secret": settings.greeninvoice_sandbox_api_secret if mode == "sandbox" else settings.greeninvoice_prod_api_secret,
+        "base_url": settings.greeninvoice_sandbox_base_url if is_sandbox_process else settings.greeninvoice_prod_base_url,
+        "api_key": settings.greeninvoice_sandbox_api_key if is_sandbox_process else settings.greeninvoice_prod_api_key,
+        "api_secret": settings.greeninvoice_sandbox_api_secret if is_sandbox_process else settings.greeninvoice_prod_api_secret,
             "mode": mode,
     }
     po = parse_purchase_order(file_path)
     po = await _enrich_po_for_process(po, cfg)
-    asyncio.create_task(_sync_project_managers_from_pdf_background(file_path, po))
-    source_drive_sync = _try_sync_source_po_to_drive_for_process(po, file_path)
+    if is_sandbox_process:
+        # Sandbox runs must not write the shared project-managers table or upload
+        # the real customer PO into the real Drive.
+        source_drive_sync = {
+            "status": "skipped_sandbox",
+            "source_drive_file_id": "",
+            "source_drive_url": "",
+            "order_drive_folder_id": "",
+            "order_drive_folder_url": "",
+        }
+    else:
+        asyncio.create_task(_sync_project_managers_from_pdf_background(file_path, po))
+        source_drive_sync = _try_sync_source_po_to_drive_for_process(po, file_path)
     payload = _build_process_payload_from_po(
         po,
         mode,
