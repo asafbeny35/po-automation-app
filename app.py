@@ -7672,6 +7672,51 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
     if total is None and subtotal is not None and vat is not None:
         total = round(subtotal + vat, 2)
 
+    # ── עוגני הצלה לפריסת 10.2026 (KMN94...): ה-OCR מפרק את עמודות הסיכום כך
+    # שהמספרים נדדו מהתוויות, ו"(18.00%)" נקרא כסכום המע"מ — מה שהוליד
+    # total=18.00, subtotal=15.25. "סה"כ נותר לתשלום" הוא התווית היחידה שהסכום
+    # צמוד אליה באותה שורה.
+    strong_total_match = (
+        re.search(r"נותר\s+לתשלום\s*[:\s]*([\d,]+\.\d{2})", combined)
+        or re.search(r"([\d,]+\.\d{2})\s+םולשתל\s+רתונ", raw_text or "")
+    )
+    if strong_total_match:
+        strong_total = _finance_parse_number(strong_total_match.group(1))
+        if strong_total and strong_total > 0:
+            total = strong_total
+    if total is not None and total > 0:
+        amounts_sane = (
+            subtotal is not None
+            and vat is not None
+            and vat < subtotal
+            and abs((subtotal + vat) - total) <= 0.02
+        )
+        if not amounts_sane:
+            # בוחרים זוג סכומים שמסתכם לסה"כ *ועומד ביחס 18%* — בלי האילוץ הזה
+            # גם זוג המחירים-כולל-מע"מ של השורות (7,080+5,192) מסתכם בדיוק לסה"כ
+            cleaned = re.sub(r"\([\d.]+\s*%\)", "", combined)
+            pool = sorted({
+                value for value in (
+                    _finance_parse_number(v) for v in re.findall(r"[\d,]+\.\d{2}", cleaned)
+                ) if value and 0 < value < total
+            })
+            pair = next(
+                (
+                    (bigger, smaller)
+                    for bigger in pool
+                    for smaller in pool
+                    if bigger > smaller
+                    and abs(bigger + smaller - total) <= 0.02
+                    and abs(round(bigger * 0.18, 2) - smaller) <= 0.05
+                ),
+                None,
+            )
+            if pair:
+                subtotal, vat = pair
+            else:
+                subtotal = round(total / 1.18, 2)
+                vat = round(total - subtotal, 2)
+
     service_match = (
         re.search(r"פרטים[:\s]*([^\n\r]+)", fixed_text or "", re.IGNORECASE)
         or re.search(r"םיטרפ[:\s]*([^\n\r]+)", raw_text or "")
@@ -7687,7 +7732,10 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
     service_or_product = service_or_product.replace("+", " + ")
     service_or_product = re.sub(r"\s+", " ", service_or_product).strip(" -")
     if not service_or_product:
-        service_or_product = "שכ\"ד 5.2026 + הפרשי הצמדה"
+        # התקופה מהמסמך עצמו — הנפילה הקשיחה הישנה ("שכ"ד 5.2026 + הפרשי
+        # הצמדה") הדביקה חודש שגוי לחשבוניות חדשות כשה-OCR פספס את "פרטים"
+        month_match = re.search(r"שכ[\"״']?ד\s*\d{1,2}\.\d{4}", combined)
+        service_or_product = normalize_ws(month_match.group(0)) if month_match else 'שכ"ד'
 
     allocation_number = _finance_extract_allocation_number(combined) if _finance_parse_number(total) >= 10000 else ""
     if not allocation_number and file_path.suffix.lower() == ".pdf":
