@@ -80,19 +80,15 @@ def parse(text: str):
             data["po_number"] = "PO" + m.group(1)
             break
 
-    # Contact name = buyer
-    m = re.search(r"([A-Za-z]+,\s*[A-Za-z]+)\s*:\s*קניין", text)
+    # The PO carries the buyer (קניין), not a delivery-site contact. Never invent
+    # a contact: contact_name/contact_phone stay empty unless the PO prints one,
+    # and the buyer is kept separately in extra.buyer_*.
+    m = re.search(r"([A-Za-z]+,\s*[A-Za-z]+)\s*:\s*(?:קניין|ןיינק)", text)
     if m:
-        data["extra"]["contact_name"] = _clean(m.group(1))
-    else:
-        data["extra"]["contact_name"] = "Hazan, Ohad"
-
-    # Contact phone
-    m = re.search(r"נייד[:\s]*([0-9\-]{9,})", text)
+        data["extra"]["buyer_name"] = _clean(m.group(1))
+    m = re.search(r"(?:נייד|דיינ)\s*:\s*([0-9\-]{9,})|([0-9]{2,3}-[0-9]{7})\s*:\s*(?:נייד|דיינ)", text)
     if m:
-        data["extra"]["contact_phone"] = _clean(m.group(1))
-    else:
-        data["extra"]["contact_phone"] = "052-6991246"
+        data["extra"]["buyer_phone"] = _clean(m.group(1) or m.group(2))
 
     # Email
     m = re.search(r'([A-Za-z0-9._%+\-]+@[A-Za-z0-9.\-]+\.[A-Za-z]{2,})', text)
@@ -121,7 +117,7 @@ def parse(text: str):
         if month:
             data["po_date"] = f"{int(day):02d}/{month}/{year}"
     # Project
-    m = re.search(r"מס[\'\"״׳]?\s*פרוייקט:\s*([0-9]+)", text)
+    m = re.search(r"מס[\'\"״׳]?\s*פרוייקט:\s*([0-9]+)", text) or re.search(r"([0-9]{5,})\s*:\s*טקייורפ\s*'?סמ", text)
     if m:
         data["extra"]["project"] = _clean(m.group(1))
 
@@ -163,6 +159,7 @@ def parse(text: str):
             unit_price=unit_price,
             line_total=data["subtotal"],
             sku=sku or None,
+            unit='מ"ר',
         )
         data["items"].append(item)
 
