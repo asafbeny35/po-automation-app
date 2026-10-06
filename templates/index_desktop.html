@@ -20451,6 +20451,19 @@ input:focus {
   </div>
 </div>
 
+<div id="collectionReceiptChoiceModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card">
+    <h3>כבר קיימת קבלה לחשבונית הזו</h3>
+    <p id="collectionReceiptChoiceMessage"></p>
+    <p style="font-size:13px; color:#64748b;">אפשר לסמן את השורה כשולמה בלי קבלה חדשה (למשל כשהקבלה הקיימת מכסה את התשלום), או להפיק קבלה נוספת (למשל תשלום חלקי נוסף על אותה חשבונית).</p>
+    <div class="confirm-modal-actions">
+      <button type="button" class="ghost-btn" id="collectionReceiptChoiceCancel">ביטול</button>
+      <button type="button" class="ghost-btn" id="collectionReceiptChoiceCreate">הפק קבלה נוספת</button>
+      <button type="button" class="primary-btn" id="collectionReceiptChoiceMarkPaid">סמן כשולמה</button>
+    </div>
+  </div>
+</div>
+
 <div id="receiptCreateModal" class="confirm-modal" aria-hidden="true">
   <div class="confirm-modal-card reminder-modal-card">
     <h3>הפקת קבלה</h3>
@@ -33475,6 +33488,10 @@ document.addEventListener("DOMContentLoaded", () => {
             openReceiptCreateModal(receiptInvoice);
             return;
           }
+          // קבלה כבר קיימת (הוטבעה מסנכרון מורנינג) — בחירה מפורשת במקום סימון שקט
+          event.currentTarget.checked = false;
+          openCollectionReceiptChoiceModal(row);
+          return;
         }
         const previousState = clonePaymentTransferStateSnapshot();
         row.paid = checked ? "TRUE" : "FALSE";
@@ -33945,6 +33962,10 @@ document.addEventListener("DOMContentLoaded", () => {
             openReceiptCreateModal(receiptInvoice);
             return;
           }
+          // קבלה כבר קיימת (הוטבעה מסנכרון מורנינג) — בחירה מפורשת במקום סימון שקט
+          event.currentTarget.checked = false;
+          openCollectionReceiptChoiceModal(row);
+          return;
         }
         const previousState = clonePaymentTransferStateSnapshot();
         row.paid = checked ? "TRUE" : "FALSE";
@@ -39013,6 +39034,71 @@ document.addEventListener("DOMContentLoaded", () => {
     if (receiptCreateCancel) receiptCreateCancel.disabled = false;
     updateAssistantContextPreview();
   }
+
+  // ── שורת גבייה שכבר נושאת קבלה: בחירה מפורשת במקום סימון שקט ──────────────
+  // סנכרון הקבלות מטביע מספרי קבלה ממורנינג על שורות לפי מספר חשבונית, ולכן
+  // שורה יכולה להגיע עם קבלה קיימת עוד לפני שסומנה כשולמה. קודם הסימון קרה
+  // בשקט בלי מודאל — ואי אפשר היה להפיק קבלה לשורה כזו בכלל (הבאג של 06.10).
+  const collectionReceiptChoiceModal = document.getElementById("collectionReceiptChoiceModal");
+  const collectionReceiptChoiceMessage = document.getElementById("collectionReceiptChoiceMessage");
+  const collectionReceiptChoiceCancel = document.getElementById("collectionReceiptChoiceCancel");
+  const collectionReceiptChoiceCreate = document.getElementById("collectionReceiptChoiceCreate");
+  const collectionReceiptChoiceMarkPaid = document.getElementById("collectionReceiptChoiceMarkPaid");
+  let pendingCollectionReceiptChoiceRow = null;
+
+  async function applyPaymentPaidToggle(row, checked) {
+    const previousState = clonePaymentTransferStateSnapshot();
+    row.paid = checked ? "TRUE" : "FALSE";
+    renderPaymentsTransferState(buildPaymentsTransferStateWithUpdatedRow(row, paymentTransferState));
+    try {
+      await updatePaymentTransferPaidState(row);
+      showToast("success", "סטטוס שולם עודכן", checked ? "השורה סומנה כשולמה." : "הסימון הוסר מהשורה.");
+    } catch (error) {
+      if (error?.status === 409 && error?.payload) {
+        renderPaymentsTransferState(error.payload);
+      } else {
+        renderPaymentsTransferState(previousState);
+      }
+      showToast("error", "עדכון סטטוס נכשל", error.message || "לא הצלחתי לעדכן את סטטוס השורה.");
+    }
+  }
+
+  function closeCollectionReceiptChoiceModal() {
+    if (!collectionReceiptChoiceModal) return;
+    collectionReceiptChoiceModal.classList.remove("visible");
+    collectionReceiptChoiceModal.setAttribute("aria-hidden", "true");
+    pendingCollectionReceiptChoiceRow = null;
+  }
+
+  function openCollectionReceiptChoiceModal(row) {
+    if (!collectionReceiptChoiceModal || !row) return;
+    pendingCollectionReceiptChoiceRow = row;
+    if (collectionReceiptChoiceMessage) {
+      collectionReceiptChoiceMessage.innerHTML = `לחשבונית <strong>${escapeHtml(String(row.tax_invoice_number || "—"))}</strong> של <strong>${escapeHtml(String(row.customer_name || "הלקוח"))}</strong> כבר קיימת קבלה <strong>${escapeHtml(String(row.receipt_number || ""))}</strong> במורנינג.`;
+    }
+    collectionReceiptChoiceModal.classList.add("visible");
+    collectionReceiptChoiceModal.setAttribute("aria-hidden", "false");
+  }
+
+  collectionReceiptChoiceCancel?.addEventListener("click", () => closeCollectionReceiptChoiceModal());
+
+  collectionReceiptChoiceMarkPaid?.addEventListener("click", async () => {
+    const row = pendingCollectionReceiptChoiceRow;
+    closeCollectionReceiptChoiceModal();
+    if (row) await applyPaymentPaidToggle(row, true);
+  });
+
+  collectionReceiptChoiceCreate?.addEventListener("click", () => {
+    const row = pendingCollectionReceiptChoiceRow;
+    closeCollectionReceiptChoiceModal();
+    if (!row) return;
+    const receiptInvoice = paymentRowToReceiptInvoice(row);
+    if (!receiptInvoice) {
+      showToast("info", "חסרה חשבונית מס", "כדי להפיק קבלה מתוך שורת גבייה צריך מספר חשבונית מס בשורה.");
+      return;
+    }
+    openReceiptCreateModal(receiptInvoice);
+  });
 
   function paymentRowToReceiptInvoice(row) {
     const invoiceNumber = String(row?.tax_invoice_number || "").trim();
