@@ -2232,7 +2232,9 @@ class GreenInvoiceClient:
             "currency": "ILS",
             "date": payment_date,
             "ref": [],
-            "type": 5,
+            # type 0 = ניכוי במקור במורנינג (אומת מול sandbox 06.10.2026 — המסמך
+            # מציג "ניכוי במקור"); ‏type 5 הקודם היה PayPal וכך הוצג בקבלות
+            "type": 0,
             "name": "ניכוי במקור",
             "description": description,
         }
