@@ -738,22 +738,59 @@ class GreenInvoiceClient:
             print(json.dumps(data, ensure_ascii=False, indent=2))
             return self._normalize_document_response(data)
 
-    async def close_document(self, token: str, document_id: str) -> dict:
-        """מבטל/סוגר מסמך במורנינג (status 2) — POST /documents/{id}/close.
+    # סוג המסמך ← מסמך הביטול שמקזז אותו (נוצר מקושר עם linkType=cancel)
+    _CANCEL_REVERSAL_TYPES = {305: 330, 320: 330, 200: 210}
 
-        אומת אמפירית מול ה-sandbox (06.10.2026): חשבונית פתוחה (status 0)
-        עברה ל-status 2 והתשובה היא המסמך המעודכן.
+    async def cancel_document(self, token: str, document_id: str) -> dict:
+        """ביטול אמיתי של מסמך במורנינג: יצירת מסמך ביטול מקושר (linkType=cancel).
+
+        חשבונית מס (305/320) ← חשבונית זיכוי (330); תעודת משלוח (200) ← תעודת
+        החזרה (210). המקור עובר ל-status 4 ("מבוטל"). לקח 06.10.2026: ‏close
+        אינו ביטול — ‏status 2 הוא "סגור ידנית" והמסמך נשאר חי חשבונאית
+        (חשבונית 550646 של פלסן סומנה כך בטעות ונדרש זיכוי אמיתי). ביטול
+        חשבונית משחרר אוטומטית את תעודת המשלוח המקושרת חזרה לפתוחה.
         """
         async with httpx.AsyncClient(timeout=60) as client:
-            response = await client.post(
-                f"{self.base_url}/documents/{document_id}/close",
-                headers=self._auth_headers(token),
-            )
-            if response.status_code >= 400:
-                print("CLOSE DOCUMENT STATUS:", response.status_code)
-                print("CLOSE DOCUMENT RESPONSE:", response.text[:500])
+            headers = self._auth_headers(token)
+            response = await client.get(f"{self.base_url}/documents/{document_id}", headers=headers)
             response.raise_for_status()
-            return response.json()
+            document = response.json()
+            status = document.get("status")
+            number = document.get("number")
+            if status == 4:
+                return {"status": "already_cancelled", "number": number}
+            if status == 2:
+                # "סגור ידנית" — חייבים לפתוח לפני שאפשר לקשר אליו מסמך ביטול
+                reopened = await client.post(f"{self.base_url}/documents/{document_id}/open", headers=headers)
+                reopened.raise_for_status()
+            doc_type = int(document.get("type") or 0)
+            reversal_type = self._CANCEL_REVERSAL_TYPES.get(doc_type)
+            if not reversal_type:
+                raise RuntimeError(f"אין מסמך ביטול מוגדר לסוג מסמך {doc_type}")
+            payload = {
+                "type": reversal_type,
+                "lang": "he",
+                "currency": document.get("currency") or "ILS",
+                "vatType": document.get("vatType", 0),
+                "client": {"id": (document.get("client") or {}).get("id")},
+                "description": f"ביטול מסמך {number}",
+                "linkedDocumentIds": [document_id],
+                "linkType": "cancel",
+                "rounding": False,
+                "income": document.get("income") or [],
+            }
+            created_response = await client.post(f"{self.base_url}/documents", headers=headers, json=payload)
+            if created_response.status_code >= 400:
+                print("CANCEL DOCUMENT STATUS:", created_response.status_code)
+                print("CANCEL DOCUMENT RESPONSE:", created_response.text[:500])
+            created_response.raise_for_status()
+            created = created_response.json()
+            return {
+                "status": "cancelled",
+                "number": number,
+                "reversal_number": created.get("number"),
+                "reversal_id": created.get("id"),
+            }
 
     async def download_pdf(self, token: str, url: str, save_path: Path, fallback_urls: list[str] | None = None):
         """מוריד PDF ומוודא שהתוכן באמת PDF.

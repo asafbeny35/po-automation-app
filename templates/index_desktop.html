@@ -41087,7 +41087,13 @@ document.addEventListener("DOMContentLoaded", () => {
         orderHistoryLoaded = true;
       }
       const morningSummary = (payload.morning || [])
-        .map(item => `${item.document}: ${item.status === "cancelled" ? "בוטל" : (item.status === "skipped" ? "דולג" : "שגיאה")}`)
+        .map(item => {
+          if (item.status === "cancelled") {
+            const reversal = String(item.reversal_number || "").trim();
+            return `${item.document}: בוטל${reversal ? ` (מסמך ביטול ${reversal})` : ""}`;
+          }
+          return `${item.document}: ${item.status === "skipped" ? "דולג" : "שגיאה"}`;
+        })
         .join(" · ");
       const hadMorningError = (payload.morning || []).some(item => item.status === "error");
       showToast(

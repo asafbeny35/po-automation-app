@@ -1,9 +1,11 @@
 """ביטול הזמנה מהיסטוריית ההזמנות.
 
-אישור במודאל מבטל במורנינג את חשבונית המס ותעודת המשלוח (documents/{id}/close),
-מסלק את ההזמנה מאישורי המסירה (כולל דיכוי) ומתשלומים והעברות — ומשאיר אותה
-בהיסטוריה בלבד, מתויגת "ההזמנה בוטלה". אם שום מסמך לא בוטל בפועל — אין ניקוי,
-כדי לא ליצור מצב שבו המסמכים חיים במורנינג אבל נעלמו מהמסכים.
+אישור במודאל מבטל במורנינג את חשבונית המס ותעודת המשלוח דרך מסמכי ביטול
+מקושרים (linkType=cancel: זיכוי 330 לחשבונית, תעודת החזרה 210 לתעודה —
+לקח 06.10.2026: close הוא "סגור ידנית", לא ביטול), מסלק את ההזמנה מאישורי
+המסירה (כולל דיכוי) ומתשלומים והעברות — ומשאיר אותה בהיסטוריה בלבד, מתויגת
+"ההזמנה בוטלה". אם שום מסמך לא בוטל בפועל — אין ניקוי, כדי לא ליצור מצב
+שבו המסמכים חיים במורנינג אבל נעלמו מהמסכים.
 """
 from __future__ import annotations
 
@@ -33,17 +35,17 @@ def _history_row(**overrides):
 
 class _FakeClient:
     def __init__(self, fail_ids=()):
-        self.closed: list[str] = []
+        self.cancelled: list[str] = []
         self.fail_ids = set(fail_ids)
 
     async def _get_token(self):
         return "token"
 
-    async def close_document(self, token, document_id):
+    async def cancel_document(self, token, document_id):
         if document_id in self.fail_ids:
             raise RuntimeError(f"morning refused {document_id}")
-        self.closed.append(document_id)
-        return {"id": document_id, "status": 2, "number": 999}
+        self.cancelled.append(document_id)
+        return {"status": "cancelled", "number": 999, "reversal_number": 750000 + len(self.cancelled)}
 
 
 def _patches(row, fake, saved, payments_matches=None):
@@ -88,8 +90,10 @@ def test_happy_path_cancels_both_documents_and_cleans_everything(client):
     assert resp.status_code == 200
     data = resp.json()
     # החשבונית מבוטלת לפני התעודה
-    assert fake.closed == ["doc-invoice-1", "doc-delivery-1"]
+    assert fake.cancelled == ["doc-invoice-1", "doc-delivery-1"]
     assert [m["status"] for m in data["morning"]] == ["cancelled", "cancelled"]
+    # מספרי מסמכי הביטול (זיכוי/החזרה) חוזרים ללקוח — אסף מחפש אותם במורנינג
+    assert all(str(m.get("reversal_number") or "").strip() for m in data["morning"])
     suppress_mock.assert_called_once()
     dc_mock.assert_called_once()
     # השורה נשארה בהיסטוריה — מתויגת
@@ -151,7 +155,7 @@ def test_invoice_only_order_skips_the_missing_delivery(client):
     statuses = {m["document"]: m["status"] for m in resp.json()["morning"]}
     assert statuses["חשבונית מס"] == "cancelled"
     assert statuses["תעודת משלוח"] == "skipped"
-    assert fake.closed == ["doc-invoice-1"]
+    assert fake.cancelled == ["doc-invoice-1"]
 
 
 def test_sandbox_row_uses_the_sandbox_config(client):

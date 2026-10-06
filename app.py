@@ -20402,11 +20402,18 @@ async def order_history_cancel_order(request: Request):
                 morning_results.append({"document": label, "number": document_number, "status": "skipped", "reason": "אין מזהה מסמך ברשומה"})
                 continue
             try:
-                closed = await client.close_document(token, document_id)
-                morning_results.append({"document": label, "number": document_number or str(closed.get("number") or ""), "status": "cancelled"})
-            except Exception as close_exc:
-                log_handled_error(f"order cancel: morning close failed for {label}", close_exc)
-                morning_results.append({"document": label, "number": document_number, "status": "error", "error": str(close_exc)})
+                cancelled = await client.cancel_document(token, document_id)
+                morning_results.append(
+                    {
+                        "document": label,
+                        "number": document_number or str(cancelled.get("number") or ""),
+                        "status": "cancelled" if cancelled.get("status") in {"cancelled", "already_cancelled"} else "error",
+                        "reversal_number": str(cancelled.get("reversal_number") or ""),
+                    }
+                )
+            except Exception as cancel_exc:
+                log_handled_error(f"order cancel: morning cancel failed for {label}", cancel_exc)
+                morning_results.append({"document": label, "number": document_number, "status": "error", "error": str(cancel_exc)})
 
         cancelled_any = any(item["status"] == "cancelled" for item in morning_results)
         errored_any = any(item["status"] == "error" for item in morning_results)
