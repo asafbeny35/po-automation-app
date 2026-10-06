@@ -20681,6 +20681,28 @@ input:focus {
   </div>
 </div>
 
+<div id="cancelOrderModal" class="confirm-modal" aria-hidden="true">
+  <div class="confirm-modal-card" style="position: relative;">
+    <button type="button" id="cancelOrderModalClose" aria-label="סגירה" style="position:absolute; top:12px; inset-inline-start:12px; width:32px; height:32px; border:none; border-radius:10px; background:#f1f5f9; color:#334155; font-size:16px; font-weight:700; cursor:pointer;">✕</button>
+    <h3 id="cancelOrderModalTitle">ביטול הזמנה</h3>
+    <p id="cancelOrderModalMessage">האם אתה בטוח?</p>
+    <p style="font-size:13px; color:#9a3412; background:#fff7ed; border:1px solid rgba(249,115,22,0.25); border-radius:12px; padding:10px 12px;">הפעולה תבטל במורנינג את תעודת המשלוח ואת חשבונית המס, ותסיר את ההזמנה מאישורי המסירה ומתשלומים והעברות. ההזמנה תישאר בהיסטוריה בלבד.</p>
+    <div id="cancelOrderProgress" class="receipts-progress" aria-live="polite">
+      <div class="receipts-progress-head">
+        <div id="cancelOrderProgressTitle" class="receipts-progress-title">מכין את הביטול...</div>
+        <div id="cancelOrderProgressPercent" class="receipts-progress-percent">0%</div>
+      </div>
+      <div class="receipts-progress-track">
+        <div id="cancelOrderProgressFill" class="receipts-progress-fill"></div>
+      </div>
+      <div id="cancelOrderProgressMessage" class="receipts-progress-message">כאן תופיע התקדמות תהליך הביטול.</div>
+    </div>
+    <div class="confirm-modal-actions">
+      <button type="button" class="primary-btn" id="cancelOrderConfirm" style="background:#dc2626; border-color:#dc2626;">אישור ביטול</button>
+    </div>
+  </div>
+</div>
+
 <div id="orderHistoryDeleteModal" class="confirm-modal" aria-hidden="true">
   <div class="confirm-modal-card">
     <h3 id="orderHistoryDeleteTitle">מחיקת יצירה מההיסטוריה</h3>
@@ -40465,6 +40487,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const resendWhatsappButton = (String(row.merged_drive_file_id || "").trim() || String(row.delivery_drive_file_id || "").trim())
         ? `<button type="button" class="ghost-btn history-action-btn" data-history-resend-whatsapp="${escapeHtml(row.history_id || "")}">שלח שוב בוואטסאפ</button>`
         : "";
+      const isCancelledOrder = statusTag === "ההזמנה בוטלה";
+      const cancelOrderButton = isCancelledOrder
+        ? ""
+        : `<button type="button" class="ghost-btn history-action-btn" data-history-cancel-order="${escapeHtml(row.history_id || "")}" style="color:#dc2626; border-color:rgba(220,38,38,0.35);">בטל הזמנה</button>`;
       return `
         <article class="history-item ${compact ? "compact" : ""}" data-history-id="${escapeHtml(row.history_id || "")}">
           <div class="history-item-head">
@@ -40483,7 +40509,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <span>חשבונית: ${escapeHtml(String(row.tax_invoice_number || "").trim() || "—")}</span>
               </div>
               <div class="history-item-links">${renderedLinks.join("") || `<span class="history-link-chip">אין עדיין קישורי Drive</span>`}</div>
-              ${(createInvoiceLaterButton || createAdditionalDeliveryButton || resendWhatsappButton) ? `<div class="history-item-actions">${createInvoiceLaterButton}${createAdditionalDeliveryButton}${resendWhatsappButton}</div>` : ""}
+              ${(createInvoiceLaterButton || createAdditionalDeliveryButton || resendWhatsappButton || cancelOrderButton) ? `<div class="history-item-actions">${createInvoiceLaterButton}${createAdditionalDeliveryButton}${resendWhatsappButton}${cancelOrderButton}</div>` : ""}
             </div>
             <button type="button" class="history-delete-btn" data-history-delete="${escapeHtml(row.history_id || "")}" aria-label="מחיקת שורת היסטוריה">
               <svg viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -40504,6 +40530,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const historyId = button.dataset.historyDelete || "";
         const row = orderHistoryRows.find(item => String(item.history_id || "") === historyId);
         if (row) openHistoryDeleteModal(row, "order");
+      });
+    });
+    host.querySelectorAll("[data-history-cancel-order]").forEach(button => {
+      button.addEventListener("click", event => {
+        event.stopPropagation();
+        const historyId = button.dataset.historyCancelOrder || "";
+        const row = orderHistoryRows.find(item => String(item.history_id || "") === historyId);
+        if (row) openCancelOrderModal(row);
       });
     });
     host.querySelectorAll("[data-history-create-invoice]").forEach(button => {
@@ -40982,6 +41016,97 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     }
   }
+
+  // ── ביטול הזמנה (מורנינג + אישורי מסירה + תשלומים) ─────────────────────────
+  const cancelOrderModal = document.getElementById("cancelOrderModal");
+  const cancelOrderModalClose = document.getElementById("cancelOrderModalClose");
+  const cancelOrderModalMessage = document.getElementById("cancelOrderModalMessage");
+  const cancelOrderConfirm = document.getElementById("cancelOrderConfirm");
+  const cancelOrderProgress = document.getElementById("cancelOrderProgress");
+  const cancelOrderProgressTitle = document.getElementById("cancelOrderProgressTitle");
+  const cancelOrderProgressPercent = document.getElementById("cancelOrderProgressPercent");
+  const cancelOrderProgressFill = document.getElementById("cancelOrderProgressFill");
+  const cancelOrderProgressMessage = document.getElementById("cancelOrderProgressMessage");
+  let pendingCancelOrderRow = null;
+  let cancelOrderRunning = false;
+
+  // בכוונה אין האזנה ללחיצה על הרקע: לחיצה מחוץ לגבולות המודאל לא סוגרת אותו.
+  function openCancelOrderModal(row) {
+    if (!cancelOrderModal || !row) return;
+    pendingCancelOrderRow = row;
+    if (cancelOrderModalMessage) {
+      cancelOrderModalMessage.textContent = `האם אתה בטוח שברצונך לבטל את ההזמנה של ${row.customer_name || "הלקוח"}${row.po_number ? ` מספר ${row.po_number}` : ""}?`;
+    }
+    if (cancelOrderProgress) cancelOrderProgress.classList.remove("visible");
+    if (cancelOrderProgressFill) cancelOrderProgressFill.style.width = "0%";
+    if (cancelOrderProgressPercent) cancelOrderProgressPercent.textContent = "0%";
+    if (cancelOrderConfirm) cancelOrderConfirm.disabled = false;
+    cancelOrderModal.classList.add("visible");
+    cancelOrderModal.setAttribute("aria-hidden", "false");
+  }
+
+  function closeCancelOrderModal() {
+    if (!cancelOrderModal || cancelOrderRunning) return;
+    cancelOrderModal.classList.remove("visible");
+    cancelOrderModal.setAttribute("aria-hidden", "true");
+    pendingCancelOrderRow = null;
+  }
+
+  function updateCancelOrderProgress(value, title, message) {
+    const safeValue = Math.max(0, Math.min(100, Number(value) || 0));
+    if (cancelOrderProgress) cancelOrderProgress.classList.add("visible");
+    if (cancelOrderProgressFill) cancelOrderProgressFill.style.width = `${safeValue}%`;
+    if (cancelOrderProgressPercent) cancelOrderProgressPercent.textContent = `${Math.round(safeValue)}%`;
+    if (title && cancelOrderProgressTitle) cancelOrderProgressTitle.textContent = title;
+    if (message && cancelOrderProgressMessage) cancelOrderProgressMessage.textContent = message;
+  }
+
+  cancelOrderModalClose?.addEventListener("click", () => closeCancelOrderModal());
+
+  cancelOrderConfirm?.addEventListener("click", async () => {
+    const row = pendingCancelOrderRow;
+    if (!row || cancelOrderRunning) return;
+    cancelOrderRunning = true;
+    if (cancelOrderConfirm) cancelOrderConfirm.disabled = true;
+    updateCancelOrderProgress(18, "מבטל את המסמכים במורנינג...", "מבטל את חשבונית המס ותעודת המשלוח של ההזמנה.");
+    const progressTimer = window.setInterval(() => {
+      const current = parseFloat(cancelOrderProgressFill?.style.width || "18") || 18;
+      if (current < 88) updateCancelOrderProgress(current + 6);
+    }, 900);
+    try {
+      const response = await fetch("/order-history-cancel-order", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ history_id: String(row.history_id || "") }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "לא הצלחתי לבטל את ההזמנה.");
+      updateCancelOrderProgress(100, "ההזמנה בוטלה", "המסמכים בוטלו וההזמנה הוסרה מאישורי המסירה ומהתשלומים.");
+      if (Array.isArray(payload.rows)) {
+        renderOrderHistoryState(payload);
+        orderHistoryLoaded = true;
+      }
+      const morningSummary = (payload.morning || [])
+        .map(item => `${item.document}: ${item.status === "cancelled" ? "בוטל" : (item.status === "skipped" ? "דולג" : "שגיאה")}`)
+        .join(" · ");
+      const hadMorningError = (payload.morning || []).some(item => item.status === "error");
+      showToast(
+        hadMorningError ? "info" : "success",
+        "ההזמנה בוטלה",
+        `${morningSummary || "המסמכים טופלו"}. ההזמנה הוסרה מאישורי המסירה ומתשלומים והעברות ונשארה בהיסטוריה בלבד.`
+      );
+      loadDeliveryConfirmationsFromServer(false).catch(() => {});
+      cancelOrderRunning = false;
+      closeCancelOrderModal();
+    } catch (error) {
+      updateCancelOrderProgress(100, "הביטול נכשל", error.message || "לא הצלחתי לבטל את ההזמנה.");
+      showToast("error", "ביטול ההזמנה נכשל", error.message || "לא הצלחתי לבטל את ההזמנה.");
+      cancelOrderRunning = false;
+      if (cancelOrderConfirm) cancelOrderConfirm.disabled = false;
+    } finally {
+      window.clearInterval(progressTimer);
+    }
+  });
 
   function openHistoryDeleteModal(row, type = "order") {
     pendingHistoryDelete = row || null;

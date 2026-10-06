@@ -270,5 +270,6 @@
   "checkbox:hrPayrollWhatsappIncludeHours": "פער אמיתי — בתור לפיתוח: מתג צירוף דוח נוכחות לתלוש בוואטסאפ (השרת מצרף כברירת מחדל גם בלי המפתח)",
   "checkbox:hrPayslipPrepMealEnabled": "פער אמיתי — בתור לפיתוח: שווי ארוחות במודאל תלושים להפקה (זרימת הכנה לרו\"ח — דסקטופית בעיקרה)",
   "checkbox:labelSplitManualQty": "פער אמיתי — בתור לפיתוח: מצב \"ידני\" בחלוקת מדבקות (קו תחתון במקום כמות)",
-  "data-extra-item-description": "עריכת תיאור לכל שורת פריט קיימת בקומפוזר האפליקציה — order-item-description-<index> ב-ComposerItemsEditor (מזהה אינטרפולציה מלאה שהמחלץ לא רואה)"
+  "data-extra-item-description": "עריכת תיאור לכל שורת פריט קיימת בקומפוזר האפליקציה — order-item-description-<index> ב-ComposerItemsEditor (מזהה אינטרפולציה מלאה שהמחלץ לא רואה)",
+  "data-history-cancel-order": "פער אמיתי — בתור לפיתוח: ביטול הזמנה מלא (מורנינג+אישורי מסירה+תשלומים) מתוך האפליקציה"
 }

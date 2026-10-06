@@ -20360,6 +20360,122 @@ async def order_history_delete(request: Request):
         return JSONResponse({"error": f"לא הצלחתי למחוק את השורה מההיסטוריה: {exc}"}, status_code=500)
 
 
+ORDER_CANCELLED_STATUS_TAG = "ההזמנה בוטלה"
+
+
+@app.post("/order-history-cancel-order")
+async def order_history_cancel_order(request: Request):
+    """ביטול הזמנה מלא: מבטל במורנינג את חשבונית המס ותעודת המשלוח
+    (POST /documents/{id}/close), מסלק את ההזמנה מאישורי המסירה (כולל דיכוי
+    שימנע ממנה לקום לתחייה בסנכרון) ומתשלומים והעברות — ומשאיר אותה במערכת
+    רק כרשומה בהיסטוריית ההזמנות, מתויגת "ההזמנה בוטלה"."""
+    try:
+        body = await request.json()
+        history_id = str(body.get("history_id") or "").strip()
+        if not history_id:
+            return JSONResponse({"error": "חסר מזהה היסטוריה לביטול."}, status_code=400)
+
+        history_rows = load_order_history_rows(force_refresh=True)
+        target_index = next(
+            (index for index, row in enumerate(history_rows) if str(row.get("history_id") or "").strip() == history_id),
+            -1,
+        )
+        if target_index < 0:
+            return JSONResponse({"error": "לא נמצאה שורת היסטוריה תואמת לביטול."}, status_code=404)
+        target_row = history_rows[target_index]
+        if str(target_row.get("order_status_tag") or "").strip() == ORDER_CANCELLED_STATUS_TAG:
+            return JSONResponse({"error": "ההזמנה הזו כבר בוטלה."}, status_code=400)
+
+        mode = "sandbox" if str(target_row.get("mode") or "").strip().upper() == "SB" else "prod"
+        cfg = get_mode_config(mode)
+        client = GreenInvoiceClient(base_url=cfg["base_url"], api_key=cfg["api_key"], api_secret=cfg["api_secret"])
+        token = await client._get_token()
+
+        # חשבונית קודם ואז תעודת המשלוח — החשבונית מפנה לתעודה, וביטולה משחרר אותה
+        documents_to_cancel = [
+            ("חשבונית מס", str(target_row.get("tax_invoice_document_id") or "").strip(), str(target_row.get("tax_invoice_number") or "").strip()),
+            ("תעודת משלוח", str(target_row.get("delivery_document_id") or "").strip(), str(target_row.get("delivery_document_number") or "").strip()),
+        ]
+        morning_results: list[dict] = []
+        for label, document_id, document_number in documents_to_cancel:
+            if not document_id:
+                morning_results.append({"document": label, "number": document_number, "status": "skipped", "reason": "אין מזהה מסמך ברשומה"})
+                continue
+            try:
+                closed = await client.close_document(token, document_id)
+                morning_results.append({"document": label, "number": document_number or str(closed.get("number") or ""), "status": "cancelled"})
+            except Exception as close_exc:
+                log_handled_error(f"order cancel: morning close failed for {label}", close_exc)
+                morning_results.append({"document": label, "number": document_number, "status": "error", "error": str(close_exc)})
+
+        cancelled_any = any(item["status"] == "cancelled" for item in morning_results)
+        errored_any = any(item["status"] == "error" for item in morning_results)
+        if errored_any and not cancelled_any:
+            # שום מסמך לא בוטל בפועל — עוצרים לפני הניקוי כדי לא ליצור מצב
+            # שבו המסמכים חיים במורנינג אבל נעלמו מהמסכים שלנו
+            return JSONResponse(
+                {"error": "ביטול המסמכים במורנינג נכשל — לא בוצע שום ניקוי.", "morning": morning_results},
+                status_code=502,
+            )
+
+        add_delivery_confirmation_suppression(
+            company=str(target_row.get("customer_name") or "").strip(),
+            po_number=str(target_row.get("po_number") or "").strip(),
+            source_mode=str(target_row.get("mode") or "").strip(),
+            tax_invoice_number=str(target_row.get("tax_invoice_number") or "").strip(),
+            delivery_document_number=str(target_row.get("delivery_document_number") or "").strip(),
+        )
+        delivery_result = delete_delivery_confirmation_rows(
+            history_id=history_id,
+            fulfillment_id=str(target_row.get("fulfillment_id") or "").strip(),
+            po_number=str(target_row.get("po_number") or "").strip(),
+            source_mode=str(target_row.get("mode") or "").strip(),
+            company=str(target_row.get("customer_name") or "").strip(),
+            delivery_document_number=str(target_row.get("delivery_document_number") or "").strip(),
+            tax_invoice_number=str(target_row.get("tax_invoice_number") or "").strip(),
+        )
+
+        payments_cleanup: list[dict] = []
+        for payment_row in _matching_payment_rows_for_order_history_row(target_row):
+            try:
+                payments_cleanup.append(
+                    delete_payment_transfer_row(
+                        str(payment_row.get("_sheet_title") or "").strip(),
+                        int(payment_row.get("_sheet_row") or 0),
+                        payment_row,
+                        exact_only=True,
+                    )
+                )
+            except Exception as payments_exc:
+                log_handled_error("order cancel payments cascade failed", payments_exc)
+                payments_cleanup.append({"status": "error", "error": str(payments_exc)})
+
+        target_row["order_status_tag"] = ORDER_CANCELLED_STATUS_TAG
+        target_row["updated_at"] = datetime.now().isoformat(timespec="seconds")
+        history_rows[target_index] = target_row
+        save_order_history_rows(history_rows)
+
+        await _log_activity(
+            request,
+            action="ביטול",
+            tab="הזמנות",
+            description=f"ביטול הזמנה {str(target_row.get('po_number') or '') or 'ללא מספר'} — {str(target_row.get('customer_name') or '')}".strip(" —"),
+            entity_id=history_id,
+        )
+        return JSONResponse(
+            {
+                "status": "ok",
+                "morning": morning_results,
+                "delivery_confirmation_cleanup": delivery_result,
+                "payments_cleanup": payments_cleanup,
+                **_build_order_history_payload(history_rows),
+            }
+        )
+    except Exception as exc:
+        log_handled_error("order_history_cancel_order failed", exc)
+        return JSONResponse({"error": f"לא הצלחתי לבטל את ההזמנה: {exc}"}, status_code=500)
+
+
 @app.get("/installations-state")
 async def installations_state():
     try:

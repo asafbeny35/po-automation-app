@@ -738,6 +738,23 @@ class GreenInvoiceClient:
             print(json.dumps(data, ensure_ascii=False, indent=2))
             return self._normalize_document_response(data)
 
+    async def close_document(self, token: str, document_id: str) -> dict:
+        """מבטל/סוגר מסמך במורנינג (status 2) — POST /documents/{id}/close.
+
+        אומת אמפירית מול ה-sandbox (06.10.2026): חשבונית פתוחה (status 0)
+        עברה ל-status 2 והתשובה היא המסמך המעודכן.
+        """
+        async with httpx.AsyncClient(timeout=60) as client:
+            response = await client.post(
+                f"{self.base_url}/documents/{document_id}/close",
+                headers=self._auth_headers(token),
+            )
+            if response.status_code >= 400:
+                print("CLOSE DOCUMENT STATUS:", response.status_code)
+                print("CLOSE DOCUMENT RESPONSE:", response.text[:500])
+            response.raise_for_status()
+            return response.json()
+
     async def download_pdf(self, token: str, url: str, save_path: Path, fallback_urls: list[str] | None = None):
         """מוריד PDF ומוודא שהתוכן באמת PDF.
 
