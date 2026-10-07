@@ -7572,6 +7572,9 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
         or re.search(r"חשבונית\s*מס\s*מרכזת\s*(?:-|–)?\s*([$S5][I1L!$]?\d{6,})", fixed_text or "", re.IGNORECASE)
         or re.search(r"מספר\s+תעודה[:\s]*([$S5][I1L!$]?\d{6,})", raw_text or "", re.IGNORECASE)
         or re.search(r"מספר\s+תעודה[:\s]*([$S5][I1L!$]?\d{6,})", fixed_text or "", re.IGNORECASE)
+        # הסריקה לפעמים הופכת את הקידומת לסיומת: "266008915/S"
+        or re.search(r"מספר\s+תעודה[:\s]*(\d{6,}[/\\][SI$5!1L]{1,2})", combined, re.IGNORECASE)
+        or re.search(r"\*(\d{6,}[/\\][SI$5!1L]{1,2})\*", combined, re.IGNORECASE)
         or re.search(r"\b(SI\d{6,})\b", fixed_text or "", re.IGNORECASE)
         or re.search(r"\b(SI\d{6,})\b", combined, re.IGNORECASE)
         or re.search(r"חשבונית\s*מס\s*מרכזת\s*(?:-|–)?\s*([S5][I1L!$]\d{6,})", combined, re.IGNORECASE)
@@ -7581,14 +7584,22 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
     invoice_date = normalize_date(invoice_date_match.group(1)) if invoice_date_match else ""
     invoice_number = normalize_ws(invoice_number_match.group(1)) if invoice_number_match else ""
     if invoice_number:
-        normalized_invoice_number = invoice_number.upper().replace("$", "S").replace("!", "I").replace("1", "I").replace("L", "I")
-        if normalized_invoice_number.startswith("5"):
-            normalized_invoice_number = "S" + normalized_invoice_number[1:]
-        if normalized_invoice_number.startswith("SS"):
-            normalized_invoice_number = "SI" + normalized_invoice_number[2:]
-        elif normalized_invoice_number.startswith("S") and not normalized_invoice_number.startswith("SI") and len(normalized_invoice_number) > 1:
-            normalized_invoice_number = "SI" + normalized_invoice_number[1:]
-        invoice_number = normalized_invoice_number
+        # נרמול בלבול-OCR נפרד לקידומת ולספרות: ההחלפה הגורפת הישנה ("1"→"I"
+        # על כל המחרוזת) השחיתה מספרים שמכילים 1 — ‏SI266008915 יצא SI2660089I5
+        raw_number = invoice_number.upper().strip().strip("/*")
+        # הסריקה לפעמים הופכת את הקידומת לסיומת: "266008915/S"
+        flip_match = re.fullmatch(r"(\d{6,})[/\\]?([SI$5!1L]{1,2})", raw_number)
+        if flip_match:
+            raw_number = "S" + flip_match.group(1)
+        # מקלפים את קידומת ה-SI על בלבולי ה-OCR שלה (S→5/$, I→1/L/!) לפי מיקום
+        body = raw_number
+        if body[:1] in {"S", "$"} or (body[:1] == "5" and not body.isdigit()):
+            body = body[1:]
+            if body[:1] in {"I", "1", "L", "!"} and len(body) > 6:
+                body = body[1:]
+        digits = body.translate(str.maketrans({"I": "1", "L": "1", "!": "1", "O": "0", "S": "5", "$": "5", "B": "8"}))
+        digits = re.sub(r"\D", "", digits)
+        invoice_number = f"SI{digits}" if len(digits) >= 6 else invoice_number
     payment_due_match = (
         re.search(r"לתשלום\s*עד[:\s]*([0-9./-]+)", raw_text or "", re.IGNORECASE)
         or re.search(r"לתשלום\s*עד[:\s]*([0-9./-]+)", fixed_text or "", re.IGNORECASE)
@@ -7680,42 +7691,53 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
         re.search(r"נותר\s+לתשלום\s*[:\s]*([\d,]+\.\d{2})", combined)
         or re.search(r"([\d,]+\.\d{2})\s+םולשתל\s+רתונ", raw_text or "")
     )
-    if strong_total_match:
-        strong_total = _finance_parse_number(strong_total_match.group(1))
-        if strong_total and strong_total > 0:
-            total = strong_total
-    if total is not None and total > 0:
-        amounts_sane = (
-            subtotal is not None
-            and vat is not None
-            and vat < subtotal
-            and abs((subtotal + vat) - total) <= 0.02
-        )
-        if not amounts_sane:
-            # בוחרים זוג סכומים שמסתכם לסה"כ *ועומד ביחס 18%* — בלי האילוץ הזה
-            # גם זוג המחירים-כולל-מע"מ של השורות (7,080+5,192) מסתכם בדיוק לסה"כ
-            cleaned = re.sub(r"\([\d.]+\s*%\)", "", combined)
-            pool = sorted({
-                value for value in (
-                    _finance_parse_number(v) for v in re.findall(r"[\d,]+\.\d{2}", cleaned)
-                ) if value and 0 < value < total
-            })
-            pair = next(
-                (
-                    (bigger, smaller)
-                    for bigger in pool
-                    for smaller in pool
-                    if bigger > smaller
-                    and abs(bigger + smaller - total) <= 0.02
-                    and abs(round(bigger * 0.18, 2) - smaller) <= 0.05
-                ),
-                None,
-            )
-            if pair:
-                subtotal, vat = pair
-            else:
-                subtotal = round(total / 1.18, 2)
-                vat = round(total - subtotal, 2)
+    strong_total = _finance_parse_number(strong_total_match.group(1)) if strong_total_match else None
+    if strong_total and strong_total > 0:
+        total = strong_total
+
+    # ── העוגן האמיתי: סריקת שלשות 18% ───────────────────────────────────────
+    # ה-OCR מפרק את עמודות הסיכום כך שהמספרים נדדו מהתוויות, ו"(18.00%)" נקרא
+    # כסכום — אז במקום תוויות מחפשים שלשה (ביניים, מע"מ, סה"כ) שמקיימת גם
+    # ביניים+מע"מ=סה"כ וגם מע"מ≈18% מהביניים. זה עמיד גם להנחה כללית (209.50
+    # −0.18 ⇒ 209.32+37.68=247.00) וגם לזוגות-מתעתעים של מחירי שורה כולל מע"מ.
+    # "סה"כ נותר לתשלום" (כשקיים) רק קובע איזו שלשה לבחור.
+    # הסריקה רצה תמיד: חילוץ-התוויות הישן מסוגל לייצר זבל עקבי-בעצמו (total
+    # שנלקח מ-"(18.00%)" ואז פוצל ל-15.25+2.75 — שלשת 18% תקינה לכאורה), אבל
+    # הזבל הזה לא מופיע בטקסט המסמך — ולכן שלשה שנמצאה בטקסט עצמו גוברת.
+    amounts_sane = (
+        subtotal is not None
+        and vat is not None
+        and total is not None
+        and vat < subtotal
+        and abs((subtotal + vat) - total) <= 0.02
+        and abs(round(subtotal * 0.18, 2) - vat) <= 0.05
+    )
+    cleaned = re.sub(r"\([\d.]+\s*%\)", "", combined)
+    pool = sorted({
+        value for value in (
+            _finance_parse_number(v) for v in re.findall(r"[\d,]+\.\d{2}", cleaned)
+        ) if value and value > 0
+    })
+    triples = [
+        (bigger, smaller, round(bigger + smaller, 2))
+        for bigger in pool
+        for smaller in pool
+        if bigger > smaller
+        and abs(round(bigger * 0.18, 2) - smaller) <= 0.05
+        and any(abs(candidate - (bigger + smaller)) <= 0.02 for candidate in pool)
+    ]
+    chosen = None
+    if strong_total:
+        chosen = next((t for t in triples if abs(t[2] - strong_total) <= 0.02), None)
+    if chosen is None and triples:
+        chosen = max(triples, key=lambda t: t[2])
+    if chosen:
+        subtotal, vat = chosen[0], chosen[1]
+        total = chosen[2]
+    elif not amounts_sane and strong_total:
+        total = strong_total
+        subtotal = round(total / 1.18, 2)
+        vat = round(total - subtotal, 2)
 
     service_match = (
         re.search(r"פרטים[:\s]*([^\n\r]+)", fixed_text or "", re.IGNORECASE)
@@ -7723,10 +7745,9 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
     )
     service_or_product = normalize_ws(service_match.group(1)) if service_match else ""
     if service_or_product and service_or_product.endswith("עד"):
-        service_date_match = (
-            re.search(r"פרטים[:\s]*[^\n\r]*עד\s*[\n\r]+\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})", raw_text or "", re.IGNORECASE)
-            or re.search(r"פרטים[:\s]*[^\n\r]*עד\s*[\n\r]+\s*([0-9]{1,2}[./-][0-9]{1,2}[./-][0-9]{2,4})", fixed_text or "", re.IGNORECASE)
-        )
+        # ה-OCR זורק את התאריך רחוק משורת "פרטים" (עמודות ממוזגות) — מחפשים
+        # בכל המסמך תאריך בפורמט d.m.yyyy, שמופיע רק בהקשר הזה
+        service_date_match = re.search(r"\b(\d{1,2}\.\d{1,2}\.\d{4})\b", combined)
         if service_date_match:
             service_or_product = f"{service_or_product} {service_date_match.group(1)}"
     service_or_product = service_or_product.replace("+", " + ")
@@ -7735,7 +7756,13 @@ def _finance_parse_elron_car_invoice(raw_text: str, fixed_text: str, original_na
         # התקופה מהמסמך עצמו — הנפילה הקשיחה הישנה ("שכ"ד 5.2026 + הפרשי
         # הצמדה") הדביקה חודש שגוי לחשבוניות חדשות כשה-OCR פספס את "פרטים"
         month_match = re.search(r"שכ[\"״']?ד\s*\d{1,2}\.\d{4}", combined)
-        service_or_product = normalize_ws(month_match.group(0)) if month_match else 'שכ"ד'
+        if month_match:
+            service_or_product = normalize_ws(month_match.group(0))
+        elif "חשמל" in combined and "מים" in combined:
+            until_match = re.search(r"\b(\d{1,2}\.\d{1,2}\.\d{4})\b", combined)
+            service_or_product = f"חשמל + מים עד {until_match.group(1)}" if until_match else "חשמל + מים"
+        else:
+            service_or_product = 'שכ"ד'
 
     allocation_number = _finance_extract_allocation_number(combined) if _finance_parse_number(total) >= 10000 else ""
     if not allocation_number and file_path.suffix.lower() == ".pdf":
