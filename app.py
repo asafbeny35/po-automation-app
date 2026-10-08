@@ -11333,6 +11333,27 @@ def _hr_parse_hours_document(file_path: Path, employees: list[dict]) -> dict | N
     }
 
 
+def _hr_hours_month_in_progress_error(employee_name: str, month_key: str, details: list[dict] | None = None) -> str:
+    """דוח שעות חודשי תקף רק לחודש שהסתיים. ייצוא של חודש-בעיצומו הוא כמעט
+    תמיד בחירת חודש שגויה בשעון הנוכחות — המקרה של יונתן (08.10.2026): קובץ
+    עם ימי 01-08/10 בלבד נקלט כאוקטובר במקום דוח ספטמבר המלא שהתכוונו אליו."""
+    clean_key = str(month_key or "").strip()
+    if not re.match(r"^\d{4}-\d{2}$", clean_key):
+        return ""
+    current_key = date.today().strftime("%Y-%m")
+    if clean_key < current_key:
+        return ""
+    worked_days = sum(1 for detail in (details or []) if float((detail or {}).get("hours") or 0) > 0)
+    month_label = _hr_month_display(clean_key)
+    previous_month = (date.today().replace(day=1) - timedelta(days=1)).strftime("%Y-%m")
+    previous_label = _hr_month_display(previous_month)
+    suffix = f" ({worked_days} ימי עבודה בלבד)" if details is not None else ""
+    return (
+        f"דוח השעות של {employee_name or 'העובד'} מכיל את {month_label} — חודש שעדיין לא הסתיים{suffix}. "
+        f"כנראה נבחר חודש שגוי בייצוא משעון הנוכחות; יש לייצא את {previous_label} ולהעלות שוב."
+    )
+
+
 def _hr_extract_first_amount(text: str, patterns: list[str]) -> str:
     for pattern in patterns:
         match = re.search(pattern, text)
@@ -29511,6 +29532,10 @@ async def hr_ingest_files(
                         upsert_hr_row("contributions", row, "row_id")
                         results.append({"file_name": safe_name, "section": "contributions", "employee_name": entry_employee_name, "month_key": month_key})
                 elif parsed.get("doc_type") == "hours":
+                    in_progress_error = _hr_hours_month_in_progress_error(employee_name, month_key, parsed.get("details") or [])
+                    if in_progress_error:
+                        errors.append({"file_name": safe_name, "error": in_progress_error})
+                        continue
                     upload_result = _hr_upload_file_to_drive(final_path, employee_name, "hours", month_key=month_key, drive_name=safe_name)
                     employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or employee.get("drive_folder_id") or "").strip()
                     employee["drive_folder_url"] = str(upload_result.get("employee_folder_url") or employee.get("drive_folder_url") or "").strip()
@@ -29633,6 +29658,30 @@ async def hr_upload_file(
         local_path.write_bytes(contents)
 
         employee_name = str(employee.get("full_name") or "").strip()
+
+        if section_key == "hours":
+            # הצלבת תוכן-הקובץ מול החודש שנבחר: דוח של חודש אחר או של חודש
+            # שעדיין לא הסתיים נדחה עם הסבר, במקום להישמר בשקט תחת חודש שגוי
+            try:
+                uploaded_details = _hr_parse_hours_report_rows(local_path)
+            except Exception:
+                uploaded_details = []
+            derived_month = _hr_month_key_from_hours_details(uploaded_details) if uploaded_details else ""
+            chosen_month = str(month_key or "").strip()
+            if derived_month and chosen_month and derived_month != chosen_month:
+                return JSONResponse(
+                    {
+                        "error": (
+                            f"קובץ השעות של {employee_name} מכיל את {_hr_month_display(derived_month)} "
+                            f"אבל הועלה לחודש {_hr_month_display(chosen_month)} — כנראה יוצא חודש שגוי משעון הנוכחות."
+                        )
+                    },
+                    status_code=400,
+                )
+            in_progress_error = _hr_hours_month_in_progress_error(employee_name, derived_month or chosen_month, uploaded_details or None)
+            if in_progress_error:
+                return JSONResponse({"error": in_progress_error}, status_code=400)
+
         upload_result = _hr_upload_file_to_drive(local_path, employee_name, section_key, month_key=str(month_key or "").strip(), drive_name=safe_name)
 
         employee["drive_folder_id"] = str(upload_result.get("employee_folder_id") or employee.get("drive_folder_id") or "").strip()
