@@ -3322,6 +3322,23 @@ def _normalize_finance_invoice_row_app(row: dict) -> dict:
     normalized["reference_number"] = str(normalized.get("reference_number") or "").strip()
     normalized["allocation_number"] = str(normalized.get("allocation_number") or "").strip()
     normalized["currency_code"] = str(normalized.get("currency_code") or "ILS").strip().upper() or "ILS"
+    # חוק מטבע-זר (הנחיית אסף 09.10.2026): חשבונית שמטבעה אינו שקל לעולם לא
+    # נושאת מע"מ בחישוב — לא מפענוח, לא מהזנה ידנית ולא מגזירה; הסכום כולו
+    # הוא הבסיס. שקל נשאר בכללים הקיימים (עירוני/סיבוס מאפסים, השאר לפי
+    # המסמך). האכיפה כאן, בנורמליזציה שכל שורה עוברת, סוגרת גם שורות ישנות
+    # שמע"מ כבר נשמר בהן וגם מסלולים שמפספסים את כלל ה-foreign בפענוח.
+    final_currency = str(normalized.get("currency_code") or "").strip().upper()
+    if re.fullmatch(r"[A-Z]{3}", final_currency) and final_currency not in {"ILS", "NIS"}:
+        foreign_vat = _finance_parse_number(normalized.get("vat"))
+        if foreign_vat > 0:
+            foreign_total = _finance_parse_number(normalized.get("total"))
+            foreign_subtotal = _finance_parse_number(normalized.get("subtotal"))
+            if foreign_total <= 0 and foreign_subtotal > 0:
+                foreign_total = round(foreign_subtotal + foreign_vat, 2)
+                normalized["total"] = f"{foreign_total:.2f}"
+            if foreign_total > 0:
+                normalized["subtotal"] = f"{foreign_total:.2f}"
+        normalized["vat"] = "0.00"
     return normalized
 
 
